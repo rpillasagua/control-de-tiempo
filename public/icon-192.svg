@@ -1,29 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="32" fill="#0077b6"/>
-  <g>
-    <path d="M60 120c0-24 24-44 52-44 20 0 36 12 36 28 0 12-10 20-22 20-8 0-14-4-14-10 0-6 6-10 14-10 6 0 10 2 10 6" stroke="#fff" stroke-width="6" fill="none"/>
-    <ellipse cx="120" cy="104" rx="6" ry="6" fill="#fff"/>
-    <path d="M72 140c8 8 24 12 36 12 20 0 36-12 36-28" stroke="#fff" stroke-width="6" fill="none"/>
-    <text x="50%" y="170" text-anchor="middle" font-size="28" font-family="Arial, sans-serif" fill="#fff" font-weight="bold">AQUAGOLD</text>
-  </g>
-</svg>
-    <path d="M 65 38 L 63 45" stroke="white" stroke-width="1.5" opacity="0.7"/>
-  </g>
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo con gradiente -->
+  <rect width="192" height="192" rx="42" fill="url(#bgGradient)"/>
   
-  <!-- Símbolo de resistencia/durabilidad (escudo) -->
-  <g transform="translate(120, 110)">
-    <path d="M 20 0 L 30 5 L 30 20 Q 30 30 20 35 Q 10 30 10 20 L 10 5 Z" 
-          fill="white" opacity="0.9" stroke="#0EA5E9" stroke-width="1.5"/>
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1E40AF"/>
+    </linearGradient>
     
-    <!-- Check mark dentro del escudo -->
-    <path d="M 15 18 L 19 22 L 26 13" 
-          stroke="#0EA5E9" stroke-width="2.5" fill="none" 
-          stroke-linecap="round" stroke-linejoin="round"/>
+    <linearGradient id="dropGradient" x1="96" y1="30" x2="96" y2="165" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="50%" stop-color="#E0F2FE"/>
+      <stop offset="100%" stop-color="#BFDBFE"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Sombra de la gota -->
+  <ellipse cx="96" cy="162" rx="45" ry="8" fill="#000000" opacity="0.15"/>
+  
+  <!-- Gota principal -->
+  <path 
+    d="M96 30C96 30 52 86 52 116C52 147.61 77.39 173 109 173C140.61 173 166 147.61 166 116C166 86 96 30 96 30Z" 
+    fill="url(#dropGradient)"
+  />
+  
+  <!-- Estructura cristalina interna -->
+  <path 
+    d="M96 45L60 112L96 157L132 112L96 45Z" 
+    fill="white" 
+    opacity="0.4"
+  />
+  
+  <!-- Reflejo/brillo -->
+  <path 
+    d="M96 45L71 101L96 135L96 45Z" 
+    fill="white" 
+    opacity="0.6"
+  />
+  
+  <!-- Detalle de copo de nieve/hielo -->
+  <g opacity="0.8">
+    <line x1="96" y1="94" x2="96" y2="131" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+    <line x1="77" y1="112.5" x2="115" y2="112.5" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
   </g>
   
-  <!-- Burbujas de agua (ambiente acuícola) -->
-  <circle cx="40" cy="40" r="4" fill="white" opacity="0.3"/>
-  <circle cx="150" cy="45" r="5" fill="white" opacity="0.25"/>
-  <circle cx="160" cy="150" r="3" fill="white" opacity="0.3"/>
-  <circle cx="30" cy="155" r="4" fill="white" opacity="0.25"/>
+  <!-- Gotas pequeñas decorativas -->
+  <circle cx="120" cy="67" r="3" fill="white" opacity="0.6"/>
+  <circle cx="127" cy="82" r="2.2" fill="white" opacity="0.5"/>
 </svg>

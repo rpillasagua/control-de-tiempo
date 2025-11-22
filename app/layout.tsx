@@ -10,13 +10,13 @@ const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 // PWA Ready - Vercel Production Build
 export const metadata: Metadata = {
-  title: 'Resistencias',
-  description: 'Sistema de gestión de pruebas de resistencia de camarones',
+  title: 'Análisis en Descongelado',
+  description: 'Sistema de control de calidad para análisis de productos en descongelado - Aquagold',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Resistencias',
+    title: 'Análisis Aquagold',
   },
   icons: {
     icon: [

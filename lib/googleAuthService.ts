@@ -113,6 +113,11 @@ class GoogleAuthService {
     }
 
     if (accessToken) {
+      // Evitar procesar si ya tenemos un token válido en memoria para evitar bucles
+      if (this.accessToken === accessToken) {
+        return;
+      }
+
       logger.log('✅ Token recibido desde redirect');
 
       // Simular respuesta del callback
@@ -139,6 +144,7 @@ class GoogleAuthService {
         this.user = JSON.parse(savedUser) as UserProfile;
 
         // Verificar si el token aún es válido
+        // IMPORTANTE: Si falla por red, ASUMIMOS que es válido para no desloguear al usuario offline
         const isValid = await this.verifyToken();
 
         if (isValid) {
@@ -156,14 +162,18 @@ class GoogleAuthService {
             }
           }
           return;
+        } else {
+          // Solo limpiar si verifyToken devuelve explícitamente false (inválido)
+          // Si verifyToken lanzó excepción (red), no llegamos aquí (o deberíamos manejarlo en verifyToken)
+          // En la nueva implementación de verifyToken, devuelve true si hay error de red,
+          // así que si llegamos aquí es porque es REALMENTE inválido.
+          logger.warn('⚠️ Token guardado expiró o es inválido, limpiando...');
+          this.clearStoredAuth();
         }
-
-        // Token expirado, limpiar
-        logger.warn('⚠️ Token guardado expiró, limpiando...');
-        this.clearStoredAuth();
       }
     } catch (error) {
       logger.error('Error sincronizando storage:', error);
+      // No limpiamos auth aquí por si es un error temporal de lectura
     }
   }
   /**
@@ -307,6 +317,11 @@ class GoogleAuthService {
   /**
    * Verifica si un token es válido (sin clearing agresivo)
    */
+  /**
+   * Verifica si un token es válido (sin clearing agresivo)
+   * Retorna true si es válido O si no se puede verificar (offline)
+   * Retorna false SOLO si Google responde explícitamente que es inválido
+   */
   private async verifyToken(): Promise<boolean> {
     if (!this.accessToken) return false;
 
@@ -317,13 +332,14 @@ class GoogleAuthService {
       );
 
       if (response.status === 401) {
-        logger.warn('⚠️ Token inválido (401)');
+        logger.warn('⚠️ Token inválido (401) - Expirado o revocado');
         return false;
       }
 
       if (!response.ok) {
-        logger.warn(`⚠️ Token check failed: ${response.status}`);
-        return false;
+        logger.warn(`⚠️ Token check failed: ${response.status} - Asumiendo válido por error de servidor`);
+        // Si falla con 500 u otro error, asumimos válido para no bloquear al usuario
+        return true;
       }
 
       const tokenInfo: TokenInfo = await response.json();
@@ -337,8 +353,10 @@ class GoogleAuthService {
       logger.log(`✅ Token válido (expira en ${tokenInfo.expires_in}s)`);
       return true;
     } catch (error) {
-      logger.warn('Error verificando token:', error);
-      return false;
+      logger.warn('Error verificando token (posiblemente offline):', error);
+      // Si hay error de red (offline), ASUMIMOS que el token es válido
+      // para permitir que la app funcione con datos en caché
+      return true;
     }
   }
 

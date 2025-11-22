@@ -1,0 +1,50 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo con gradiente -->
+  <rect width="180" height="180" rx="40" fill="url(#bgGradient)"/>
+  
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1E40AF"/>
+    </linearGradient>
+    
+    <linearGradient id="dropGradient" x1="90" y1="28" x2="90" y2="155" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="50%" stop-color="#E0F2FE"/>
+      <stop offset="100%" stop-color="#BFDBFE"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Sombra de la gota -->
+  <ellipse cx="90" cy="152" rx="42" ry="7" fill="#000000" opacity="0.15"/>
+  
+  <!-- Gota principal -->
+  <path 
+    d="M90 28C90 28 49 81 49 109C49 138.82 72.18 162 102 162C131.82 162 155 138.82 155 109C155 81 90 28 90 28Z" 
+    fill="url(#dropGradient)"
+  />
+  
+  <!-- Estructura cristalina interna -->
+  <path 
+    d="M90 42L56.5 105L90 147L123.5 105L90 42Z" 
+    fill="white" 
+    opacity="0.4"
+  />
+  
+  <!-- Reflejo/brillo -->
+  <path 
+    d="M90 42L67 95L90 127L90 42Z" 
+    fill="white" 
+    opacity="0.6"
+  />
+  
+  <!-- Detalle de copo de nieve/hielo -->
+  <g opacity="0.8">
+    <line x1="90" y1="88" x2="90" y2="123" stroke="white" stroke-width="4.2" stroke-linecap="round"/>
+    <line x1="72.5" y1="105.5" x2="107.5" y2="105.5" stroke="white" stroke-width="4.2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Gotas pequeñas decorativas -->
+  <circle cx="112" cy="63" r="2.8" fill="white" opacity="0.6"/>
+  <circle cx="119" cy="77" r="2" fill="white" opacity="0.5"/>
+</svg>
