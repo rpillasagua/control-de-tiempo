@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, ZoomIn, ImageOff, Camera } from 'lucide-react';
+import { compressImage } from '@/lib/imageCompression';
 
 interface PhotoCaptureProps {
   label: string;
@@ -21,6 +22,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const [retryCount, setRetryCount] = useState(0);
   const [cacheBuster, setCacheBuster] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
@@ -81,7 +83,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
     }
   }, [isLoading, photoUrl, label, imageError]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       console.log(`📸 PhotoCapture: Archivo seleccionado para ${label}:`, file.name);
@@ -100,7 +102,18 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
       setLocalPreviewUrl(previewUrl);
       setImageError(false);
 
-      onPhotoCapture(file);
+      // Compress image before uploading
+      setIsCompressing(true);
+      try {
+        const compressedFile = await compressImage(file);
+        onPhotoCapture(compressedFile);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        // If compression fails, upload original
+        onPhotoCapture(file);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -133,11 +146,11 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         {(photoUrl || localPreviewUrl) && !imageError ? (
           <div className={`flex flex-col sm:flex-row sm:items-center gap-4 w-full ${compact ? 'p-1.5' : 'p-3'} bg-black/20 rounded-xl border border-white/5`}>
             <div className={`relative group self-center sm:self-auto ${compact ? 'w-12 h-12' : 'w-24 h-24 sm:w-20 sm:h-20'} flex-shrink-0`}>
-              {(isLoading || isRetrying || isUploading) && (
+              {(isLoading || isRetrying || isUploading || isCompressing) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg z-10 backdrop-blur-sm transition-all duration-300">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500/30 border-t-blue-500 mb-2"></div>
                   <span className="text-[10px] font-bold text-white tracking-wide uppercase">
-                    {isUploading ? 'Subiendo...' : isRetrying ? 'Reconectando...' : 'Cargando...'}
+                    {isCompressing ? 'Comprimiendo...' : isUploading ? 'Subiendo...' : isRetrying ? 'Reconectando...' : 'Cargando...'}
                   </span>
                 </div>
               )}
