@@ -697,7 +697,7 @@ export default function NewMultiAnalysisPageContent() {
                                 onPhotoCapture={handlePesoBrutoPhotoCapture}
                                 onDeleteRequest={handlePesoBrutoDelete}
                                 isPhotoUploading={isPesoBrutoUploading}
-                                viewMode={viewMode}
+                                viewMode={viewMode === 'compact' ? 'COMPACTA' : 'SUELTA'}
                             />
                         )
                     }
