@@ -331,13 +331,13 @@ class GoogleAuthService {
         { signal: AbortSignal.timeout(5000) }
       );
 
-      if (response.status === 401) {
-        logger.warn('⚠️ Token inválido (401) - Expirado o revocado');
+      if (response.status === 400 || response.status === 401 || response.status === 403) {
+        logger.warn(`⚠️ Token inválido (${response.status}) - Expirado, revocado o malformado`);
         return false;
       }
 
       if (!response.ok) {
-        logger.warn(`⚠️ Token check failed: ${response.status} - Asumiendo válido por error de servidor`);
+        logger.warn(`⚠️ Token check failed: ${response.status} - Asumiendo válido por error de servidor (5xx)`);
         // Si falla con 500 u otro error, asumimos válido para no bloquear al usuario
         return true;
       }

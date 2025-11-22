@@ -51,7 +51,7 @@ export const PesoItem = memo(({
             <div className={isCompact ? 'space-y-3' : 'space-y-4'}>
                 <div className="space-y-2">
                     <label htmlFor={`peso-${registro.id}`} className="text-xs sm:text-sm font-medium text-gray-300">
-                        Peso Bruto (kg) *
+                        Peso Bruto *
                     </label>
                     <div className="relative">
                         <input
@@ -64,14 +64,12 @@ export const PesoItem = memo(({
                             value={registro.peso || ''}
                             onChange={(e) => {
                                 const val = parseFloat(e.target.value);
-                                // Validación simple para evitar negativos
-                                onUpdate(registro.id, val < 0 ? 0 : val);
+                                // Si es NaN (vacío), enviamos 0. Si es negativo, 0.
+                                onUpdate(registro.id, isNaN(val) ? 0 : (val < 0 ? 0 : val));
                             }}
-                            className="flex h-10 w-full rounded-lg border border-[#dbdbdb] bg-white text-[#262626] px-3 py-2 font-mono text-lg focus:outline-none focus:border-gray-400 shadow-sm pl-4 pr-12"
+                            style={{ height: '56px' }}
+                            className="flex !h-14 w-full rounded-lg border border-[#dbdbdb] bg-white text-[#262626] px-3 py-2 font-mono text-lg focus:outline-none focus:border-gray-400 shadow-sm pl-4 text-center"
                         />
-                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
-                            kg
-                        </span>
                     </div>
                 </div>
 
@@ -80,6 +78,7 @@ export const PesoItem = memo(({
                     photoUrl={registro.fotoUrl}
                     onPhotoCapture={(file) => onPhotoCapture(registro.id, file)}
                     isUploading={isUploading}
+                    compact={isCompact}
                 />
             </div>
         </div>

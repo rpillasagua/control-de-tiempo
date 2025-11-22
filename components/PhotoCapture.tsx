@@ -9,9 +9,10 @@ interface PhotoCaptureProps {
   onPhotoCapture: (file: File) => void;
   onPhotoRemove?: () => void;
   isUploading?: boolean;
+  compact?: boolean;
 }
 
-export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false }: PhotoCaptureProps) {
+export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false }: PhotoCaptureProps) {
   const [showModal, setShowModal] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [errorType, setErrorType] = useState<'blob' | 'drive_auth' | 'drive_permissions' | 'unknown'>('unknown');
@@ -119,7 +120,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${compact ? 'py-1' : ''}`}>
         <input
           ref={fileInputRef}
           type="file"
@@ -130,8 +131,8 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         />
 
         {(photoUrl || localPreviewUrl) && !imageError ? (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full p-3 bg-black/20 rounded-xl border border-white/5">
-            <div className="relative group self-center sm:self-auto w-24 h-24 sm:w-20 sm:h-20 flex-shrink-0">
+          <div className={`flex flex-col sm:flex-row sm:items-center gap-4 w-full ${compact ? 'p-1.5' : 'p-3'} bg-black/20 rounded-xl border border-white/5`}>
+            <div className={`relative group self-center sm:self-auto ${compact ? 'w-12 h-12' : 'w-24 h-24 sm:w-20 sm:h-20'} flex-shrink-0`}>
               {(isLoading || isRetrying || isUploading) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg z-10 backdrop-blur-sm transition-all duration-300">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500/30 border-t-blue-500 mb-2"></div>
@@ -273,7 +274,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               <button
                 type="button"
                 onClick={handleCameraClick}
-                className="px-4 py-2.5 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex-1 sm:flex-none shadow-lg shadow-blue-500/20"
+                className={`px-4 ${compact ? 'py-1.5 text-xs' : 'py-2.5 text-sm'} font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex-1 sm:flex-none shadow-lg shadow-blue-500/20`}
               >
                 Cambiar
               </button>
@@ -281,7 +282,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                 <button
                   type="button"
                   onClick={onPhotoRemove}
-                  className="px-4 py-2.5 text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors flex-1 sm:flex-none"
+                  className={`px-4 ${compact ? 'py-1.5 text-xs' : 'py-2.5 text-sm'} font-medium bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors flex-1 sm:flex-none`}
                 >
                   Eliminar
                 </button>
@@ -368,7 +369,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               <button
                 type="button"
                 onClick={handleCameraClick}
-                className="flex items-center justify-center gap-3 px-4 py-4 bg-white/5 text-gray-300 border border-white/10 rounded-xl hover:bg-white/10 transition-all hover:scale-[1.01] active:scale-[0.99] w-full group"
+                className={`flex items-center justify-center gap-3 px-4 ${compact ? 'py-2' : 'py-4'} bg-white/5 text-gray-300 border border-white/10 rounded-xl hover:bg-white/10 transition-all hover:scale-[1.01] active:scale-[0.99] w-full group`}
               >
                 <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
                   <Camera className="w-4 h-4 text-blue-400" />

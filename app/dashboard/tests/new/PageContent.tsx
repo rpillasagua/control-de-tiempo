@@ -98,6 +98,7 @@ export default function NewMultiAnalysisPageContent() {
     const [codigo, setCodigo] = useState('');
     const [talla, setTalla] = useState('');
     const [analystColor, setAnalystColor] = useState<AnalystColor | null>(null);
+    const [createdAtState, setCreatedAtState] = useState<string | null>(null);
 
     // Analyses array and active tab
     const [analyses, setAnalyses] = useState<Analysis[]>([createEmptyAnalysis(1)]);
@@ -111,7 +112,7 @@ export default function NewMultiAnalysisPageContent() {
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(!!searchParams.get('id'));
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [viewMode, setViewMode] = useState<'compact' | 'loose'>('loose');
 
@@ -161,6 +162,7 @@ export default function NewMultiAnalysisPageContent() {
                         setCodigo(existingAnalysis.codigo);
                         setTalla(existingAnalysis.talla || '');
                         setAnalystColor(existingAnalysis.analystColor);
+                        setCreatedAtState(existingAnalysis.createdAt);
 
                         // Load analyses array if it exists, otherwise create empty one
                         if (existingAnalysis.analyses && existingAnalysis.analyses.length > 0) {
@@ -246,6 +248,19 @@ export default function NewMultiAnalysisPageContent() {
             const user = googleAuthService.getUser();
             const now = new Date();
 
+            // Si ya tenemos un createdAt (porque cargamos un análisis existente), lo mantenemos.
+            // Si es nuevo, usamos 'now'.
+            // Para asegurarnos, intentamos obtenerlo del estado actual si existe, o del análisis cargado.
+            // Pero como 'saveDocument' construye el objeto desde cero con variables de estado,
+            // necesitamos persistir el 'createdAt' original.
+            // Una forma es guardarlo en un estado al cargar, o simplemente no sobrescribirlo si ya existe en la DB.
+            // Como aquí estamos construyendo el objeto completo para 'saveAnalysis',
+            // lo mejor es tener un estado para 'createdAt' o leerlo del análisis actual si lo tenemos en memoria.
+
+            // Solución: Usar un estado para createdAt, inicializado cuando se carga el análisis.
+            // Si no hay estado (nuevo análisis), usar now.
+            const creationDate = createdAtState || now.toISOString();
+
             const document: QualityAnalysis = {
                 id: analysisId,
                 productType,
@@ -254,11 +269,11 @@ export default function NewMultiAnalysisPageContent() {
                 talla: talla || undefined,
                 analystColor,
                 analyses,
-                createdAt: now.toISOString(),
+                createdAt: creationDate,
                 updatedAt: now.toISOString(),
                 createdBy: user?.email || 'unknown',
-                shift: getWorkShift(now),
-                date: formatDate(now),
+                shift: getWorkShift(new Date(creationDate)), // El turno debe basarse en la fecha de creación original
+                date: formatDate(new Date(creationDate)),    // La fecha también
                 status: 'EN_PROGRESO'
             };
 
@@ -518,7 +533,7 @@ export default function NewMultiAnalysisPageContent() {
                 />
             )}
 
-            <div className="max-w-5xl mx-auto space-y-6 p-4">
+            <div className="max-w-4xl mx-auto space-y-6 p-4">
                 {/* Minimalist Header */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -682,6 +697,7 @@ export default function NewMultiAnalysisPageContent() {
                                 onPhotoCapture={handlePesoBrutoPhotoCapture}
                                 onDeleteRequest={handlePesoBrutoDelete}
                                 isPhotoUploading={isPesoBrutoUploading}
+                                viewMode={viewMode}
                             />
                         )
                     }

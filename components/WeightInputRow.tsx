@@ -40,11 +40,11 @@ export const WeightInputRow = ({
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        className="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-mono text-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                        style={{ height: '56px' }}
+                        className="w-full pl-4 !h-14 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-mono text-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-center"
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">KG</span>
                 </div>
 
                 {/* Botón de Cámara / Preview */}

@@ -21,18 +21,15 @@ const ANALYST_COLORS = [
 
 export default function AnalystColorSelector({ selectedColor, onSelect }: AnalystColorSelectorProps) {
     return (
-        <div className="space-y-3">
-            <label className="block text-base font-bold text-gray-900">
-                Selecciona tu color de analista *
-            </label>
-            <div className="flex flex-wrap gap-4">
+        <div className="space-y-4 flex flex-col items-center">
+            <div className="flex flex-wrap gap-4 justify-center">
                 {ANALYST_COLORS.map((color) => (
                     <button
                         key={color}
                         type="button"
                         onClick={() => onSelect(color)}
                         className={`
-              w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center shadow-sm
+              w-16 h-16 rounded-full transition-all duration-200 flex items-center justify-center shadow-sm
               ${selectedColor === color
                                 ? 'ring-4 ring-offset-2 scale-110'
                                 : 'hover:scale-110 hover:shadow-md'

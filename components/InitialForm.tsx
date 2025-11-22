@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AnalystColor } from '@/lib/types';
 import AnalystColorSelector from './AnalystColorSelector';
-import { AlertCircle, Loader2, ArrowRight, FileText, Tag, Layers } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 
 // 1. Tipado estricto y reutilizable
 interface AnalysisData {
@@ -22,44 +22,28 @@ interface InitialFormProps {
 interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
     error?: string;
-    icon?: React.ElementType;
 }
 
-const CleanInput = ({ error, label, id, icon: Icon, ...props }: CustomInputProps) => (
+const CleanInput = ({ error, label, id, ...props }: CustomInputProps) => (
     <div className="space-y-1.5 group">
-        <label htmlFor={id} className="text-sm font-semibold text-slate-700 ml-1 flex items-center gap-2">
+        <label htmlFor={id} className="text-sm font-semibold text-slate-700 ml-1 flex items-center justify-center gap-2">
             {label} {props.required && <span className="text-red-500">*</span>}
         </label>
         <div className="relative">
-            {Icon && (
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                    <Icon className="w-5 h-5" />
-                </div>
-            )}
             <input
                 id={id}
                 {...props}
+                style={{ height: '56px' }}
                 className={`
-                    w-full bg-white border rounded-xl px-4 py-3.5 text-slate-900 placeholder-slate-400
-                    transition-all duration-200 outline-none text-base shadow-sm
-                    ${Icon ? 'pl-12' : 'pl-4'}
+                    w-full bg-white border rounded-xl px-4 !h-14 text-slate-900 placeholder-slate-400
+                    transition-all duration-200 outline-none text-base shadow-sm pl-4 text-center flex items-center
                     ${error
                         ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
                         : 'border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 hover:border-slate-300'
                     }
                 `}
             />
-            {error && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500 animate-pulse">
-                    <AlertCircle className="w-5 h-5" />
-                </div>
-            )}
         </div>
-        {error && (
-            <p className="text-sm text-red-500 font-medium ml-1 animate-in slide-in-from-top-1">
-                {error}
-            </p>
-        )}
     </div>
 );
 
@@ -126,16 +110,13 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
     };
 
     return (
-        <div className="w-full max-w-2xl mx-auto px-4">
+        <div className="w-full max-w-xl mx-auto px-4">
             {/* Card Principal: Blanco con sombra elegante */}
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
 
                 {/* Header con fondo suave */}
-                <div className="bg-slate-50/50 border-b border-slate-100 p-8 pb-6">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                            <Layers className="w-6 h-6" />
-                        </div>
+                <div className="bg-slate-50/50 border-b border-slate-100 p-8 pb-6 text-center">
+                    <div className="flex items-center justify-center gap-3 mb-2">
                         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
                             Nuevo Análisis de Calidad
                         </h2>
@@ -151,7 +132,6 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                         <CleanInput
                             id="lote"
                             label="Lote de Producción"
-                            icon={Layers}
                             placeholder="Ej: L-2024-001"
                             value={formData.lote}
                             onChange={(e) => handleChange('lote', e.target.value)}
@@ -165,7 +145,6 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                             <CleanInput
                                 id="codigo"
                                 label="Código Referencia"
-                                icon={FileText}
                                 placeholder="Ej: REF-882"
                                 value={formData.codigo}
                                 onChange={(e) => handleChange('codigo', e.target.value)}
@@ -175,8 +154,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                             />
                             <CleanInput
                                 id="talla"
-                                label="Talla / Calibre"
-                                icon={Tag}
+                                label="Talla"
                                 placeholder="Ej: 40-50"
                                 value={formData.talla}
                                 onChange={(e) => handleChange('talla', e.target.value)}
@@ -190,7 +168,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                     {/* Selector de Color (Adaptado a Light Mode) */}
                     <div className={`p-5 rounded-xl border transition-all duration-300 ${errors.color && touched.color ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'
                         }`}>
-                        <label className="block text-sm font-semibold text-slate-700 mb-4">
+                        <label className="block text-sm font-semibold text-slate-700 mb-4 text-center">
                             Color del Analista <span className="text-red-500">*</span>
                         </label>
                         <AnalystColorSelector
