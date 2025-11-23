@@ -197,7 +197,7 @@ export default function Home() {
         setLoadingAnalyses(true);
         try {
           const { getPaginatedAnalyses } = await import('@/lib/analysisService');
-          const { analyses, lastDoc } = await getPaginatedAnalyses(20);
+          const { analyses, lastDoc } = await getPaginatedAnalyses(30);
 
           if (isMounted) {
             setInitialAnalyses(analyses);

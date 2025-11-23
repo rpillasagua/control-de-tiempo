@@ -37,14 +37,14 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
     setIsLoadingMore(true);
     try {
       const { getPaginatedAnalyses } = await import('@/lib/analysisService');
-      const { analyses: newAnalyses, lastDoc: newLastDoc } = await getPaginatedAnalyses(20, lastDoc);
+      const { analyses: newAnalyses, lastDoc: newLastDoc } = await getPaginatedAnalyses(10, lastDoc);
 
       if (newAnalyses.length === 0) {
         setHasMore(false);
       } else {
         setAnalyses((prev: any[]) => [...prev, ...newAnalyses]);
         setLastDoc(newLastDoc);
-        if (newAnalyses.length < 20) {
+        if (newAnalyses.length < 10) {
           setHasMore(false);
         }
       }
