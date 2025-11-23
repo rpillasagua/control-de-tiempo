@@ -78,7 +78,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
           setImageError(true);
           setErrorType('unknown');
         }
-      }, 20000); // 20 segundos máximo (7s propagación + margen)
+      }, 30000); // 30 segundos máximo - Google Drive puede tardar
 
       return () => clearTimeout(timeout);
     }
@@ -261,13 +261,16 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                     setImageError(true);
                     setIsLoading(false);
                     setIsRetrying(false);
+                    return;
                   }
 
-                  // Para otros tipos de URLs o errores no manejados
-                  setErrorType('unknown');
-                  setImageError(true);
-                  setIsLoading(false);
-                  setIsRetrying(false);
+                  // Para otros tipos de URLs o errores no manejados (solo si no se manejó antes)
+                  if (!imageError) {
+                    setErrorType('unknown');
+                    setImageError(true);
+                    setIsLoading(false);
+                    setIsRetrying(false);
+                  }
                 }}
                 onLoad={() => {
                   console.log(`✅ Imagen cargada correctamente: ${label}`);
@@ -365,15 +368,15 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                       Reintentar
                     </button>
                   ) : null}
-                  {photoUrl && photoUrl.includes('drive.google.com') && (
+                  {photoUrl && (
                     <a
-                      href={photoUrl.replace('export=download', 'view').replace('thumbnail', 'view')}
+                      href={photoUrl.includes('drive.google.com') ? photoUrl.replace('export=download', 'view').replace('thumbnail', 'view') : photoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-medium bg-gray-600 hover:bg-gray-700 px-3 py-1.5 rounded-lg text-white transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Ver Drive
+                      Ver en Drive
                     </a>
                   )}
                 </div>
