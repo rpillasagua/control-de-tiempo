@@ -257,6 +257,15 @@ export default function NewMultiAnalysisPageContent() {
         ));
     };
 
+    // Update specific analysis by index (safe for async operations)
+    const updateAnalysisAtIndex = (indexToUpdate: number, updates: Partial<Analysis>) => {
+        setAnalyses(prev => prev.map((analysis, index) =>
+            index === indexToUpdate
+                ? { ...analysis, ...updates }
+                : analysis
+        ));
+    };
+
     // Auto-save document
     const saveDocument = async () => {
         if (!analysisId || !productType || !analystColor) return;
@@ -365,7 +374,8 @@ export default function NewMultiAnalysisPageContent() {
 
     // Photo upload handlers
     const handlePhotoCapture = async (field: string, file: File) => {
-        const key = `${activeAnalysisIndex}-${field}`;
+        const targetIndex = activeAnalysisIndex; // Capturar índice actual
+        const key = `${targetIndex}-${field}`;
         setPhotos(prev => ({ ...prev, [key]: file }));
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true); // Bloquear auto-save
@@ -378,15 +388,18 @@ export default function NewMultiAnalysisPageContent() {
             const user = googleAuthService.getUser();
 
             // Obtener URL anterior para limpieza
+            // Usamos analyses[targetIndex] para asegurar consistencia
+            const targetAnalysis = analyses[targetIndex];
             let oldUrl: string | undefined;
+
             if (field === 'fotoCalidad') {
-                oldUrl = currentAnalysis.fotoCalidad;
+                oldUrl = targetAnalysis.fotoCalidad;
             } else if (field.startsWith('uniformidad_')) {
                 const tipo = field.split('_')[1] as 'grandes' | 'pequenos';
-                oldUrl = currentAnalysis.uniformidad?.[tipo]?.fotoUrl;
+                oldUrl = targetAnalysis.uniformidad?.[tipo]?.fotoUrl;
             } else {
                 // pesoBruto, pesoCongelado, pesoNeto
-                const currentFieldValue = currentAnalysis[field as keyof Analysis] as any;
+                const currentFieldValue = targetAnalysis[field as keyof Analysis] as any;
                 oldUrl = currentFieldValue?.fotoUrl;
             }
 
@@ -394,34 +407,64 @@ export default function NewMultiAnalysisPageContent() {
                 file,
                 codigo,
                 lote,
-                `${field}_analysis${activeAnalysisIndex + 1}`,
+                `${field}_analysis${targetIndex + 1}`,
                 oldUrl, // Pasar URL anterior
                 user?.email
             ));
 
-            // Update analysis with photo URL
+            // Update analysis with photo URL using targetIndex
             if (field === 'fotoCalidad') {
-                updateCurrentAnalysis({ fotoCalidad: url });
+                updateAnalysisAtIndex(targetIndex, { fotoCalidad: url });
             } else if (field.startsWith('uniformidad_')) {
                 const tipo = field.split('_')[1] as 'grandes' | 'pequenos';
-                updateCurrentAnalysis({
-                    uniformidad: {
-                        ...currentAnalysis.uniformidad,
-                        [tipo]: {
-                            ...currentAnalysis.uniformidad?.[tipo],
-                            fotoUrl: url
+                // Necesitamos leer el estado MÁS RECIENTE del análisis para no sobrescribir otros campos de uniformidad
+                // Usamos el callback de setAnalyses dentro de updateAnalysisAtIndex o leemos de 'analyses' (que podría ser stale en closure, pero updateAnalysisAtIndex usa functional update para el array)
+                // PERO, para objetos anidados como uniformidad, necesitamos cuidado.
+                // updateAnalysisAtIndex hace merge shallow: { ...analysis, ...updates }
+                // Así que debemos pasar el objeto uniformidad completo actualizado.
+
+                // Como estamos en una función async, 'analyses' puede ser viejo.
+                // Lo mejor es pasar una función a updateAnalysisAtIndex si fuera posible, pero por simplicidad y dado que uniformidad solo tiene 2 campos,
+                // podemos reconstruirlo con setAnalyses directo o mejorar updateAnalysisAtIndex.
+                // Vamos a usar setAnalyses directo aquí para máxima seguridad con nested state.
+
+                setAnalyses(prev => prev.map((analysis, index) => {
+                    if (index !== targetIndex) return analysis;
+
+                    const currentUniformidad = analysis.uniformidad || {};
+                    const currentTipo = currentUniformidad[tipo] || {};
+
+                    return {
+                        ...analysis,
+                        uniformidad: {
+                            ...currentUniformidad,
+                            [tipo]: {
+                                ...currentTipo,
+                                fotoUrl: url
+                            }
                         }
-                    }
-                });
+                    };
+                }));
+
             } else {
                 // pesoBruto, pesoCongelado, pesoNeto
-                const currentFieldValue = currentAnalysis[field as keyof Analysis] as any;
-                updateCurrentAnalysis({
-                    [field]: {
-                        ...(currentFieldValue || {}),
-                        fotoUrl: url
-                    } as any
-                });
+                // Aquí también hay riesgo si el campo tiene otras propiedades (valor).
+                // updateAnalysisAtIndex hace shallow merge del root.
+                // Si pasamos { pesoBruto: { ...old, fotoUrl } }, necesitamos 'old'.
+                // Usaremos setAnalyses funcional para acceder al estado más reciente.
+
+                setAnalyses(prev => prev.map((analysis, index) => {
+                    if (index !== targetIndex) return analysis;
+
+                    const currentFieldValue = analysis[field as keyof Analysis] as any || {};
+                    return {
+                        ...analysis,
+                        [field]: {
+                            ...currentFieldValue,
+                            fotoUrl: url
+                        }
+                    };
+                }));
             }
         } catch (error) {
             console.error('Error uploading photo:', error);
@@ -447,7 +490,8 @@ export default function NewMultiAnalysisPageContent() {
     };
 
     const handlePesoBrutoPhotoCapture = async (registroId: string, file: File) => {
-        const key = `${activeAnalysisIndex}-pesobruto-${registroId}`;
+        const targetIndex = activeAnalysisIndex; // Capturar índice actual
+        const key = `${targetIndex}-pesobruto-${registroId}`;
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true); // Bloquear auto-save
 
@@ -459,24 +503,31 @@ export default function NewMultiAnalysisPageContent() {
             const user = googleAuthService.getUser();
 
             // Obtener URL anterior
-            const registro = currentAnalysis.pesosBrutos?.find(r => r.id === registroId);
+            // Usamos analyses[targetIndex]
+            const targetAnalysis = analyses[targetIndex];
+            const registro = targetAnalysis.pesosBrutos?.find(r => r.id === registroId);
             const oldUrl = registro?.fotoUrl;
 
             const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
                 file,
                 codigo,
                 lote,
-                `peso_bruto_${registroId}_analysis${activeAnalysisIndex + 1}`,
+                `peso_bruto_${registroId}_analysis${targetIndex + 1}`,
                 oldUrl, // Pasar URL anterior
                 user?.email
             ));
 
-            // Update the specific registro
-            updateCurrentAnalysis({
-                pesosBrutos: currentAnalysis.pesosBrutos?.map(r =>
-                    r.id === registroId ? { ...r, fotoUrl: url } : r
-                )
-            });
+            // Update the specific registro using functional update on setAnalyses
+            setAnalyses(prev => prev.map((analysis, index) => {
+                if (index !== targetIndex) return analysis;
+
+                return {
+                    ...analysis,
+                    pesosBrutos: analysis.pesosBrutos?.map(r =>
+                        r.id === registroId ? { ...r, fotoUrl: url } : r
+                    )
+                };
+            }));
         } catch (error) {
             console.error('Error uploading peso bruto photo:', error);
             toast.error('Error al subir la foto del peso bruto');
