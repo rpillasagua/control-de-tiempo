@@ -37,6 +37,7 @@ import {
 } from '@/lib/types';
 import { getWorkShift, formatDate, generateId } from '@/lib/utils';
 import { useWeightInput } from '@/hooks/useWeightInput';
+import { PRODUCT_DATA } from '@/lib/product-data';
 
 // Helper para crear un análisis vacío
 const createEmptyAnalysis = (numero: number): Analysis => ({
@@ -44,60 +45,6 @@ const createEmptyAnalysis = (numero: number): Analysis => ({
     pesosBrutos: [],
     defectos: {}
 });
-
-// Mapping de códigos a unidades de peso
-const CODE_UNITS: { [key: string]: 'KG' | 'LB' } = {
-    '00010': 'KG', '00012': 'KG', '00016': 'LB', '00017': 'LB', '00018': 'LB', '00020': 'KG',
-    '00021': 'KG', '00022': 'KG', '00024': 'KG', '00026': 'LB', '00027': 'KG', '00028': 'KG',
-    '00031': 'LB', '00034': 'LB', '00035': 'LB', '00036': 'LB', '00037': 'KG', '00038': 'LB',
-    '00039': 'KG', '00041': 'LB', '00042': 'LB', '00043': 'LB', '00044': 'LB', '00045': 'LB',
-    '00046': 'LB', '00047': 'KG', '00048': 'KG', '00049': 'LB', '00050': 'LB', '00051': 'KG',
-    '00052': 'KG', '00053': 'LB', '00054': 'LB', '00055': 'LB', '00056': 'KG', '00057': 'KG',
-    '00058': 'LB', '00059': 'KG', '00060': 'KG', '00062': 'KG', '00063': 'KG', '00064': 'KG',
-    '00065': 'LB', '00066': 'KG', '00067': 'KG', '00068': 'KG', '00069': 'KG', '00070': 'KG',
-    '00071': 'LB', '00072': 'LB', '00073': 'KG', '00074': 'KG', '00075': 'LB', '00076': 'KG',
-    '00077': 'KG', '00078': 'KG', '00079': 'KG', '00080': 'KG', '00081': 'KG', '00082': 'KG',
-    '00083': 'LB', '00084': 'KG', '00085': 'KG', '00087': 'KG', '00088': 'KG', '00089': 'LB',
-    '00091': 'LB', '00092': 'KG', '00093': 'KG', '00094': 'KG', '00095': 'KG', '00096': 'KG',
-    '00097': 'KG', '00098': 'LB', '00099': 'KG', '00100': 'KG', '00102': 'LB', '00103': 'KG',
-    '00105': 'LB', '00106': 'KG', '00108': 'KG', '00111': 'LB', '00112': 'KG', '00113': 'KG',
-    '00116': 'KG', '00117': 'KG', '00119': 'KG', '00120': 'KG', '00121': 'KG', '00122': 'KG',
-    '00123': 'KG', '00124': 'KG', '00125': 'LB', '00126': 'LB', '00127': 'KG', '00128': 'KG',
-    '00130': 'LB', '00131': 'KG', '00133': 'LB', '00134': 'LB', '00136': 'LB', '00137': 'KG',
-    '00140': 'KG', '00142': 'KG', '00143': 'KG', '00144': 'LB', '00145': 'KG', '00146': 'LB',
-    '00147': 'LB', '00148': 'LB', '00149': 'LB', '00150': 'LB', '00152': 'LB', '00153': 'KG',
-    '00154': 'KG', '00155': 'LB', '00157': 'KG', '00158': 'KG', '00159': 'KG', '00160': 'KG',
-    '00161': 'LB', '00162': 'KG', '00163': 'KG', '00164': 'KG', '00165': 'KG', '00166': 'KG',
-    '00168': 'LB', '00169': 'LB', '00170': 'KG', '00171': 'KG', '00172': 'KG', '00173': 'LB',
-    '00174': 'LB', '00175': 'KG', '00176': 'LB', '00177': 'KG', '00178': 'LB', '00179': 'KG',
-    '00181': 'KG', '00182': 'KG', '00183': 'KG', '00184': 'KG', '00186': 'LB', '00187': 'KG',
-    '00192': 'KG', '00194': 'KG', '00195': 'LB', '00196': 'LB', '00197': 'LB', '00198': 'KG',
-    '00199': 'LB', '00202': 'KG', '00203': 'LB', '00204': 'KG', '00205': 'KG', '00206': 'KG',
-    '00207': 'KG', '00208': 'LB', '00209': 'LB', '00210': 'LB', '00211': 'LB', '00212': 'LB',
-    '00213': 'LB', '00214': 'LB', '00215': 'LB', '00216': 'LB', '00217': 'LB', '00218': 'LB',
-    '00219': 'LB', '00220': 'KG', '00221': 'KG', '00222': 'KG', '00224': 'KG', '00225': 'KG',
-    '00226': 'KG', '00227': 'KG', '00228': 'KG', '00229': 'LB', '00232': 'KG', '00233': 'KG',
-    '00234': 'KG', '00235': 'KG', '00236': 'LB', '00237': 'LB', '00238': 'KG', '00239': 'LB',
-    '00240': 'KG', '00241': 'KG', '00242': 'KG', '00243': 'KG', '00244': 'KG', '00245': 'KG',
-    '00246': 'KG', '00247': 'KG', '00248': 'LB', '00249': 'KG', '00250': 'LB', '00251': 'LB',
-    '00252': 'LB', '00253': 'LB', '00254': 'KG', '00255': 'KG', '00256': 'KG', '00257': 'KG',
-    '00258': 'KG', '00259': 'LB', '00261': 'LB', '00262': 'KG', '00263': 'KG', '00264': 'KG',
-    '00265': 'KG', '00266': 'KG', '00267': 'KG', '00268': 'KG', '00269': 'KG', '00270': 'LB',
-    '00271': 'KG', '00272': 'KG', '00273': 'KG', '00274': 'KG', '00275': 'KG', '00276': 'LB',
-    '00277': 'KG', '00278': 'KG', '00279': 'LB', '00280': 'KG', '00281': 'KG', '00282': 'KG',
-    '00283': 'KG', '00287': 'KG', '00288': 'KG', '00290': 'KG', '00291': 'LB', '00292': 'LB',
-    '00293': 'LB', '00294': 'KG', '00295': 'KG', '00296': 'KG', '00297': 'KG', '00298': 'KG',
-    '00299': 'KG', '00300': 'KG', '00301': 'KG', '00302': 'LB', '00303': 'LB', '00305': 'KG',
-    '00306': 'KG', '00307': 'KG', '00308': 'KG', '00309': 'KG', '00310': 'LB', '00311': 'LB',
-    '00312': 'LB', '00313': 'LB', '00314': 'LB', '00315': 'KG', '00319': 'KG', '00321': 'KG',
-    '00324': 'KG', '00325': 'KG', '00327': 'KG', '00328': 'KG', '00329': 'KG', '00330': 'KG',
-    '00331': 'KG', '00336': 'KG', '00337': 'KG', '00338': 'KG', '00339': 'KG', '00340': 'LB',
-    '00341': 'LB', '00342': 'KG', '00343': 'KG', '00344': 'KG', '00345': 'KG', '00346': 'LB',
-    '00348': 'KG', '00349': 'KG', '00350': 'KG', '00352': 'KG', '00353': 'LB', '00355': 'LB',
-    '00356': 'KG', '00358': 'KG', '00359': 'LB', '00360': 'KG', '00361': 'LB', '00362': 'LB',
-    '00366': 'KG', '00367': 'KG', '00372': 'KG', '00373': 'KG', '00375': 'KG', '00378': 'KG',
-    '00379': 'KG', '00380': 'KG'
-};
 
 // Códigos que requieren flujo especial: 1 Peso Bruto Global -> 2 Análisis (Fundas)
 const DUAL_BAG_CODES = [
@@ -184,6 +131,12 @@ export default function NewMultiAnalysisPageContent() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [viewMode, setViewMode] = useState<'compact' | 'loose'>('loose');
+
+    // Product information state
+    const [clientName, setClientName] = useState('');
+    const [brandName, setBrandName] = useState('');
+    const [masterInfo, setMasterInfo] = useState('');
+    const [codeValidationError, setCodeValidationError] = useState<string | null>(null);
 
     const handleDeleteAnalysis = async () => {
         console.log('🗑️ handleDeleteAnalysis called', { analysisId, totalAnalyses: analyses.length, activeIndex: activeAnalysisIndex });
@@ -295,12 +248,48 @@ export default function NewMultiAnalysisPageContent() {
 
     // Detectar códigos especiales y configurar modo Dual Bag y Unidad de Peso
     useEffect(() => {
+        if (!codigo) {
+            // Limpiar datos del producto si no hay código
+            setClientName('');
+            setBrandName('');
+            setMasterInfo('');
+            setCodeValidationError(null);
+            return;
+        }
+
+        const productData = PRODUCT_DATA[codigo];
+
+        // Validación: verificar que el código exista
+        if (!productData) {
+            setCodeValidationError(`El código ${codigo} no existe en la base de datos`);
+            setWeightUnit('KG'); // fallback
+            setClientName('');
+            setBrandName('');
+            setMasterInfo('');
+            return;
+        }
+
+        // Validación: verificar que coincida con el tipo de producto
+        if (productType && productData.type !== productType) {
+            setCodeValidationError(
+                `El código ${codigo} es de tipo "${productData.type}" pero seleccionaste "${productType}". Por favor verifica el código o cambia el tipo de producto.`
+            );
+            setClientName('');
+            setBrandName('');
+            setMasterInfo('');
+            return;
+        }
+
+        // Código válido: limpiar error y cargar datos
+        setCodeValidationError(null);
+        setClientName(productData.client);
+        setBrandName(productData.brand);
+        setMasterInfo(productData.master);
+        setWeightUnit(productData.unit);
+
+        // Lógica dual bag existente
         const isSpecialCode = DUAL_BAG_CODES.includes(codigo);
         setIsDualBag(isSpecialCode);
-
-        // Determinar unidad de peso
-        const unit = CODE_UNITS[codigo] || 'KG';
-        setWeightUnit(unit);
 
         if (isSpecialCode) {
             // Asegurar que haya exactamente 2 análisis si es un código especial
@@ -312,7 +301,7 @@ export default function NewMultiAnalysisPageContent() {
                 });
             }
         }
-    }, [codigo]);
+    }, [codigo, productType]);
 
     // Handle initial form completion
     const handleInitialFormComplete = async (data: {
@@ -362,7 +351,7 @@ export default function NewMultiAnalysisPageContent() {
 
     // Auto-save document
     const saveDocument = async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
-        if (!analysisId || !productType || !analystColor) return;
+        if (!analysisId || !productType || !analystColor || codeValidationError) return;
 
         try {
             setIsSaving(true);
@@ -785,7 +774,10 @@ export default function NewMultiAnalysisPageContent() {
                         <span className="font-medium">Volver al Dashboard</span>
                     </button>
 
-                    <InitialForm onComplete={handleInitialFormComplete} />
+                    <InitialForm
+                        onComplete={handleInitialFormComplete}
+                        initialData={{ productType }}
+                    />
                 </div>
             </div>
         );
@@ -865,6 +857,49 @@ export default function NewMultiAnalysisPageContent() {
                     <div className="flex justify-end">
                         <ViewModeSelector mode={viewMode} onChange={setViewMode} />
                     </div>
+
+                    {/* Información del Producto */}
+                    {(clientName || brandName || masterInfo) && (
+                        <div className="bg-white border-l-4 border-blue-600 shadow-sm rounded-sm p-3" style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                            <div className="flex flex-wrap items-center" style={{ margin: 0, padding: 0, rowGap: 0 }}>
+                                {/* Cliente */}
+                                <div style={{ margin: 0, padding: 0, width: '40%', borderRight: '1px solid #e2e8f0', paddingRight: '8px' }}>
+                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>CLIENTE</div>
+                                    <div className="text-sm font-black text-slate-800 truncate" style={{ lineHeight: 1 }}>
+                                        {clientName}
+                                    </div>
+                                </div>
+
+                                {/* Marca */}
+                                <div style={{ margin: 0, padding: 0, width: '60%', paddingLeft: '12px' }}>
+                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>MARCA</div>
+                                    <div className="text-sm font-black text-slate-800 truncate" style={{ lineHeight: 1 }}>
+                                        {brandName}
+                                    </div>
+                                </div>
+
+                                {/* Separator */}
+                                <div className="w-full my-2 border-t border-slate-100"></div>
+
+                                {/* Presentación */}
+                                <div style={{ margin: 0, padding: 0, width: '100%' }}>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1 }}>PRESENTACIÓN:</span>
+                                        <span className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
+                                            {masterInfo}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Alerta de Error de Validación */}
+                    {codeValidationError && (
+                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                            <p className="text-red-400 font-medium">⚠️ {codeValidationError}</p>
+                        </div>
+                    )}
 
                     {/* GLOBAL PESO BRUTO (Solo para códigos especiales) */}
                     {isDualBag && (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
@@ -1045,6 +1080,7 @@ export default function NewMultiAnalysisPageContent() {
                                 onDeleteRequest={handlePesoBrutoDelete}
                                 isPhotoUploading={isPesoBrutoUploading}
                                 viewMode={viewMode === 'compact' ? 'COMPACTA' : 'SUELTA'}
+                                unit={weightUnit}
                             />
                         )
                     }

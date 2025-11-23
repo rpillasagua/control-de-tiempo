@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AnalystColor } from '@/lib/types';
+import { AnalystColor, ProductType } from '@/lib/types';
+import { PRODUCT_DATA } from '@/lib/product-data';
 import AnalystColorSelector from './AnalystColorSelector';
 import { Loader2, ArrowRight } from 'lucide-react';
 
@@ -11,6 +12,7 @@ interface AnalysisData {
     codigo: string;
     talla: string;
     color: AnalystColor | null;
+    productType?: ProductType;
 }
 
 interface InitialFormProps {
@@ -71,13 +73,48 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
     // Marcar campo como tocado al salir (onBlur)
     const handleBlur = (field: string) => {
         setTouched(prev => ({ ...prev, [field]: true }));
+
+        // Si es el campo código, normalizarlo visualmente también
+        if (field === 'codigo' && formData.codigo) {
+            const normalized = getNormalizedCode(formData.codigo);
+            if (normalized !== formData.codigo) {
+                handleChange('codigo', normalized);
+            }
+        }
+
         validateField(field as keyof AnalysisData);
+    };
+
+    // Helper para normalizar código (agregar ceros a la izquierda si es necesario)
+    const getNormalizedCode = (input: string) => {
+        const trimmed = input.trim();
+        if (!trimmed) return trimmed;
+        if (PRODUCT_DATA[trimmed]) return trimmed;
+
+        // Intentar con padding de ceros (asumiendo 5 dígitos como en la BD)
+        const padded = trimmed.padStart(5, '0');
+        if (PRODUCT_DATA[padded]) return padded;
+
+        return trimmed;
     };
 
     const validateField = (field: keyof AnalysisData) => {
         let error = '';
         if (field === 'lote' && !formData.lote.trim()) error = 'El lote es requerido';
-        if (field === 'codigo' && !formData.codigo.trim()) error = 'El código es requerido';
+        if (field === 'codigo') {
+            if (!formData.codigo.trim()) {
+                error = 'El código es requerido';
+            } else {
+                const normalizedCode = getNormalizedCode(formData.codigo);
+                const product = PRODUCT_DATA[normalizedCode];
+
+                if (!product) {
+                    error = 'Código no encontrado en la base de datos';
+                } else if (initialData?.productType && initialData.productType !== 'CONTROL_PESOS' && product.type !== initialData.productType) {
+                    error = `El código es de tipo ${product.type} pero seleccionaste ${initialData.productType}`;
+                }
+            }
+        }
         if (field === 'talla' && !formData.talla.trim()) error = 'La talla es requerida';
         if (field === 'color' && !formData.color) error = 'Selecciona un color';
 
@@ -101,7 +138,12 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
 
         setIsSubmitting(true);
         try {
-            await onComplete(formData);
+            // Enviar datos con el código normalizado
+            const normalizedCode = getNormalizedCode(formData.codigo);
+            await onComplete({
+                ...formData,
+                codigo: normalizedCode
+            });
         } catch (error) {
             console.error("Error submitting form:", error);
         } finally {

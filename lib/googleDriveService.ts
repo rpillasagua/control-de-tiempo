@@ -698,8 +698,17 @@ class GoogleDriveService {
       logger.log(`🗑️ Intentando eliminar carpeta de análisis: ${codigo}/${lote}`);
       await this.ensureToken();
 
-      // 1. Buscar carpeta del código
-      const codigoFolderId = await this.findFolderInRoot(codigo);
+      // Asegurar que tenemos la carpeta raíz "descongelado"
+      if (!this.rootFolderId) {
+        await this.initialize();
+        if (!this.rootFolderId) {
+          logger.warn('⚠️ No se pudo obtener rootFolderId para eliminar carpeta');
+          return;
+        }
+      }
+
+      // 1. Buscar carpeta del código dentro de "descongelado"
+      const codigoFolderId = await this.findFolder(codigo, this.rootFolderId);
       if (!codigoFolderId) {
         logger.warn(`⚠️ No se encontró la carpeta del código: ${codigo}`);
         return;
@@ -712,9 +721,9 @@ class GoogleDriveService {
         return;
       }
 
-      // 3. Eliminar carpeta del lote
+      // 3. Eliminar carpeta del lote (esto elimina la carpeta y todos sus archivos)
       await this.deleteFile(loteFolderId);
-      logger.log(`✅ Carpeta de análisis eliminada: ${lote} (${loteFolderId})`);
+      logger.log(`✅ Carpeta de análisis eliminada: ${codigo}/${lote} (${loteFolderId})`);
 
     } catch (error) {
       logger.error('❌ Error eliminando carpeta de análisis:', error);
