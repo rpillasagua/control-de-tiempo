@@ -81,7 +81,10 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
       analysis.lote.toLowerCase().includes(searchTerm.toLowerCase()) ||
       analysis.codigo.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (activeTab === 'todos') return matchesSearch && analysis.status === 'COMPLETADO';
+    // "Todos" muestra TODOS los análisis (completados y en progreso)
+    if (activeTab === 'todos') return matchesSearch;
+
+    // "En Progreso" muestra solo los que NO están completados
     if (activeTab === 'en_progreso') return matchesSearch && analysis.status !== 'COMPLETADO';
 
     return matchesSearch;
