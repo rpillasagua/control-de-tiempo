@@ -357,9 +357,27 @@ export const deleteAnalysis = async (analysisId: string): Promise<void> => {
   console.log(`🗑️ Service: deleteAnalysis called for ID: ${analysisId}`);
 
   try {
+    // 1. Obtener datos del análisis para saber qué carpeta borrar
+    const analysis = await getAnalysisById(analysisId);
+
+    if (analysis && analysis.codigo && analysis.lote) {
+      try {
+        // Importar dinámicamente para evitar ciclos si fuera necesario
+        const { googleDriveService } = await import('./googleDriveService');
+        await googleDriveService.initialize();
+        await googleDriveService.deleteAnalysisFolder(analysis.codigo, analysis.lote);
+      } catch (driveError) {
+        console.warn('⚠️ Error al intentar borrar carpeta de Drive (continuando con eliminación de BD):', driveError);
+      }
+    } else {
+      console.warn('⚠️ No se pudo obtener datos del análisis para borrar fotos (o faltan codigo/lote)');
+    }
+
+    // 2. Borrar documento de Firestore
     const analysisRef = getAnalysisRef(analysisId);
     console.log(`Service: Deleting document at path: ${analysisRef.path}`);
     await deleteDoc(analysisRef);
+
     logger.log('✅ Análisis eliminado:', analysisId);
     console.log(`✅ Service: deleteAnalysis completed for ID: ${analysisId}`);
   } catch (error) {

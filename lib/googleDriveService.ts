@@ -491,7 +491,14 @@ class GoogleDriveService {
           else publicUrl += '=s2000';
         }
 
-        logger.log(`🔗 Usando thumbnailLink optimizado: ${publicUrl}`);
+        // IMPORTANT: Append the file ID to the URL so we can extract it later for deletion
+        // We use a custom parameter 'x-file-id' that won't affect Google's serving
+        if (publicUrl.includes('?')) {
+          publicUrl += `&x-file-id=${data.id}`;
+        } else {
+          publicUrl += `?x-file-id=${data.id}`;
+        }
+
         logger.log(`🔗 Usando thumbnailLink optimizado: ${publicUrl}`);
       } else {
         // Fallback a la URL directa
@@ -535,11 +542,15 @@ class GoogleDriveService {
   private extractFileIdFromUrl(url: string): string | null {
     if (!url) return null;
 
-    // Formato: https://drive.google.com/uc?export=view&id=FILE_ID
+    // 1. Check for our custom x-file-id parameter first (most reliable for our app)
+    const customMatch = url.match(/[?&]x-file-id=([^&]+)/);
+    if (customMatch) return customMatch[1];
+
+    // 2. Formato: https://drive.google.com/uc?export=view&id=FILE_ID
     const match = url.match(/[?&]id=([^&]+)/);
     if (match) return match[1];
 
-    // Formato: https://drive.google.com/file/d/FILE_ID/view
+    // 3. Formato: https://drive.google.com/file/d/FILE_ID/view
     const match2 = url.match(/\/file\/d\/([^/]+)/);
     if (match2) return match2[1];
 
@@ -662,6 +673,41 @@ class GoogleDriveService {
       throw error;
     }
   }
+
+  /**
+   * Elimina la carpeta del análisis (Lote) dentro de la carpeta del Código
+   * @param codigo Código del análisis
+   * @param lote Lote del análisis
+   */
+  async deleteAnalysisFolder(codigo: string, lote: string): Promise<void> {
+    try {
+      logger.log(`🗑️ Intentando eliminar carpeta de análisis: ${codigo}/${lote}`);
+      await this.ensureToken();
+
+      // 1. Buscar carpeta del código
+      const codigoFolderId = await this.findFolderInRoot(codigo);
+      if (!codigoFolderId) {
+        logger.warn(`⚠️ No se encontró la carpeta del código: ${codigo}`);
+        return;
+      }
+
+      // 2. Buscar carpeta del lote dentro de la carpeta del código
+      const loteFolderId = await this.findFolder(lote, codigoFolderId);
+      if (!loteFolderId) {
+        logger.warn(`⚠️ No se encontró la carpeta del lote: ${lote} en ${codigo}`);
+        return;
+      }
+
+      // 3. Eliminar carpeta del lote
+      await this.deleteFile(loteFolderId);
+      logger.log(`✅ Carpeta de análisis eliminada: ${lote} (${loteFolderId})`);
+
+    } catch (error) {
+      logger.error('❌ Error eliminando carpeta de análisis:', error);
+      // No lanzamos error para no romper el flujo de eliminación del documento
+    }
+  }
+
 
   /**
    * Verifica la conectividad con Google Drive
