@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
@@ -12,10 +12,6 @@ import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { Textarea } from '@/components/ui';
 
-// Specialized Components
-import SmartInputGroup from '@/components/SmartInputGroup';
-import StickyHeader from '@/components/StickyHeader';
-
 // Existing Components
 import ProductTypeSelector from '@/components/ProductTypeSelector';
 import InitialForm from '@/components/InitialForm';
@@ -23,7 +19,6 @@ import AnalysisTabs from '@/components/AnalysisTabs';
 import PhotoCapture from '@/components/PhotoCapture';
 import ControlPesosBrutos from '@/components/ControlPesosBrutos';
 import DefectSelector from '@/components/DefectSelector';
-import AutoSaveIndicatorNew from '@/components/AutoSaveIndicatorNew';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 // Types and Utils
@@ -32,7 +27,7 @@ import {
     QualityAnalysis,
     AnalystColor,
     Analysis,
-    PesoBrutoRegistro,
+    PesoBrutoRecord as PesoBrutoRegistro,
     ANALYST_COLOR_HEX
 } from '@/lib/types';
 import { getWorkShift, formatDate, generateId } from '@/lib/utils';
@@ -850,18 +845,21 @@ export default function NewMultiAnalysisPageContent() {
 
     return (
         <div className="min-h-screen pb-20">
-            {/* Sticky Header */}
-            {basicsCompleted && analystColor && (
-                <StickyHeader
-                    lote={lote}
-                    codigo={codigo}
-                    talla={talla}
-                    analystColor={analystColor}
-                    activeAnalysisIndex={activeAnalysisIndex}
-                    totalAnalyses={analyses.length}
-                    saveState={isSaving ? 'saving' : saveError ? 'error' : 'saved'}
-                    lastSaved={lastSaved}
-                />
+            {/* Floating Save Indicator (top-right corner) */}
+            {(isSaving || saveError) && (
+                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                    {isSaving ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg shadow-lg text-xs font-medium">
+                            <Clock className="w-3.5 h-3.5 animate-spin" />
+                            <span>Guardando...</span>
+                        </div>
+                    ) : saveError ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg shadow-lg text-xs font-medium">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            <span>Error al guardar</span>
+                        </div>
+                    ) : null}
+                </div>
             )}
 
             <div className="max-w-4xl mx-auto space-y-6 p-4">
@@ -891,11 +889,21 @@ export default function NewMultiAnalysisPageContent() {
                             </h1>
                         </div>
 
-                        {/* Solo el indicador de color del analista */}
-                        <div className="flex items-center gap-2">
+                        {/* Sample number badge and analyst color */}
+                        <div className="flex items-center gap-3">
+                            {/* Sample badge */}
+                            <div
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
+                                style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
+                            >
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                                <span>Muestra {activeAnalysisIndex + 1}/{analyses.length}</span>
+                            </div>
+
+                            {/* Analyst color indicator */}
                             <div
                                 className="w-5 h-5 rounded-full border border-slate-700 shadow-sm"
-                                style={{ backgroundColor: colorHex }}
+                                style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
                                 title={`Color del analista: ${analystColor}`}
                             />
                         </div>

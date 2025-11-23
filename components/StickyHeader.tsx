@@ -11,6 +11,7 @@ interface StickyHeaderProps {
     analystColor: AnalystColor;
     activeAnalysisIndex: number;
     totalAnalyses: number;
+    productType?: string;
     saveState?: 'saving' | 'saved' | 'error' | null;
     lastSaved?: Date | null;
 }
@@ -22,6 +23,7 @@ export default function StickyHeader({
     analystColor,
     activeAnalysisIndex,
     totalAnalyses,
+    productType,
     saveState = null,
     lastSaved = null
 }: StickyHeaderProps) {
@@ -66,17 +68,27 @@ export default function StickyHeader({
         return `hace ${Math.floor(seconds / 3600)}h`;
     };
 
+    // Obtener nombre del tipo de producto
+    const getProductTypeName = () => {
+        if (!productType) return '';
+        switch (productType) {
+            case 'ENTERO': return 'Entero';
+            case 'COLA': return 'Cola';
+            case 'VALOR_AGREGADO': return 'Valor Agregado';
+            case 'CONTROL_PESOS': return 'Control de Pesos';
+            default: return '';
+        }
+    };
+
     return (
         <div className="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-[#efefef] shadow-sm transition-all">
             <div className="px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
-                    {/* Left side - Save state */}
-                    <div className="flex items-center gap-4">
-                        {getSaveStateDisplay()}
-                    </div>
+                    {/* Left side - Empty for balance */}
+                    <div className="flex-1"></div>
 
-                    {/* Right side - Analysis number */}
-                    <div className="flex items-center gap-4">
+                    {/* Center - Analysis type and sample number */}
+                    <div className="flex items-center gap-3">
                         <div
                             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
                             style={{ backgroundColor: colorHex }}
@@ -84,6 +96,21 @@ export default function StickyHeader({
                             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                             <span>Muestra {activeAnalysisIndex + 1}/{totalAnalyses}</span>
                         </div>
+                        {productType && productType !== 'CONTROL_PESOS' && (
+                            <span className="text-xs font-semibold text-slate-600">
+                                Análisis de Calidad - {getProductTypeName()}
+                            </span>
+                        )}
+                        {productType === 'CONTROL_PESOS' && (
+                            <span className="text-xs font-bold text-slate-700">
+                                CONTROL DE PESOS
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Right side - Save state (only when actively saving or just saved) */}
+                    <div className="flex-1 flex justify-end">
+                        {getSaveStateDisplay()}
                     </div>
                 </div>
             </div>
