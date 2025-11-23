@@ -114,6 +114,7 @@ export default function NewMultiAnalysisPageContent() {
     const [saveError, setSaveError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(!!searchParams.get('id'));
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [confirmText, setConfirmText] = useState('');
     const [viewMode, setViewMode] = useState<'compact' | 'loose'>('loose');
 
     const handleDeleteAnalysis = async () => {
@@ -861,27 +862,67 @@ export default function NewMultiAnalysisPageContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Delete Button */}
+                    {/* Delete Button with Inline Confirmation */}
                     <div className="pt-4 flex justify-center">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                console.log('🗑️ Delete button clicked');
-                                console.log('Current analysisId:', analysisId);
-                                if (!analysisId) {
-                                    console.warn('⚠️ Delete clicked but no analysisId present');
-                                    toast.error('Error: No hay análisis cargado para eliminar');
-                                    return;
-                                }
-                                console.log('Setting showDeleteModal to true');
-                                setShowDeleteModal(true);
-                                console.log('Set showDeleteModal command executed');
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Borrar Análisis
-                        </button>
+                        {!showDeleteModal ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    console.log('🗑️ Delete button clicked');
+                                    if (!analysisId) {
+                                        toast.error('Error: No hay análisis cargado para eliminar');
+                                        return;
+                                    }
+                                    setShowDeleteModal(true);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium border border-red-200"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Borrar Análisis
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200 max-w-2xl w-full">
+                                <div className="flex-1 space-y-2">
+                                    <p className="text-sm font-medium text-red-800">
+                                        Escribe <span className="font-mono font-bold">confirmar</span> para eliminar:
+                                    </p>
+                                    <input
+                                        type="text"
+                                        value={confirmText}
+                                        onChange={(e) => setConfirmText(e.target.value)}
+                                        placeholder="confirmar"
+                                        className="w-full px-3 py-2 border border-red-300 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm"
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && confirmText.toLowerCase() === 'confirmar') {
+                                                handleDeleteAnalysis();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowDeleteModal(false);
+                                            setConfirmText('');
+                                        }}
+                                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteAnalysis}
+                                        disabled={confirmText.toLowerCase() !== 'confirmar'}
+                                        className={`px-3 py-2 text-sm font-bold rounded-lg ${confirmText.toLowerCase() === 'confirmar'
+                                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div >
             </div >
