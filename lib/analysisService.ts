@@ -296,10 +296,35 @@ export const getAnalysesByShift = async (
   }
 
   try {
+    // Construir rango de fechas basado en el turno
+    // Asumimos que la fecha viene en formato YYYY-MM-DD
+    const start = new Date(`${date}T00:00:00`);
+    const end = new Date(`${date}T00:00:00`);
+
+    if (shift === 'DIA') {
+      // Turno Día: 07:00 - 19:00 del mismo día
+      start.setHours(7, 0, 0, 0);
+      end.setHours(19, 0, 0, 0);
+    } else {
+      // Turno Noche: 19:00 del día actual - 07:00 del día siguiente
+      start.setHours(19, 0, 0, 0);
+      end.setDate(end.getDate() + 1);
+      end.setHours(7, 0, 0, 0);
+    }
+
+    // Convertir a ISO string para comparar con createdAt (que está en ISO/UTC)
+    // IMPORTANTE: new Date() usa la zona horaria local del navegador,
+    // y toISOString() lo convierte a UTC. Esto es correcto porque
+    // createdAt se guarda como UTC.
+    const startIso = start.toISOString();
+    const endIso = end.toISOString();
+
+    console.log(`🔍 Buscando análisis por turno (${shift}):`, { startIso, endIso });
+
     const q = query(
       collection(db, ANALYSES_COLLECTION),
-      where('date', '==', date),
-      where('shift', '==', shift)
+      where('createdAt', '>=', startIso),
+      where('createdAt', '<', endIso)
     );
 
     const querySnapshot = await getDocs(q);
