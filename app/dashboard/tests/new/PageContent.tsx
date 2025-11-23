@@ -334,6 +334,20 @@ export default function NewMultiAnalysisPageContent() {
         }
     }, [analyses, basicsCompleted, isUploadingGlobal]);
 
+    // Prevenir cierre de pestaña si hay subidas en progreso
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isUploadingGlobal) {
+                e.preventDefault();
+                e.returnValue = ''; // Mensaje estándar del navegador
+                return '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isUploadingGlobal]);
+
     // Helper para reintentar subidas
     const uploadWithRetry = async (uploadFn: () => Promise<string>, retries = 3) => {
         for (let i = 0; i < retries; i++) {
