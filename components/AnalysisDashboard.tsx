@@ -17,7 +17,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   const [analyses, setAnalyses] = useState<QualityAnalysis[]>(initialAnalyses);
   const [searchTerm, setSearchTerm] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'todos' | 'en_progreso'>('todos');
+  const [activeTab, setActiveTab] = useState<'completados' | 'en_progreso'>('completados');
 
   // Pagination state
   const [lastDoc, setLastDoc] = useState<any>(initialLastDoc);
@@ -81,8 +81,8 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
       analysis.lote.toLowerCase().includes(searchTerm.toLowerCase()) ||
       analysis.codigo.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // "Todos" muestra TODOS los análisis (completados y en progreso)
-    if (activeTab === 'todos') return matchesSearch;
+    // "Completados" muestra solo los análisis completados
+    if (activeTab === 'completados') return matchesSearch && analysis.status === 'COMPLETADO';
 
     // "En Progreso" muestra solo los que NO están completados
     if (activeTab === 'en_progreso') return matchesSearch && analysis.status !== 'COMPLETADO';
@@ -175,14 +175,14 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
           <div className="flex justify-center" style={{ marginTop: '12px', marginBottom: '16px' }}>
             <div className="flex items-center gap-1 glass p-1 rounded-full shadow-md">
               <button
-                onClick={() => setActiveTab('todos')}
-                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'todos'
+                onClick={() => setActiveTab('completados')}
+                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'completados'
                   ? 'gradient-blue text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                   }`}
                 style={{ border: 'none' }}
               >
-                Todos
+                Completados
               </button>
               <button
                 onClick={() => setActiveTab('en_progreso')}
