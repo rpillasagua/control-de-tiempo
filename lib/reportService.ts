@@ -214,8 +214,8 @@ const createConsolidatedSheet = (workbook: ExcelJS.Workbook, analyses: Flattened
             producto: PRODUCT_TYPE_LABELS[productType as ProductType],
             turno: shiftType === 'DIA' ? 'Día' : 'Noche',
             cantidad,
-            promPesoBruto: totalPesoBruto > 0 ? (totalPesoBruto / cantidad).toFixed(2) : '-',
-            promPesoNeto: totalPesoNeto > 0 ? (totalPesoNeto / cantidad).toFixed(2) : '-',
+            promPesoBruto: totalPesoBruto > 0 ? Number((totalPesoBruto / cantidad).toFixed(2)) : '-',
+            promPesoNeto: totalPesoNeto > 0 ? Number((totalPesoNeto / cantidad).toFixed(2)) : '-',
             totalDefectos,
             percentage: 0 // Se calculará después
         });
@@ -465,7 +465,7 @@ const createControlPesosSheet = (
                 // Obtener todos los pesos brutos
                 const pesos = d.pesosBrutos;
                 const promedio = pesos.length > 0
-                    ? (pesos.reduce((sum, p) => sum + p, 0) / pesos.length).toFixed(2)
+                    ? Number((pesos.reduce((sum, p) => sum + p, 0) / pesos.length).toFixed(2))
                     : '-';
 
                 // Rellenar array de pesos hasta maxPesos
