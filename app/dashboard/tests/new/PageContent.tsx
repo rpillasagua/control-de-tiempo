@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
@@ -117,8 +117,30 @@ export default function NewMultiAnalysisPageContent() {
     const [viewMode, setViewMode] = useState<'compact' | 'loose'>('loose');
 
     const handleDeleteAnalysis = async () => {
-        console.log('🗑️ handleDeleteAnalysis called', { analysisId });
+        console.log('🗑️ handleDeleteAnalysis called', { analysisId, totalAnalyses: analyses.length, activeIndex: activeAnalysisIndex });
 
+        // Caso 1: Si hay múltiples análisis (tabs), solo eliminar el activo
+        if (analyses.length > 1) {
+            console.log('🗑️ Multiple analyses detected, removing active tab only');
+
+            // Eliminar el análisis activo del array
+            const updatedAnalyses = analyses.filter((_, index) => index !== activeAnalysisIndex);
+            setAnalyses(updatedAnalyses);
+
+            // Ajustar el índice activo
+            if (activeAnalysisIndex >= updatedAnalyses.length) {
+                setActiveAnalysisIndex(updatedAnalyses.length - 1);
+            }
+
+            toast.success('Análisis eliminado');
+            setShowDeleteModal(false);
+
+            // Guardar cambios automáticamente
+            setTimeout(() => saveDocument(), 500);
+            return;
+        }
+
+        // Caso 2: Solo hay un análisis, eliminar el documento completo
         if (!analysisId) {
             console.error('❌ No analysisId found to delete');
             toast.error('No se puede eliminar: ID de análisis no encontrado');
@@ -126,10 +148,8 @@ export default function NewMultiAnalysisPageContent() {
         }
 
         try {
-            // No usamos setIsLoading(true) aquí para evitar que el modal se desmonte
-            // El modal maneja su propio estado de carga (isDeleting)
             const { deleteAnalysis } = await import('@/lib/analysisService');
-            console.log('Calling deleteAnalysis service...');
+            console.log('Calling deleteAnalysis service for entire document...');
             await deleteAnalysis(analysisId);
             console.log('✅ Analysis deleted successfully');
 
@@ -599,8 +619,13 @@ export default function NewMultiAnalysisPageContent() {
                             <CardContent className={viewMode === 'compact' ? 'p-4 space-y-4' : 'p-6 space-y-6'}>
                                 <div className={viewMode === 'compact' ? 'grid grid-cols-3 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
                                     {/* Peso Bruto */}
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 relative">
                                         <Label required>Peso Bruto (kg)</Label>
+                                        {currentAnalysis.pesoBruto?.valor && (
+                                            <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
+                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -622,8 +647,13 @@ export default function NewMultiAnalysisPageContent() {
                                     </div>
 
                                     {/* Peso Congelado */}
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 relative">
                                         <Label>Peso Congelado (kg)</Label>
+                                        {currentAnalysis.pesoCongelado?.valor && (
+                                            <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
+                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -645,8 +675,13 @@ export default function NewMultiAnalysisPageContent() {
                                     </div>
 
                                     {/* Peso Neto */}
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 relative">
                                         <Label>Peso Neto (kg)</Label>
+                                        {currentAnalysis.pesoNeto?.valor && (
+                                            <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
+                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -712,8 +747,13 @@ export default function NewMultiAnalysisPageContent() {
                                 <CardContent className={viewMode === 'compact' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
                                     <div className={viewMode === 'compact' ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
                                         {/* Grandes */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 relative">
                                             <Label>Grandes (kg)</Label>
+                                            {currentAnalysis.uniformidad?.grandes?.valor && (
+                                                <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
                                             <Input
                                                 type="number"
                                                 step="0.01"
@@ -738,8 +778,13 @@ export default function NewMultiAnalysisPageContent() {
                                         </div>
 
                                         {/* Pequeños */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 relative">
                                             <Label>Pequeños (kg)</Label>
+                                            {currentAnalysis.uniformidad?.pequenos?.valor && (
+                                                <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
                                             <Input
                                                 type="number"
                                                 step="0.01"
