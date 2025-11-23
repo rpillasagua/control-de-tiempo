@@ -156,12 +156,17 @@ class GoogleDriveService {
    */
   async createFolder(folderName: string, parentFolderId?: string): Promise<string> {
     try {
-      logger.log(`📁 Intentando crear carpeta: "${folderName}" en parent: ${parentFolderId || this.config.rootFolderId}`);
+      const effectiveParentId = parentFolderId || this.config.rootFolderId;
+      if (!effectiveParentId) {
+        throw new Error(`Cannot create folder "${folderName}": No parent folder ID provided and no root folder ID configured`);
+      }
+
+      logger.log(`📁 Intentando crear carpeta: "${folderName}" en parent: ${effectiveParentId}`);
 
       const metadata = {
         name: folderName,
         mimeType: 'application/vnd.google-apps.folder',
-        parents: [parentFolderId || this.config.rootFolderId]
+        parents: [effectiveParentId]
       };
 
       const response = await fetch('https://www.googleapis.com/drive/v3/files', {
@@ -200,7 +205,13 @@ class GoogleDriveService {
    */
   async findFolder(folderName: string, parentFolderId?: string): Promise<string | null> {
     try {
-      const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId || this.config.rootFolderId}' in parents and trashed=false`;
+      const effectiveParentId = parentFolderId || this.config.rootFolderId;
+      if (!effectiveParentId) {
+        logger.warn(`Cannot find folder "${folderName}": No parent folder ID provided`);
+        return null;
+      }
+
+      const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${effectiveParentId}' in parents and trashed=false`;
 
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
@@ -611,6 +622,9 @@ class GoogleDriveService {
       logger.log('📁 Verificando carpeta raíz...');
       if (!this.rootFolderId) {
         await this.initialize();
+        if (!this.rootFolderId) {
+          throw new Error('Could not initialize Google Drive service: Root folder ID is missing');
+        }
       }
       logger.log('✅ Carpeta raíz verificada:', this.rootFolderId);
 

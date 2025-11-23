@@ -361,7 +361,7 @@ export default function NewMultiAnalysisPageContent() {
     };
 
     // Auto-save document
-    const saveDocument = async () => {
+    const saveDocument = async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
         if (!analysisId || !productType || !analystColor) return;
 
         try {
@@ -375,15 +375,6 @@ export default function NewMultiAnalysisPageContent() {
 
             // Si ya tenemos un createdAt (porque cargamos un análisis existente), lo mantenemos.
             // Si es nuevo, usamos 'now'.
-            // Para asegurarnos, intentamos obtenerlo del estado actual si existe, o del análisis cargado.
-            // Pero como 'saveDocument' construye el objeto desde cero con variables de estado,
-            // necesitamos persistir el 'createdAt' original.
-            // Una forma es guardarlo en un estado al cargar, o simplemente no sobrescribirlo si ya existe en la DB.
-            // Como aquí estamos construyendo el objeto completo para 'saveAnalysis',
-            // lo mejor es tener un estado para 'createdAt' o leerlo del análisis actual si lo tenemos en memoria.
-
-            // Solución: Usar un estado para createdAt, inicializado cuando se carga el análisis.
-            // Si no hay estado (nuevo análisis), usar now.
             const creationDate = createdAtState || now.toISOString();
 
             // Si es Dual Bag, inyectar el peso bruto global en cada análisis
@@ -410,7 +401,7 @@ export default function NewMultiAnalysisPageContent() {
                 createdBy: user?.email || 'unknown',
                 shift: getWorkShift(new Date(creationDate)), // El turno debe basarse en la fecha de creación original
                 date: formatDate(new Date(creationDate)),    // La fecha también
-                status: 'EN_PROGRESO'
+                status: status
             };
 
             // Validar datos antes de guardar
@@ -697,6 +688,25 @@ export default function NewMultiAnalysisPageContent() {
     // Use the new hook for weight inputs
     const { handleWeightChange } = useWeightInput(currentAnalysis, updateCurrentAnalysis);
 
+    const handleCompleteAnalysis = async () => {
+        if (!analysisId) return;
+
+        try {
+            // Guardar como completado
+            await saveDocument('COMPLETADO');
+            toast.success('¡Análisis completado exitosamente!');
+
+            // Pequeño delay para asegurar que el toast se vea antes de redirigir
+            setTimeout(() => {
+                router.push('/');
+                router.refresh();
+            }, 1000);
+        } catch (error) {
+            console.error('Error completing analysis:', error);
+            toast.error('Error al completar el análisis');
+        }
+    };
+
     // Loading state
     // Handler especial para foto global de peso bruto
     const handleGlobalPesoBrutoPhoto = async (file: File) => {
@@ -933,6 +943,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 })}
                                             />
                                             <PhotoCapture
+                                                key={`pesoBruto-${activeAnalysisIndex}`}
                                                 label="Foto Peso Bruto"
                                                 photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
@@ -964,6 +975,7 @@ export default function NewMultiAnalysisPageContent() {
                                             })}
                                         />
                                         <PhotoCapture
+                                            key={`pesoCongelado-${activeAnalysisIndex}`}
                                             label="Foto Peso Congelado"
                                             photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
                                             onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
@@ -994,6 +1006,7 @@ export default function NewMultiAnalysisPageContent() {
                                             })}
                                         />
                                         <PhotoCapture
+                                            key={`pesoNeto-${activeAnalysisIndex}`}
                                             label="Foto Peso Neto"
                                             photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
                                             onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
@@ -1071,6 +1084,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 })}
                                             />
                                             <PhotoCapture
+                                                key={`uniformidad-grandes-${activeAnalysisIndex}`}
                                                 label="Foto Grandes"
                                                 photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
@@ -1104,6 +1118,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 })}
                                             />
                                             <PhotoCapture
+                                                key={`uniformidad-pequenos-${activeAnalysisIndex}`}
                                                 label="Foto Pequeños"
                                                 photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
@@ -1142,6 +1157,7 @@ export default function NewMultiAnalysisPageContent() {
                         </CardHeader>
                         <CardContent>
                             <PhotoCapture
+                                key={`fotoCalidad-${activeAnalysisIndex}`}
                                 label="Foto General"
                                 photoUrl={currentAnalysis.fotoCalidad}
                                 onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
@@ -1163,6 +1179,18 @@ export default function NewMultiAnalysisPageContent() {
                             />
                         </CardContent>
                     </Card>
+
+                    {/* Complete Analysis Button */}
+                    <div className="pt-8 flex justify-center">
+                        <button
+                            onClick={handleCompleteAnalysis}
+                            className="group relative flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                            <CheckCircle2 className="w-6 h-6" />
+                            <span>Completar Análisis</span>
+                        </button>
+                    </div>
 
                     {/* Delete Button with Inline Confirmation */}
                     <div className="pt-4 flex justify-center">
