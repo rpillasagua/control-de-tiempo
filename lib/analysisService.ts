@@ -287,6 +287,79 @@ export const getPaginatedAnalyses = async (
 /**
  * Obtiene análisis por turno
  */
+export const getAnalysesByProductionDay = async (date: string): Promise<QualityAnalysis[]> => {
+  if (!db) {
+    throw new Error('Firestore no está configurado');
+  }
+
+  try {
+    // ESTRATEGIA DUAL PARA DÍA DE PRODUCCIÓN (Todos los turnos):
+    // 1. Rango de Tiempo: 7:10 AM (Día X) a 7:10 AM (Día X+1)
+    // 2. Coincidencia Explícita: date == X (para capturar manuales)
+
+    // --- QUERY 1: Rango de Tiempo ---
+    const [year, month, day] = date.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
+    const end = new Date(year, month - 1, day);
+
+    // Inicio: 7:10 AM del día seleccionado
+    start.setHours(7, 10, 0, 0);
+    // Fin: 7:10 AM del día siguiente
+    end.setDate(end.getDate() + 1);
+    end.setHours(7, 10, 0, 0);
+
+    const startIso = start.toISOString();
+    const endIso = end.toISOString();
+
+    const qRange = query(
+      collection(db, ANALYSES_COLLECTION),
+      where('createdAt', '>=', startIso),
+      where('createdAt', '<', endIso)
+    );
+
+    // --- QUERY 2: Coincidencia Explícita ---
+    const qExplicit = query(
+      collection(db, ANALYSES_COLLECTION),
+      where('date', '==', date)
+    );
+
+    // Ejecutar ambas consultas
+    const [snapshotRange, snapshotExplicit] = await Promise.all([
+      getDocs(qRange),
+      getDocs(qExplicit)
+    ]);
+
+    // Combinar y deduplicar
+    const analysesMap = new Map<string, QualityAnalysis>();
+
+    snapshotRange.forEach((doc) => {
+      const data = doc.data() as QualityAnalysis;
+      analysesMap.set(data.id, data);
+    });
+
+    snapshotExplicit.forEach((doc) => {
+      const data = doc.data() as QualityAnalysis;
+      if (!analysesMap.has(data.id)) {
+        analysesMap.set(data.id, data);
+      }
+    });
+
+    const analyses = Array.from(analysesMap.values());
+
+    // Ordenar por createdAt
+    analyses.sort((a, b) => {
+      return getTimestampMillis(b.createdAt) - getTimestampMillis(a.createdAt);
+    });
+
+    console.log(`📊 Reporte Producción ${date}: ${analyses.length} análisis encontrados`);
+
+    return analyses;
+  } catch (error) {
+    logger.error('❌ Error obteniendo análisis por día de producción:', error);
+    throw error;
+  }
+};
+
 export const getAnalysesByShift = async (
   date: string,
   shift: 'DIA' | 'NOCHE'

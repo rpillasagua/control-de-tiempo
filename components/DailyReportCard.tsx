@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { X, Download, Calendar, Search, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAnalysesByDate, getAnalysesByShift } from '@/lib/analysisService';
+import { getAnalysesByDate, getAnalysesByShift, getAnalysesByProductionDay } from '@/lib/analysisService';
 import { generateDailyReport } from '@/lib/reportService';
 import { QualityAnalysis, WorkShift } from '@/lib/types';
 
@@ -30,7 +30,7 @@ const DailyReportCard: React.FC<DailyReportCardProps> = ({ onClose }) => {
 
         try {
             const data = selectedShift === 'ALL'
-                ? await getAnalysesByDate(selectedDate)
+                ? await getAnalysesByProductionDay(selectedDate)
                 : await getAnalysesByShift(selectedDate, selectedShift);
 
             setAnalyses(data);
