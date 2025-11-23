@@ -131,8 +131,12 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         const isTallaValid = validateField('talla');
         const isColorValid = validateField('color');
 
+        // Marcar todos los campos como tocados para que se muestren los errores
+        setTouched({ lote: true, codigo: true, talla: true, color: true });
+
         if (!isLoteValid || !isCodigoValid || !isTallaValid || !isColorValid) {
-            setTouched({ lote: true, codigo: true, talla: true, color: true });
+            // Scroll to top para que se vea el error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
@@ -206,6 +210,26 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                             />
                         </div>
                     </div>
+
+                    {/* Error Summary - Show if any errors exist and fields have been touched */}
+                    {Object.keys(errors).some(key => errors[key as keyof AnalysisData]) && Object.keys(touched).length > 0 && (
+                        <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl animate-in fade-in duration-200">
+                            <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    !
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-red-900 mb-1">No se puede continuar</h4>
+                                    <ul className="space-y-1 text-sm text-red-700">
+                                        {errors.lote && <li>• {errors.lote}</li>}
+                                        {errors.codigo && <li>• {errors.codigo}</li>}
+                                        {errors.talla && <li>• {errors.talla}</li>}
+                                        {errors.color && <li>• {errors.color}</li>}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Selector de Color (Adaptado a Light Mode) */}
                     <div className={`p-5 rounded-xl border transition-all duration-300 ${errors.color && touched.color ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'
