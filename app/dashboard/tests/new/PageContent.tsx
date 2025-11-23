@@ -107,6 +107,7 @@ export default function NewMultiAnalysisPageContent() {
     // Photo management
     const [photos, setPhotos] = useState<{ [key: string]: File }>({});
     const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
+    const [isUploadingGlobal, setIsUploadingGlobal] = useState(false); // Para bloquear auto-save durante subida
 
     // UI state
     const [isSaving, setIsSaving] = useState(false);
@@ -324,19 +325,36 @@ export default function NewMultiAnalysisPageContent() {
 
     // Auto-save when analyses change
     useEffect(() => {
-        if (basicsCompleted && analysisId) {
+        // No guardar si se está subiendo una foto (evita race condition)
+        if (basicsCompleted && analysisId && !isUploadingGlobal) {
             const timer = setTimeout(() => {
                 saveDocument();
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [analyses, basicsCompleted]);
+    }, [analyses, basicsCompleted, isUploadingGlobal]);
+
+    // Helper para reintentar subidas
+    const uploadWithRetry = async (uploadFn: () => Promise<string>, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                return await uploadFn();
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                const delay = Math.min(1000 * Math.pow(2, i), 5000); // Exponential backoff
+                console.log(`⚠️ Error subiendo foto, reintentando en ${delay}ms... (Intento ${i + 1}/${retries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        throw new Error('Max retries reached');
+    };
 
     // Photo upload handlers
     const handlePhotoCapture = async (field: string, file: File) => {
         const key = `${activeAnalysisIndex}-${field}`;
         setPhotos(prev => ({ ...prev, [key]: file }));
         setUploadingPhotos(prev => new Set(prev).add(key));
+        setIsUploadingGlobal(true); // Bloquear auto-save
 
         try {
             const { googleDriveService } = await import('@/lib/googleDriveService');
@@ -345,14 +363,27 @@ export default function NewMultiAnalysisPageContent() {
             const { googleAuthService } = await import('@/lib/googleAuthService');
             const user = googleAuthService.getUser();
 
-            const url = await googleDriveService.uploadAnalysisPhoto(
+            // Obtener URL anterior para limpieza
+            let oldUrl: string | undefined;
+            if (field === 'fotoCalidad') {
+                oldUrl = currentAnalysis.fotoCalidad;
+            } else if (field.startsWith('uniformidad_')) {
+                const tipo = field.split('_')[1] as 'grandes' | 'pequenos';
+                oldUrl = currentAnalysis.uniformidad?.[tipo]?.fotoUrl;
+            } else {
+                // pesoBruto, pesoCongelado, pesoNeto
+                const currentFieldValue = currentAnalysis[field as keyof Analysis] as any;
+                oldUrl = currentFieldValue?.fotoUrl;
+            }
+
+            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
                 file,
                 codigo,
                 lote,
                 `${field}_analysis${activeAnalysisIndex + 1}`,
-                undefined, // oldPhotoUrl
-                user?.email // viewerEmail
-            );
+                oldUrl, // Pasar URL anterior
+                user?.email
+            ));
 
             // Update analysis with photo URL
             if (field === 'fotoCalidad') {
@@ -387,6 +418,7 @@ export default function NewMultiAnalysisPageContent() {
                 next.delete(key);
                 return next;
             });
+            setIsUploadingGlobal(false); // Desbloquear auto-save (disparará el useEffect)
         }
     };
 
@@ -403,6 +435,7 @@ export default function NewMultiAnalysisPageContent() {
     const handlePesoBrutoPhotoCapture = async (registroId: string, file: File) => {
         const key = `${activeAnalysisIndex}-pesobruto-${registroId}`;
         setUploadingPhotos(prev => new Set(prev).add(key));
+        setIsUploadingGlobal(true); // Bloquear auto-save
 
         try {
             const { googleDriveService } = await import('@/lib/googleDriveService');
@@ -411,14 +444,18 @@ export default function NewMultiAnalysisPageContent() {
             const { googleAuthService } = await import('@/lib/googleAuthService');
             const user = googleAuthService.getUser();
 
-            const url = await googleDriveService.uploadAnalysisPhoto(
+            // Obtener URL anterior
+            const registro = currentAnalysis.pesosBrutos?.find(r => r.id === registroId);
+            const oldUrl = registro?.fotoUrl;
+
+            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
                 file,
                 codigo,
                 lote,
                 `peso_bruto_${registroId}_analysis${activeAnalysisIndex + 1}`,
-                undefined, // oldPhotoUrl
-                user?.email // viewerEmail
-            );
+                oldUrl, // Pasar URL anterior
+                user?.email
+            ));
 
             // Update the specific registro
             updateCurrentAnalysis({
@@ -435,6 +472,7 @@ export default function NewMultiAnalysisPageContent() {
                 next.delete(key);
                 return next;
             });
+            setIsUploadingGlobal(false); // Desbloquear auto-save
         }
     };
 

@@ -43,8 +43,8 @@ const cleanDataForFirestore = <T>(data: T): T | null => {
 
   // Prevenir guardar URLs de blob (locales) en Firestore
   if (typeof data === 'string' && data.startsWith('blob:')) {
-    logger.warn('⚠️ Detectada URL blob en guardado, ignorando para evitar enlaces rotos:', data);
-    return null;
+    logger.error('❌ INTENTO DE GUARDAR BLOB URL:', data);
+    throw new Error('No se puede guardar el análisis porque hay fotos que aún no se han subido a Google Drive (URL blob detectada). Por favor espera a que terminen de subir.');
   }
 
   if (Array.isArray(data)) {
@@ -329,12 +329,17 @@ export const deleteAnalysis = async (analysisId: string): Promise<void> => {
     throw new Error('Firestore no está configurado');
   }
 
+  console.log(`🗑️ Service: deleteAnalysis called for ID: ${analysisId}`);
+
   try {
     const analysisRef = getAnalysisRef(analysisId);
+    console.log(`Service: Deleting document at path: ${analysisRef.path}`);
     await deleteDoc(analysisRef);
     logger.log('✅ Análisis eliminado:', analysisId);
+    console.log(`✅ Service: deleteAnalysis completed for ID: ${analysisId}`);
   } catch (error) {
     logger.error('❌ Error eliminando análisis:', error);
+    console.error(`❌ Service: deleteAnalysis failed for ID: ${analysisId}`, error);
     throw error;
   }
 };

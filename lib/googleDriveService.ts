@@ -422,11 +422,33 @@ class GoogleDriveService {
         await this.makeFilePublic(data.id);
         logger.log('✅ Permisos públicos configurados');
 
-        // Agregar delay de 7 segundos para que los permisos se propaguen
-        // Google Drive puede tardar 5-10 segundos en propagar permisos a todos sus servidores
-        logger.log('⏳ Esperando propagación de permisos (7 segundos)...');
-        await new Promise(resolve => setTimeout(resolve, 7000));
-        logger.log('✅ Propagación completada');
+        // Polling para verificar propagación de permisos (máximo 10s)
+        logger.log('⏳ Verificando propagación de permisos...');
+        const start = Date.now();
+        let propagated = false;
+
+        while (Date.now() - start < 10000) {
+          try {
+            // Intentar acceder al archivo sin autenticación (HEAD request)
+            // Usamos la URL de export=view que redirige si es público
+            const testUrl = `https://drive.google.com/uc?export=view&id=${data.id}`;
+            const checkResponse = await fetch(testUrl, { method: 'HEAD' });
+
+            // Si recibimos 200 OK o 3xx Redirección, es accesible
+            if (checkResponse.ok || checkResponse.status === 302 || checkResponse.status === 303) {
+              propagated = true;
+              logger.log(`✅ Permisos propagados en ${Date.now() - start}ms`);
+              break;
+            }
+          } catch (e) {
+            // Ignorar errores de red durante el check
+          }
+          await new Promise(r => setTimeout(r, 1000)); // Esperar 1s entre intentos
+        }
+
+        if (!propagated) {
+          logger.warn('⚠️ Timeout esperando confirmación de propagación, continuando de todos modos...');
+        }
       } catch (error) {
         logger.warn('⚠️ No se pudieron configurar permisos públicos:', error instanceof Error ? error.message : String(error));
         // Continuar de todos modos
@@ -457,7 +479,19 @@ class GoogleDriveService {
 
       if (thumbnailLink) {
         // Reemplazar el tamaño (=s220) por uno grande (=s2000) para mantener calidad
-        publicUrl = thumbnailLink.replace(/=s\d+/, '=s2000');
+        // Soportar múltiples formatos de URL de Drive
+        publicUrl = thumbnailLink
+          .replace(/=s\d+/, '=s2000')        // Formato estándar =s220
+          .replace(/[?&]sz=\d+/, '?sz=2000') // Formato alternativo ?sz=220
+          .replace(/\/s\d+\//, '/s2000/');   // Formato path /s220/
+
+        // Si no coincidió con ninguno (formato desconocido), intentar append
+        if (!publicUrl.includes('s2000')) {
+          if (publicUrl.includes('=')) publicUrl = publicUrl.replace(/=.*$/, '=s2000');
+          else publicUrl += '=s2000';
+        }
+
+        logger.log(`🔗 Usando thumbnailLink optimizado: ${publicUrl}`);
         logger.log(`🔗 Usando thumbnailLink optimizado: ${publicUrl}`);
       } else {
         // Fallback a la URL directa

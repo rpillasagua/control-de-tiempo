@@ -69,8 +69,21 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   // Timeout de seguridad para prevenir loading infinito
   useEffect(() => {
     if (isLoading && photoUrl) {
+      // Timeout adaptativo según conexión
+      let timeoutDuration = 30000; // 30s por defecto
+
+      // Detectar conexión lenta si es posible
+      if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+        const conn = (navigator as any).connection;
+        if (conn) {
+          if (conn.effectiveType === '2g') timeoutDuration = 60000; // 60s para 2G
+          else if (conn.effectiveType === '3g') timeoutDuration = 45000; // 45s para 3G
+          console.log(`📡 Conexión detectada: ${conn.effectiveType}, timeout ajustado a ${timeoutDuration}ms`);
+        }
+      }
+
       const timeout = setTimeout(() => {
-        console.warn(`⏰ Timeout de carga excedido para ${label}, forzando fin de loading`);
+        console.warn(`⏰ Timeout de carga excedido para ${label} (${timeoutDuration}ms), forzando fin de loading`);
         setIsLoading(false);
         setIsRetrying(false);
         // Si aún no hay error, marcar como error desconocido
@@ -78,7 +91,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
           setImageError(true);
           setErrorType('unknown');
         }
-      }, 30000); // 30 segundos máximo - Google Drive puede tardar
+      }, timeoutDuration);
 
       return () => clearTimeout(timeout);
     }
