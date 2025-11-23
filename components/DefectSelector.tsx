@@ -28,33 +28,13 @@ export default function DefectSelector({
   onDefectsChange
 }: DefectSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<DefectItem[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  quantity: '' // Empezar con campo vacío en lugar de 0
+};
 
-  // Obtener la lista de defectos según el tipo de producto
-  const getDefectosForProductType = () => {
-    switch (productType) {
-    label: DEFECTO_LABELS[key] || key,
-      quantity
-  }));
-  setSelectedItems(existingItems);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []); // Solo cargar al montar
-
-const handleAddDefect = (defectoKey: string) => {
-  const label = DEFECTO_LABELS[defectoKey] || defectoKey;
-  const newItem: DefectItem = {
-    key: defectoKey,
-    label,
-    quantity: '' // Empezar con campo vacío en lugar de 0
-  };
-
-  setSelectedItems(prev => [...prev, newItem]);
-  setSearchTerm('');
-  setShowSuggestions(false);
-  searchInputRef.current?.focus();
+setSelectedItems(prev => [...prev, newItem]);
+setSearchTerm('');
+setShowSuggestions(false);
+searchInputRef.current?.focus();
 };
 
 const handleRemoveDefect = (defectoKey: string) => {
