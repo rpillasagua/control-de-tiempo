@@ -27,7 +27,7 @@ import {
     QualityAnalysis,
     AnalystColor,
     Analysis,
-    PesoBrutoRecord as PesoBrutoRegistro,
+    PesoBrutoRegistro,
     ANALYST_COLOR_HEX
 } from '@/lib/types';
 import { getWorkShift, formatDate, generateId } from '@/lib/utils';
