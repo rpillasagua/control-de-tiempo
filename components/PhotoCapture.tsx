@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, ZoomIn, ImageOff, Camera } from 'lucide-react';
+import { X, ZoomIn, ImageOff, Camera, CheckCircle2 } from 'lucide-react';
 import { compressImage } from '@/lib/imageCompression';
 
 interface PhotoCaptureProps {
@@ -23,6 +23,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const [cacheBuster, setCacheBuster] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
@@ -77,7 +78,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
           setImageError(true);
           setErrorType('unknown');
         }
-      }, 10000); // 10 segundos máximo
+      }, 20000); // 20 segundos máximo (7s propagación + margen)
 
       return () => clearTimeout(timeout);
     }
@@ -101,6 +102,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
       const previewUrl = URL.createObjectURL(file);
       setLocalPreviewUrl(previewUrl);
       setImageError(false);
+      setUploadSuccess(false);
 
       // Compress image before uploading
       setIsCompressing(true);
@@ -145,7 +147,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
 
         {(photoUrl || localPreviewUrl) && !imageError ? (
           <div className={`flex flex-col sm:flex-row sm:items-center gap-4 w-full ${compact ? 'p-1.5' : 'p-3'} bg-black/20 rounded-xl border border-white/5`}>
-            <div className={`relative group self-center sm:self-auto ${compact ? 'w-12 h-12' : 'w-24 h-24 sm:w-20 sm:h-20'} flex-shrink-0`}>
+            <div className={`relative group self-center sm:self-auto ${compact ? 'w-8 h-8' : 'w-12 h-12 sm:w-10 sm:h-10'} flex-shrink-0`}>
               {(isLoading || isRetrying || isUploading || isCompressing) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg z-10 backdrop-blur-sm transition-all duration-300">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500/30 border-t-blue-500 mb-2"></div>
@@ -274,8 +276,20 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                   setIsLoading(false);
                   setIsRetrying(false);
                   setRetryCount(0); // Reset retry count
+                  // Solo mostrar check si es una URL de Drive (no blob local)
+                  if (photoUrl && !photoUrl.startsWith('blob:')) {
+                    setUploadSuccess(true);
+                    // Ocultar el check después de 3 segundos
+                    setTimeout(() => setUploadSuccess(false), 3000);
+                  }
                 }}
               />
+              {/* Indicador de éxito en carga */}
+              {uploadSuccess && !isLoading && !isUploading && (
+                <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-200">
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                </div>
+              )}
               <div
                 className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-lg transition-all flex items-center justify-center cursor-pointer backdrop-blur-[2px]"
                 onClick={handleImageClick}

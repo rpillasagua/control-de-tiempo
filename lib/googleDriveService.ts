@@ -408,9 +408,10 @@ class GoogleDriveService {
         await this.makeFilePublic(data.id);
         logger.log('✅ Permisos públicos configurados');
 
-        // Agregar delay de 2 segundos para que los permisos se propaguen
-        logger.log('⏳ Esperando propagación de permisos...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Agregar delay de 7 segundos para que los permisos se propaguen
+        // Google Drive puede tardar 5-10 segundos en propagar permisos a todos sus servidores
+        logger.log('⏳ Esperando propagación de permisos (7 segundos)...');
+        await new Promise(resolve => setTimeout(resolve, 7000));
         logger.log('✅ Propagación completada');
       } catch (error) {
         logger.warn('⚠️ No se pudieron configurar permisos públicos:', error instanceof Error ? error.message : String(error));
