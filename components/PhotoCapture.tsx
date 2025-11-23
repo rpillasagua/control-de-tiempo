@@ -27,7 +27,6 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
-  // Función para generar URLs alternativas de Google Drive
   const getAlternativeDriveUrl = (currentUrl: string): string | null => {
     // 1. Check for custom x-file-id parameter
     const customMatch = currentUrl.match(/[?&]x-file-id=([^&]+)/);
