@@ -36,35 +36,8 @@ export default function DefectSelector({
   // Obtener la lista de defectos según el tipo de producto
   const getDefectosForProductType = () => {
     switch (productType) {
-      case 'ENTERO': return DEFECTOS_ENTERO;
-      case 'COLA': return DEFECTOS_COLA;
-      case 'VALOR_AGREGADO': return DEFECTOS_VALOR_AGREGADO;
-      default: return [];
-    }
-  };
-  // Convertir vacío ('') a 0
-  const quantity = item.quantity === '' ? 0 : item.quantity;
-  newSelectedDefects[item.key] = quantity;
-});
-
-// Comparar con el estado actual para evitar bucles
-const currentDefects = selectedDefects || {};
-const hasChanges =
-  Object.keys(newSelectedDefects).length !== Object.keys(currentDefects).length ||
-  Object.keys(newSelectedDefects).some(key => newSelectedDefects[key] !== currentDefects[key]);
-
-if (hasChanges) {
-  onDefectsChange(newSelectedDefects);
-}
-  }, [selectedItems, onDefectsChange, selectedDefects]);
-
-// Cargar defectos existentes SOLO al montar el componente
-// No incluir selectedDefects en dependencias para evitar loop infinito
-useEffect(() => {
-  const existingItems: DefectItem[] = Object.entries(selectedDefects).map(([key, quantity]) => ({
-    key,
     label: DEFECTO_LABELS[key] || key,
-    quantity
+      quantity
   }));
   setSelectedItems(existingItems);
   // eslint-disable-next-line react-hooks/exhaustive-deps
