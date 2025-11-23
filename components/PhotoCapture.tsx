@@ -286,7 +286,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               />
               {/* Indicador de éxito en carga */}
               {uploadSuccess && !isLoading && !isUploading && (
-                <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-200">
+                <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-200">
                   <CheckCircle2 className="w-4 h-4 text-white" />
                 </div>
               )}
