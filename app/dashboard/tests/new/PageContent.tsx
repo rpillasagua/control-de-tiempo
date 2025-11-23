@@ -620,13 +620,15 @@ export default function NewMultiAnalysisPageContent() {
                             <CardContent className={viewMode === 'compact' ? 'p-4 space-y-4' : 'p-6 space-y-6'}>
                                 <div className={viewMode === 'compact' ? 'grid grid-cols-3 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
                                     {/* Peso Bruto */}
-                                    <div className="space-y-3 relative">
-                                        <Label required>Peso Bruto (kg)</Label>
-                                        {currentAnalysis.pesoBruto?.valor && (
-                                            <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
-                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                            </div>
-                                        )}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label required>Peso Bruto (kg)</Label>
+                                            {currentAnalysis.pesoBruto?.valor && (
+                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -648,13 +650,15 @@ export default function NewMultiAnalysisPageContent() {
                                     </div>
 
                                     {/* Peso Congelado */}
-                                    <div className="space-y-3 relative">
-                                        <Label>Peso Congelado (kg)</Label>
-                                        {currentAnalysis.pesoCongelado?.valor && (
-                                            <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
-                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                            </div>
-                                        )}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label>Peso Congelado (kg)</Label>
+                                            {currentAnalysis.pesoCongelado?.valor && (
+                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -676,13 +680,15 @@ export default function NewMultiAnalysisPageContent() {
                                     </div>
 
                                     {/* Peso Neto */}
-                                    <div className="space-y-3 relative">
-                                        <Label>Peso Neto (kg)</Label>
-                                        {currentAnalysis.pesoNeto?.valor && (
-                                            <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
-                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                            </div>
-                                        )}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label>Peso Neto (kg)</Label>
+                                            {currentAnalysis.pesoNeto?.valor && (
+                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -748,13 +754,15 @@ export default function NewMultiAnalysisPageContent() {
                                 <CardContent className={viewMode === 'compact' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
                                     <div className={viewMode === 'compact' ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
                                         {/* Grandes */}
-                                        <div className="space-y-3 relative">
-                                            <Label>Grandes (kg)</Label>
-                                            {currentAnalysis.uniformidad?.grandes?.valor && (
-                                                <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
-                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Grandes (kg)</Label>
+                                                {currentAnalysis.uniformidad?.grandes?.valor && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
                                             <Input
                                                 type="number"
                                                 step="0.01"
@@ -779,13 +787,15 @@ export default function NewMultiAnalysisPageContent() {
                                         </div>
 
                                         {/* Pequeños */}
-                                        <div className="space-y-3 relative">
-                                            <Label>Pequeños (kg)</Label>
-                                            {currentAnalysis.uniformidad?.pequenos?.valor && (
-                                                <div className="absolute top-0 right-0 bg-green-500 rounded-full p-0.5 shadow-sm z-10">
-                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Pequeños (kg)</Label>
+                                                {currentAnalysis.uniformidad?.pequenos?.valor && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
                                             <Input
                                                 type="number"
                                                 step="0.01"
