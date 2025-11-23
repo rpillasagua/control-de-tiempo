@@ -45,6 +45,14 @@ const createEmptyAnalysis = (numero: number): Analysis => ({
     defectos: {}
 });
 
+// Códigos que requieren flujo especial: 1 Peso Bruto Global -> 2 Análisis (Fundas)
+const DUAL_BAG_CODES = [
+    '00048', '00051', '00067', '00068', '00069', '00079', '00084', '00103', '00106', '00123',
+    '00158', '00170', '00171', '00172', '00177', '00204', '00238', '00240', '00244', '00255',
+    '00256', '00263', '00272', '00307', '00308', '00309', '00321', '00342', '00366', '00378',
+    '00379', '00380'
+];
+
 const ViewModeSelector = ({ mode, onChange }: { mode: 'compact' | 'loose'; onChange: (m: 'compact' | 'loose') => void }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -108,6 +116,10 @@ export default function NewMultiAnalysisPageContent() {
     const [photos, setPhotos] = useState<{ [key: string]: File }>({});
     const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
     const [isUploadingGlobal, setIsUploadingGlobal] = useState(false); // Para bloquear auto-save durante subida
+
+    // Dual Bag Logic State
+    const [isDualBag, setIsDualBag] = useState(false);
+    const [globalPesoBruto, setGlobalPesoBruto] = useState<{ valor?: number; fotoUrl?: string }>({});
 
     // UI state
     const [isSaving, setIsSaving] = useState(false);
@@ -189,6 +201,17 @@ export default function NewMultiAnalysisPageContent() {
                         // Load analyses array if it exists, otherwise create empty one
                         if (existingAnalysis.analyses && existingAnalysis.analyses.length > 0) {
                             setAnalyses(existingAnalysis.analyses);
+
+                            // Si es un código especial, poblar el peso bruto global desde el primer análisis
+                            if (DUAL_BAG_CODES.includes(existingAnalysis.codigo)) {
+                                const firstAnalysis = existingAnalysis.analyses[0];
+                                if (firstAnalysis?.pesoBruto) {
+                                    setGlobalPesoBruto({
+                                        valor: firstAnalysis.pesoBruto.valor,
+                                        fotoUrl: firstAnalysis.pesoBruto.fotoUrl
+                                    });
+                                }
+                            }
                         }
 
                         // Mark basics as completed since we loaded existing data
@@ -215,6 +238,23 @@ export default function NewMultiAnalysisPageContent() {
         loadExistingAnalysis();
     }, [searchParams]);
 
+    // Detectar códigos especiales y configurar modo Dual Bag
+    useEffect(() => {
+        const isSpecialCode = DUAL_BAG_CODES.includes(codigo);
+        setIsDualBag(isSpecialCode);
+
+        if (isSpecialCode) {
+            // Asegurar que haya exactamente 2 análisis si es un código especial
+            if (analyses.length < 2) {
+                setAnalyses(prev => {
+                    const missing = 2 - prev.length;
+                    const newAnalyses = Array(missing).fill(null).map((_, i) => createEmptyAnalysis(prev.length + i + 1));
+                    return [...prev, ...newAnalyses];
+                });
+            }
+        }
+    }, [codigo]);
+
     // Handle initial form completion
     const handleInitialFormComplete = async (data: {
         lote: string;
@@ -222,27 +262,22 @@ export default function NewMultiAnalysisPageContent() {
         talla: string;
         color: AnalystColor | null;
     }) => {
-        // Validation: color should never be null if form validation works properly
-        if (!data.color) {
-            console.error('Color is required');
-            return;
-        }
-
+        if (!data.color) return;
         setLote(data.lote);
         setCodigo(data.codigo);
         setTalla(data.talla);
         setAnalystColor(data.color);
         setBasicsCompleted(true);
 
-        // Auto-save basic info to Firestore
-        await saveDocument();
+        // Trigger auto-save
+        setTimeout(() => saveDocument(), 100);
     };
 
     // Add new analysis tab
     const handleAddAnalysis = () => {
         const newAnalysis = createEmptyAnalysis(analyses.length + 1);
         setAnalyses([...analyses, newAnalysis]);
-        setActiveAnalysisIndex(analyses.length); // Switch to new tab
+        setActiveAnalysisIndex(analyses.length);
     };
 
     // Get current active analysis
@@ -292,6 +327,17 @@ export default function NewMultiAnalysisPageContent() {
             // Si no hay estado (nuevo análisis), usar now.
             const creationDate = createdAtState || now.toISOString();
 
+            // Si es Dual Bag, inyectar el peso bruto global en cada análisis
+            const analysesToSave = isDualBag
+                ? analyses.map(a => ({
+                    ...a,
+                    pesoBruto: {
+                        valor: globalPesoBruto.valor,
+                        fotoUrl: globalPesoBruto.fotoUrl
+                    }
+                }))
+                : analyses;
+
             const document: QualityAnalysis = {
                 id: analysisId,
                 productType,
@@ -299,7 +345,7 @@ export default function NewMultiAnalysisPageContent() {
                 codigo,
                 talla: talla || undefined,
                 analystColor,
-                analyses,
+                analyses: analysesToSave,
                 createdAt: creationDate,
                 updatedAt: now.toISOString(),
                 createdBy: user?.email || 'unknown',
@@ -593,6 +639,44 @@ export default function NewMultiAnalysisPageContent() {
     const { handleWeightChange } = useWeightInput(currentAnalysis, updateCurrentAnalysis);
 
     // Loading state
+    // Handler especial para foto global de peso bruto
+    const handleGlobalPesoBrutoPhoto = async (file: File) => {
+        const key = 'global-pesoBruto';
+        setPhotos(prev => ({ ...prev, [key]: file }));
+        setUploadingPhotos(prev => new Set(prev).add(key));
+        setIsUploadingGlobal(true);
+
+        try {
+            const { googleDriveService } = await import('@/lib/googleDriveService');
+            await googleDriveService.initialize();
+            const { googleAuthService } = await import('@/lib/googleAuthService');
+            const user = googleAuthService.getUser();
+
+            const oldUrl = globalPesoBruto.fotoUrl;
+
+            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
+                file,
+                codigo,
+                lote,
+                'peso_bruto_global',
+                oldUrl,
+                user?.email
+            ));
+
+            setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
+        } catch (error) {
+            console.error('Error uploading global peso bruto photo:', error);
+            toast.error('Error al subir la foto global');
+        } finally {
+            setUploadingPhotos(prev => {
+                const next = new Set(prev);
+                next.delete(key);
+                return next;
+            });
+            setIsUploadingGlobal(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -713,20 +797,23 @@ export default function NewMultiAnalysisPageContent() {
                         <ViewModeSelector mode={viewMode} onChange={setViewMode} />
                     </div>
 
-                    {/* Pesos Section */}
-                    {(productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
-                        <Card>
+                    {/* GLOBAL PESO BRUTO (Solo para códigos especiales) */}
+                    {isDualBag && (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                        <Card className="border-blue-200 bg-blue-50/30">
                             <CardHeader>
-                                <CardTitle>⚖️ Pesos</CardTitle>
-                                <CardDescription>Registra los pesos con fotos</CardDescription>
+                                <CardTitle className="flex items-center gap-2 text-blue-800">
+                                    ⚖️ Peso Bruto Global (Cartón)
+                                    <span className="text-xs font-normal bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                                        Aplica a todos los análisis
+                                    </span>
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent className={viewMode === 'compact' ? 'p-4 space-y-4' : 'p-6 space-y-6'}>
-                                <div className={viewMode === 'compact' ? 'grid grid-cols-3 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
-                                    {/* Peso Bruto */}
+                            <CardContent className="p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <Label required>Peso Bruto (kg)</Label>
-                                            {currentAnalysis.pesoBruto?.valor && (
+                                            <Label className="text-blue-900">Peso Bruto Cartón (kg)</Label>
+                                            {globalPesoBruto.valor && (
                                                 <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                     <CheckCircle2 className="w-3 h-3 text-white" />
                                                 </div>
@@ -736,21 +823,64 @@ export default function NewMultiAnalysisPageContent() {
                                             type="number"
                                             step="0.01"
                                             placeholder="0.00"
-                                            value={currentAnalysis.pesoBruto?.valor || ''}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                pesoBruto: {
-                                                    ...currentAnalysis.pesoBruto,
-                                                    valor: parseFloat(e.target.value) || undefined
-                                                }
-                                            })}
-                                        />
-                                        <PhotoCapture
-                                            label="Foto Peso Bruto"
-                                            photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
-                                            onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
-                                            isUploading={isFieldUploading('pesoBruto')}
+                                            value={globalPesoBruto.valor || ''}
+                                            onChange={(e) => setGlobalPesoBruto(prev => ({ ...prev, valor: parseFloat(e.target.value) || undefined }))}
+                                            className="border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
                                         />
                                     </div>
+                                    <div className="space-y-3">
+                                        <PhotoCapture
+                                            label="Foto Peso Bruto Global"
+                                            photoUrl={globalPesoBruto.fotoUrl}
+                                            onPhotoCapture={handleGlobalPesoBrutoPhoto}
+                                            isUploading={uploadingPhotos.has('global-pesoBruto')}
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Pesos Section */}
+                    {(productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>⚖️ Pesos {isDualBag ? '(Por Funda)' : ''}</CardTitle>
+                                <CardDescription>Registra los pesos con fotos</CardDescription>
+                            </CardHeader>
+                            <CardContent className={viewMode === 'compact' ? 'p-4 space-y-4' : 'p-6 space-y-6'}>
+                                <div className={viewMode === 'compact' ? 'grid grid-cols-3 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
+                                    {/* Peso Bruto (Ocultar si es Dual Bag) */}
+                                    {!isDualBag && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <Label required>Peso Bruto (kg)</Label>
+                                                {currentAnalysis.pesoBruto?.valor && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                value={currentAnalysis.pesoBruto?.valor || ''}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
+                                                    pesoBruto: {
+                                                        ...currentAnalysis.pesoBruto,
+                                                        valor: parseFloat(e.target.value) || undefined
+                                                    }
+                                                })}
+                                            />
+                                            <PhotoCapture
+                                                label="Foto Peso Bruto"
+                                                photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
+                                                onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
+                                                isUploading={isFieldUploading('pesoBruto')}
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* Peso Congelado */}
                                     <div className="space-y-3">
