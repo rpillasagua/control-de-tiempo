@@ -8,15 +8,15 @@ import { WorkShift } from './types';
 export function getWorkShift(date: Date = new Date()): WorkShift {
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  
+
   // Convertir a minutos desde medianoche
   const totalMinutes = hours * 60 + minutes;
-  
+
   // 7:10 AM = 430 minutos
   // 7:10 PM = 1150 minutos
   const dayShiftStart = 7 * 60 + 10; // 430
   const dayShiftEnd = 19 * 60 + 10; // 1150
-  
+
   if (totalMinutes >= dayShiftStart && totalMinutes < dayShiftEnd) {
     return 'DIA';
   } else {
@@ -28,7 +28,8 @@ export function getWorkShift(date: Date = new Date()): WorkShift {
  * Formatea la fecha en formato YYYY-MM-DD
  */
 export function formatDate(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().split('T')[0];
 }
 
 /**

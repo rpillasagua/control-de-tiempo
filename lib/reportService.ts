@@ -1,8 +1,34 @@
 import ExcelJS from 'exceljs';
-import { QualityAnalysis, WorkShift, PRODUCT_TYPE_LABELS, ProductType, DEFECTOS_ENTERO, DEFECTOS_COLA, DEFECTOS_VALOR_AGREGADO, DEFECTO_LABELS, ANALYST_COLOR_LABELS } from '@/lib/types';
+import { QualityAnalysis, WorkShift, PRODUCT_TYPE_LABELS, ProductType, DEFECTOS_ENTERO, DEFECTOS_COLA, DEFECTOS_VALOR_AGREGADO, DEFECTO_LABELS, ANALYST_COLOR_LABELS, Analysis } from '@/lib/types';
 
 // Tipos auxiliares
 type ReportShift = 'ALL' | WorkShift;
+
+// Interfaz para datos aplanados
+interface FlattenedAnalysis {
+    // Metadata del documento padre
+    docId: string;
+    createdAt: string;
+    shift: WorkShift;
+    productType: ProductType;
+    lote: string;
+    codigo: string;
+    talla: string;
+    analystColor: string;
+    observations: string;
+
+    // Datos del análisis individual
+    numero: number;
+    pesoBruto?: number;
+    pesoCongelado?: number;
+    pesoNeto?: number;
+    conteo?: number;
+    uniformidadGrandes?: number;
+    uniformidadPequenos?: number;
+    defectos: { [key: string]: number };
+    totalDefectos: number;
+    pesosBrutos: number[];
+}
 
 // ============================================
 // ESTILOS REUTILIZABLES
@@ -53,48 +79,75 @@ const STYLES = {
 };
 
 // ============================================
-// HELPER: EXTRAER DATOS DEL ANÁLISIS
+// HELPER: APLANAR DATOS
 // ============================================
 
-const getAnalysisData = (analysis: QualityAnalysis) => {
-    // Soporte para estructura anidada (si existe) o plana
-    const core = analysis.analyses?.[0] || analysis;
+const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
+    const flattened: FlattenedAnalysis[] = [];
 
-    const defectos = core.defectos || {};
-    const totalDefectos = Object.values(defectos).reduce(
-        (sum: number, val: unknown) => sum + (Number(val) || 0),
-        0
-    );
+    analyses.forEach(doc => {
+        // Si tiene array de análisis (nueva estructura)
+        if (doc.analyses && doc.analyses.length > 0) {
+            doc.analyses.forEach(analysis => {
+                flattened.push({
+                    docId: doc.id,
+                    createdAt: doc.createdAt,
+                    shift: doc.shift,
+                    productType: doc.productType,
+                    lote: doc.lote,
+                    codigo: doc.codigo,
+                    talla: doc.talla || '-',
+                    analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
+                    observations: analysis.observations || doc.observations || '-',
 
-    return {
-        hora: new Date(analysis.createdAt).toLocaleTimeString('es-EC', {
-            hour: '2-digit',
-            minute: '2-digit'
-        }),
-        turno: analysis.shift === 'DIA' ? 'Día' : 'Noche',
-        producto: PRODUCT_TYPE_LABELS[analysis.productType] || analysis.productType,
-        lote: analysis.lote,
-        codigo: analysis.codigo,
-        talla: analysis.talla || '-',
-        colorAnalista: ANALYST_COLOR_LABELS[analysis.analystColor] || analysis.analystColor,
-        pBruto: core.pesoBruto?.valor || '-',
-        pCong: core.pesoCongelado?.valor || '-',
-        pNeto: core.pesoNeto?.valor || '-',
-        conteo: core.conteo || '-',
-        uGrandes: core.uniformidad?.grandes?.valor || '-',
-        uPequenos: core.uniformidad?.pequenos?.valor || '-',
-        defectos,
-        totalDefectos,
-        obs: analysis.observations || '-',
-        pesosBrutos: core.pesosBrutos || []
-    };
+                    numero: analysis.numero,
+                    pesoBruto: analysis.pesoBruto?.valor,
+                    pesoCongelado: analysis.pesoCongelado?.valor,
+                    pesoNeto: analysis.pesoNeto?.valor,
+                    conteo: analysis.conteo,
+                    uniformidadGrandes: analysis.uniformidad?.grandes?.valor,
+                    uniformidadPequenos: analysis.uniformidad?.pequenos?.valor,
+                    defectos: analysis.defectos || {},
+                    totalDefectos: Object.values(analysis.defectos || {}).reduce((sum, val) => sum + (Number(val) || 0), 0),
+                    pesosBrutos: analysis.pesosBrutos?.map(p => p.peso) || []
+                });
+            });
+        } else {
+            // Soporte Legacy (estructura plana antigua)
+            const legacy = doc as any;
+            flattened.push({
+                docId: doc.id,
+                createdAt: doc.createdAt,
+                shift: doc.shift,
+                productType: doc.productType,
+                lote: doc.lote,
+                codigo: doc.codigo,
+                talla: doc.talla || '-',
+                analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
+                observations: doc.observations || '-',
+
+                numero: 1,
+                pesoBruto: legacy.pesoBruto?.valor,
+                pesoCongelado: legacy.pesoCongelado?.valor,
+                pesoNeto: legacy.pesoNeto?.valor,
+                conteo: legacy.conteo,
+                uniformidadGrandes: legacy.uniformidad?.grandes?.valor,
+                uniformidadPequenos: legacy.uniformidad?.pequenos?.valor,
+                defectos: legacy.defectos || {},
+                totalDefectos: Object.values(legacy.defectos || {}).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0),
+                pesosBrutos: legacy.pesosBrutos?.map((p: any) => p.peso) || []
+            });
+        }
+    });
+
+    return flattened;
 };
 
 // ============================================
 // CREAR HOJA DE CONSOLIDADO
 // ============================================
 
-const createConsolidatedSheet = (workbook: ExcelJS.Workbook, analyses: QualityAnalysis[], date: string, shift: ReportShift) => {
+const createConsolidatedSheet = (workbook: ExcelJS.Workbook, analyses: FlattenedAnalysis[], date: string, shift: ReportShift) => {
     const worksheet = workbook.addWorksheet('Consolidado');
 
     // Título
@@ -132,7 +185,7 @@ const createConsolidatedSheet = (workbook: ExcelJS.Workbook, analyses: QualityAn
     headerRow.alignment = STYLES.centerAlign;
 
     // Agrupar análisis por tipo de producto y turno
-    const groupedAnalyses: Record<string, QualityAnalysis[]> = {};
+    const groupedAnalyses: Record<string, FlattenedAnalysis[]> = {};
 
     analyses.forEach(analysis => {
         const key = `${analysis.productType}-${analysis.shift}`;
@@ -150,20 +203,9 @@ const createConsolidatedSheet = (workbook: ExcelJS.Workbook, analyses: QualityAn
         const [productType, shiftType] = key.split('-');
         const group = groupedAnalyses[key];
 
-        const totalPesoBruto = group.reduce((sum, a) => {
-            const data = getAnalysisData(a);
-            return sum + (typeof data.pBruto === 'number' ? data.pBruto : 0);
-        }, 0);
-
-        const totalPesoNeto = group.reduce((sum, a) => {
-            const data = getAnalysisData(a);
-            return sum + (typeof data.pNeto === 'number' ? data.pNeto : 0);
-        }, 0);
-
-        const totalDefectos = group.reduce((sum, a) => {
-            const data = getAnalysisData(a);
-            return sum + data.totalDefectos;
-        }, 0);
+        const totalPesoBruto = group.reduce((sum, a) => sum + (a.pesoBruto || 0), 0);
+        const totalPesoNeto = group.reduce((sum, a) => sum + (a.pesoNeto || 0), 0);
+        const totalDefectos = group.reduce((sum, a) => sum + a.totalDefectos, 0);
 
         const cantidad = group.length;
         totalGeneral += cantidad;
@@ -233,7 +275,7 @@ const createConsolidatedSheet = (workbook: ExcelJS.Workbook, analyses: QualityAn
 
 const createStandardProductSheet = (
     workbook: ExcelJS.Workbook,
-    analyses: QualityAnalysis[],
+    analyses: FlattenedAnalysis[],
     productType: ProductType,
     date: string
 ) => {
@@ -250,7 +292,7 @@ const createStandardProductSheet = (
     }
 
     // Título
-    const headerColSpan = 13 + defectosList.length;
+    const headerColSpan = 14 + defectosList.length; // +1 por columna #
     worksheet.mergeCells(1, 1, 1, headerColSpan);
     const titleCell = worksheet.getCell(1, 1);
     titleCell.value = `Análisis de ${PRODUCT_TYPE_LABELS[productType]} - ${date}`;
@@ -268,6 +310,7 @@ const createStandardProductSheet = (
         'Código',
         'Talla',
         'Color Analista',
+        '#', // Número de análisis
         'Peso Bruto',
         'Peso Congelado',
         'Peso Neto',
@@ -300,28 +343,27 @@ const createStandardProductSheet = (
             sepRow.fill = currentShift === 'DIA' ? STYLES.dayFill : STYLES.nightFill;
 
             // Filas de datos
-            shiftAnalyses.forEach(analysis => {
-                const d = getAnalysisData(analysis);
-
+            shiftAnalyses.forEach(d => {
                 // Valores de defectos específicos
                 const defectosValues = defectosList.map(defecto => d.defectos[defecto] || 0);
 
                 const row = worksheet.addRow([
-                    d.hora,
-                    d.turno,
+                    new Date(d.createdAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
+                    d.shift === 'DIA' ? 'Día' : 'Noche',
                     d.lote,
                     d.codigo,
                     d.talla,
-                    d.colorAnalista,
-                    d.pBruto,
-                    d.pCong,
-                    d.pNeto,
-                    d.conteo,
-                    d.uGrandes,
-                    d.uPequenos,
+                    d.analystColor,
+                    d.numero, // Número de análisis
+                    d.pesoBruto || '-',
+                    d.pesoCongelado || '-',
+                    d.pesoNeto || '-',
+                    d.conteo || '-',
+                    d.uniformidadGrandes || '-',
+                    d.uniformidadPequenos || '-',
                     d.totalDefectos,
                     ...defectosValues,
-                    d.obs
+                    d.observations
                 ]);
                 row.alignment = { vertical: 'middle' };
             });
@@ -338,6 +380,7 @@ const createStandardProductSheet = (
         { width: 12 },  // Código
         { width: 10 },  // Talla
         { width: 15 },  // Color Analista
+        { width: 5 },   // #
         { width: 12 },  // Peso Bruto
         { width: 14 },  // Peso Congelado
         { width: 12 },  // Peso Neto
@@ -365,13 +408,13 @@ const createStandardProductSheet = (
 
 const createControlPesosSheet = (
     workbook: ExcelJS.Workbook,
-    analyses: QualityAnalysis[],
+    analyses: FlattenedAnalysis[],
     date: string
 ) => {
     const worksheet = workbook.addWorksheet('Control de Pesos Brutos');
 
     const maxPesos = 20; // Hasta 20 pesos brutos
-    const headerColSpan = 9 + maxPesos;
+    const headerColSpan = 10 + maxPesos; // +1 por columna #
 
     // Título
     worksheet.mergeCells(1, 1, 1, headerColSpan);
@@ -391,6 +434,7 @@ const createControlPesosSheet = (
         'Código',
         'Talla',
         'Color Analista',
+        '#',
         ...Array.from({ length: maxPesos }, (_, i) => `Peso ${i + 1}`),
         'Promedio',
         'Observaciones'
@@ -417,11 +461,9 @@ const createControlPesosSheet = (
             sepRow.fill = currentShift === 'DIA' ? STYLES.dayFill : STYLES.nightFill;
 
             // Filas de datos
-            shiftAnalyses.forEach(analysis => {
-                const d = getAnalysisData(analysis);
-
+            shiftAnalyses.forEach(d => {
                 // Obtener todos los pesos brutos
-                const pesos = d.pesosBrutos.map(p => p.peso);
+                const pesos = d.pesosBrutos;
                 const promedio = pesos.length > 0
                     ? (pesos.reduce((sum, p) => sum + p, 0) / pesos.length).toFixed(2)
                     : '-';
@@ -432,15 +474,16 @@ const createControlPesosSheet = (
                 );
 
                 const row = worksheet.addRow([
-                    d.hora,
-                    d.turno,
+                    new Date(d.createdAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
+                    d.shift === 'DIA' ? 'Día' : 'Noche',
                     d.lote,
                     d.codigo,
                     d.talla,
-                    d.colorAnalista,
+                    d.analystColor,
+                    d.numero,
                     ...pesosArray,
                     promedio,
-                    d.obs
+                    d.observations
                 ]);
                 row.alignment = { vertical: 'middle' };
             });
@@ -457,6 +500,7 @@ const createControlPesosSheet = (
         { width: 12 },  // Código
         { width: 10 },  // Talla
         { width: 15 },  // Color Analista
+        { width: 5 },   // #
     ];
 
     const pesosWidths = Array.from({ length: maxPesos }, () => ({ width: 10 }));
@@ -482,24 +526,27 @@ export const generateDailyReport = async (
 ): Promise<Blob> => {
     const workbook = new ExcelJS.Workbook();
 
-    // 1. Crear hoja de consolidado
-    createConsolidatedSheet(workbook, analyses, date, shift);
+    // 1. Aplanar análisis (convertir documentos en filas individuales)
+    const flattenedAnalyses = flattenAnalyses(analyses);
 
-    // 2. Agrupar análisis por tipo de producto
-    const analysesByType: Record<ProductType, QualityAnalysis[]> = {
+    // 2. Crear hoja de consolidado
+    createConsolidatedSheet(workbook, flattenedAnalyses, date, shift);
+
+    // 3. Agrupar análisis por tipo de producto
+    const analysesByType: Record<ProductType, FlattenedAnalysis[]> = {
         ENTERO: [],
         COLA: [],
         VALOR_AGREGADO: [],
         CONTROL_PESOS: []
     };
 
-    analyses.forEach(analysis => {
+    flattenedAnalyses.forEach(analysis => {
         if (analysesByType[analysis.productType]) {
             analysesByType[analysis.productType].push(analysis);
         }
     });
 
-    // 3. Crear hojas para cada tipo de producto que tenga datos
+    // 4. Crear hojas para cada tipo de producto que tenga datos
     if (analysesByType.ENTERO.length > 0) {
         createStandardProductSheet(workbook, analysesByType.ENTERO, 'ENTERO', date);
     }
@@ -516,7 +563,7 @@ export const generateDailyReport = async (
         createControlPesosSheet(workbook, analysesByType.CONTROL_PESOS, date);
     }
 
-    // 4. Generar buffer y blob
+    // 5. Generar buffer y blob
     const buffer = await workbook.xlsx.writeBuffer();
     return new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
