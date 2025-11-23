@@ -296,48 +296,73 @@ export const getAnalysesByShift = async (
   }
 
   try {
-    // Construir rango de fechas basado en el turno
-    // Asumimos que la fecha viene en formato YYYY-MM-DD
-    const start = new Date(`${date}T00:00:00`);
-    const end = new Date(`${date}T00:00:00`);
+    // ESTRATEGIA DUAL:
+    // 1. Buscar por Rango de Tiempo (createdAt) - Para capturar análisis de madrugada con fecha del día siguiente
+    // 2. Buscar por Coincidencia Explícita (date + shift) - Para capturar análisis asignados manualmente
+
+    // --- QUERY 1: Rango de Tiempo ---
+    // Usamos 7:10 y 19:10 para coincidir con la lógica de getWorkShift en utils.ts
+    const [year, month, day] = date.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
+    const end = new Date(year, month - 1, day);
 
     if (shift === 'DIA') {
-      // Turno Día: 07:00 - 19:00 del mismo día
-      start.setHours(7, 0, 0, 0);
-      end.setHours(19, 0, 0, 0);
+      // Turno Día: 07:10 - 19:10
+      start.setHours(7, 10, 0, 0);
+      end.setHours(19, 10, 0, 0);
     } else {
-      // Turno Noche: 19:00 del día actual - 07:00 del día siguiente
-      start.setHours(19, 0, 0, 0);
+      // Turno Noche: 19:10 del día actual - 07:10 del día siguiente
+      start.setHours(19, 10, 0, 0);
       end.setDate(end.getDate() + 1);
-      end.setHours(7, 0, 0, 0);
+      end.setHours(7, 10, 0, 0);
     }
 
-    // Convertir a ISO string para comparar con createdAt (que está en ISO/UTC)
-    // IMPORTANTE: new Date() usa la zona horaria local del navegador,
-    // y toISOString() lo convierte a UTC. Esto es correcto porque
-    // createdAt se guarda como UTC.
     const startIso = start.toISOString();
     const endIso = end.toISOString();
 
-    console.log(`🔍 Buscando análisis por turno (${shift}):`, { startIso, endIso });
-
-    const q = query(
+    const qRange = query(
       collection(db, ANALYSES_COLLECTION),
       where('createdAt', '>=', startIso),
       where('createdAt', '<', endIso)
     );
 
-    const querySnapshot = await getDocs(q);
-    const analyses: QualityAnalysis[] = [];
+    // --- QUERY 2: Coincidencia Explícita ---
+    const qExplicit = query(
+      collection(db, ANALYSES_COLLECTION),
+      where('date', '==', date),
+      where('shift', '==', shift)
+    );
 
-    querySnapshot.forEach((doc) => {
-      analyses.push(doc.data() as QualityAnalysis);
+    // Ejecutar ambas consultas en paralelo
+    const [snapshotRange, snapshotExplicit] = await Promise.all([
+      getDocs(qRange),
+      getDocs(qExplicit)
+    ]);
+
+    // Combinar y deduplicar resultados
+    const analysesMap = new Map<string, QualityAnalysis>();
+
+    snapshotRange.forEach((doc) => {
+      const data = doc.data() as QualityAnalysis;
+      analysesMap.set(data.id, data);
     });
+
+    snapshotExplicit.forEach((doc) => {
+      const data = doc.data() as QualityAnalysis;
+      // Solo agregar si no existe ya (aunque el Map lo maneja, es bueno ser explícito)
+      if (!analysesMap.has(data.id)) {
+        analysesMap.set(data.id, data);
+      }
+    });
+
+    const analyses = Array.from(analysesMap.values());
 
     // Ordenar en memoria por createdAt (más recientes primero)
     analyses.sort((a, b) => {
       return getTimestampMillis(b.createdAt) - getTimestampMillis(a.createdAt);
     });
+
+    console.log(`📊 Reporte ${date} ${shift}: ${analyses.length} análisis encontrados (Rango: ${snapshotRange.size}, Explícito: ${snapshotExplicit.size})`);
 
     return analyses;
   } catch (error) {
