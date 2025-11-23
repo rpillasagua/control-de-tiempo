@@ -156,6 +156,8 @@ class GoogleDriveService {
    */
   async createFolder(folderName: string, parentFolderId?: string): Promise<string> {
     try {
+      logger.log(`📁 Intentando crear carpeta: "${folderName}" en parent: ${parentFolderId || this.config.rootFolderId}`);
+
       const metadata = {
         name: folderName,
         mimeType: 'application/vnd.google-apps.folder',
@@ -171,10 +173,22 @@ class GoogleDriveService {
         body: JSON.stringify(metadata)
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('❌ Error HTTP al crear carpeta:', response.status, errorData);
+        throw new Error(`Error creating folder "${folderName}": ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+      }
+
       const data: GoogleDriveFile = await response.json();
+
+      if (!data.id) {
+        throw new Error(`No se recibió ID de carpeta para "${folderName}"`);
+      }
+
+      logger.log(`✅ Carpeta creada exitosamente: "${folderName}" (ID: ${data.id})`);
       return data.id;
     } catch (error) {
-      logger.error('Error creating folder:', error);
+      logger.error(`❌ Error creando carpeta "${folderName}":`, error);
       throw error;
     }
   }
