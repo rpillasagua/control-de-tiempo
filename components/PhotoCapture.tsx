@@ -27,7 +27,13 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
+  // Función para generar URLs alternativas de Google Drive
   const getAlternativeDriveUrl = (currentUrl: string): string | null => {
+    // 1. Check for custom x-file-id parameter
+    const customMatch = currentUrl.match(/[?&]x-file-id=([^&]+)/);
+    if (customMatch) return `https://drive.google.com/uc?id=${customMatch[1]}&export=download`;
+
+    // 2. Check for standard id parameter
     const fileIdMatch = currentUrl.match(/[?&]id=([^&]+)/);
     if (!fileIdMatch) return null;
 
@@ -197,7 +203,10 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                   }
 
                   // Si es una URL de Google Drive, intentar diferentes estrategias de recuperación
-                  if (photoUrl && photoUrl.includes('drive.google.com') && retryCount < 2) {
+                  // Detectar si es una URL de Drive (dominio o parámetro x-file-id)
+                  const isDriveUrl = photoUrl && (photoUrl.includes('drive.google.com') || photoUrl.includes('x-file-id'));
+
+                  if (isDriveUrl && retryCount < 2) {
                     setRetryCount(prev => prev + 1);
                     console.log(`🔄 Intento ${retryCount + 1} de recuperación para Google Drive`);
 
@@ -230,11 +239,17 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                       }
 
                       // Intentar refrescar permisos
-                      const fileIdMatch = photoUrl ? photoUrl.match(/[?&]id=([^&]+)/) : null;
-                      if (fileIdMatch) {
-                        console.warn('Intentando refrescar permisos para archivo:', fileIdMatch[1]);
+                      let fileId = null;
+                      const customMatch = photoUrl ? photoUrl.match(/[?&]x-file-id=([^&]+)/) : null;
+                      const idMatch = photoUrl ? photoUrl.match(/[?&]id=([^&]+)/) : null;
+
+                      if (customMatch) fileId = customMatch[1];
+                      else if (idMatch) fileId = idMatch[1];
+
+                      if (fileId) {
+                        console.warn('Intentando refrescar permisos para archivo:', fileId);
                         try {
-                          await googleDriveService.makeFilePublic(fileIdMatch[1]);
+                          await googleDriveService.makeFilePublic(fileId);
                           console.log('✅ Permisos refrescados exitosamente');
 
                           // Reintentar con la URL original después de refrescar permisos
@@ -267,7 +282,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                       setIsLoading(false);
                       setIsRetrying(false);
                     }
-                  } else if (photoUrl && photoUrl.includes('drive.google.com') && retryCount >= 2) {
+                  } else if (isDriveUrl && retryCount >= 2) {
                     // Máximo de reintentos alcanzado
                     console.warn('⚠️ Máximo de reintentos alcanzado para Google Drive');
                     setErrorType('drive_permissions');
