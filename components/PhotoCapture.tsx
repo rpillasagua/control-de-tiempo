@@ -319,36 +319,27 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         ) : (
           <div className="flex items-center gap-2 w-full">
             {imageError ? (
-              <div className="flex flex-col items-center gap-3 w-full p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                <div className="flex items-center gap-2 text-red-400">
-                  <ImageOff className="w-5 h-5" />
-                  <span className="text-sm font-bold">
+              <div className="flex items-center gap-3 w-full p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <div className="flex items-center gap-2 text-red-400 flex-1">
+                  <ImageOff className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs font-medium">
                     {errorType === 'blob'
-                      ? 'Imagen temporal expirada'
+                      ? '⏱️ Sesión expirada'
                       : errorType === 'drive_auth'
-                        ? 'Error de autenticación'
+                        ? '🔐 Sin autenticación'
                         : errorType === 'drive_permissions'
-                          ? 'Error de permisos'
-                          : 'Error al cargar imagen'}
+                          ? '⚠️ Sin permisos'
+                          : '❌ Error de carga'}
                   </span>
                 </div>
-                <div className="text-xs text-gray-400 text-center max-w-xs">
-                  {errorType === 'blob'
-                    ? 'Esta imagen temporal ha expirado. Necesitas volver a tomar la foto.'
-                    : errorType === 'drive_auth'
-                      ? 'Tu sesión de Google ha expirado. Inicia sesión nuevamente para ver las fotos.'
-                      : errorType === 'drive_permissions'
-                        ? 'La imagen no se puede cargar. Puede que haya un problema con los permisos o la imagen haya sido eliminada.'
-                        : 'La imagen puede estar dañada o no disponible'}
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                <div className="flex gap-2">
                   {errorType === 'blob' ? (
                     <button
                       type="button"
                       onClick={handleCameraClick}
-                      className="text-xs font-bold bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg text-white flex-1 transition-colors shadow-lg"
+                      className="text-xs font-medium bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-white transition-colors"
                     >
-                      Tomar nueva foto
+                      Retomar
                     </button>
                   ) : errorType === 'drive_auth' ? (
                     <button
@@ -356,10 +347,9 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                       onClick={(e) => {
                         e.stopPropagation();
                         console.log(`🔄 Reintentando cargar imagen: ${label}`);
-                        setImageError(false); // Reset error state
-                        setErrorType('unknown'); // Reset error type
-                        setIsLoading(true); // Show loading
-                        // Force reload by updating the src
+                        setImageError(false);
+                        setErrorType('unknown');
+                        setIsLoading(true);
                         setTimeout(() => {
                           const img = document.querySelector(`img[alt="${label}"]`) as HTMLImageElement;
                           if (img && photoUrl) {
@@ -370,24 +360,20 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
                           }
                         }, 100);
                       }}
-                      className="text-xs font-bold bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg text-white flex-1 transition-colors shadow-lg"
+                      className="text-xs font-medium bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-white transition-colors"
                     >
-                      Reintentar carga
+                      Reintentar
                     </button>
-                  ) : (
-                    <div className="text-xs text-center py-2 text-gray-500 italic">
-                      No se puede recuperar automáticamente
-                    </div>
-                  )}
+                  ) : null}
                   {photoUrl && photoUrl.includes('drive.google.com') && (
                     <a
                       href={photoUrl.replace('export=download', 'view').replace('thumbnail', 'view')}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-bold bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg text-white flex-1 transition-colors shadow-lg text-center flex items-center justify-center gap-2"
+                      className="text-xs font-medium bg-gray-600 hover:bg-gray-700 px-3 py-1.5 rounded-lg text-white transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span>Ver en Drive</span>
+                      Ver Drive
                     </a>
                   )}
                 </div>
