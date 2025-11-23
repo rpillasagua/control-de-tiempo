@@ -138,12 +138,74 @@ export default function NewMultiAnalysisPageContent() {
     const [masterInfo, setMasterInfo] = useState('');
     const [codeValidationError, setCodeValidationError] = useState<string | null>(null);
 
+    // Helper para extraer todas las URLs de fotos de un análisis
+    const extractPhotoUrlsFromAnalysis = (analysis: Analysis): string[] => {
+        const urls: string[] = [];
+
+        // Fotos de pesos
+        if (analysis.pesoBruto?.fotoUrl) urls.push(analysis.pesoBruto.fotoUrl);
+        if (analysis.pesoCongelado?.fotoUrl) urls.push(analysis.pesoCongelado.fotoUrl);
+        if (analysis.pesoNeto?.fotoUrl) urls.push(analysis.pesoNeto.fotoUrl);
+
+        // Fotos de uniformidad
+        if (analysis.uniformidad?.grandes?.fotoUrl) urls.push(analysis.uniformidad.grandes.fotoUrl);
+        if (analysis.uniformidad?.pequenos?.fotoUrl) urls.push(analysis.uniformidad.pequenos.fotoUrl);
+
+        // Foto de calidad
+        if (analysis.fotoCalidad) urls.push(analysis.fotoCalidad);
+
+        // Fotos de control de pesos brutos
+        if (analysis.pesosBrutos) {
+            analysis.pesosBrutos.forEach(peso => {
+                if (peso.fotoUrl) urls.push(peso.fotoUrl);
+            });
+        }
+
+        return urls;
+    };
+
     const handleDeleteAnalysis = async () => {
         console.log('🗑️ handleDeleteAnalysis called', { analysisId, totalAnalyses: analyses.length, activeIndex: activeAnalysisIndex });
 
         // Caso 1: Si hay múltiples análisis (tabs), solo eliminar el activo
         if (analyses.length > 1) {
             console.log('🗑️ Multiple analyses detected, removing active tab only');
+
+            // Obtener el análisis que se va a eliminar
+            const analysisToDelete = analyses[activeAnalysisIndex];
+
+            // Extraer todas las URLs de fotos del análisis
+            const photoUrls = extractPhotoUrlsFromAnalysis(analysisToDelete);
+
+            // Eliminar fotos de Google Drive
+            if (photoUrls.length > 0) {
+                try {
+                    const { googleDriveService } = await import('@/lib/googleDriveService');
+                    await googleDriveService.initialize();
+
+                    console.log(`🗑️ Eliminando ${photoUrls.length} fotos del análisis...`);
+
+                    for (const url of photoUrls) {
+                        if (url && !url.startsWith('blob:')) {
+                            try {
+                                const fileId = extractFileIdFromUrl(url);
+                                if (fileId) {
+                                    await googleDriveService.deleteFile(fileId);
+                                    console.log(`✅ Foto eliminada: ${fileId}`);
+                                }
+                            } catch (error) {
+                                console.warn('⚠️ No se pudo eliminar una foto:', error);
+                                // Continuar con las demás fotos
+                            }
+                        }
+                    }
+
+                    console.log('✅ Fotos del análisis eliminadas de Google Drive');
+                } catch (error) {
+                    console.error('❌ Error eliminando fotos:', error);
+                    // Continuar con la eliminación del análisis aunque falle la eliminación de fotos
+                }
+            }
 
             // Eliminar el análisis activo del array
             const updatedAnalyses = analyses.filter((_, index) => index !== activeAnalysisIndex);
