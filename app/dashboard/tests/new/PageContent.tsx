@@ -921,37 +921,65 @@ export default function NewMultiAnalysisPageContent() {
                     </div>
 
                     {/* Información del Producto */}
-                    {(clientName || brandName || masterInfo) && (
+                    {(clientName || brandName || masterInfo || codigo || lote || talla) && (
                         <div className="bg-white border-l-4 border-blue-600 shadow-sm rounded-sm p-3" style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <div className="flex flex-wrap items-center" style={{ margin: 0, padding: 0, rowGap: 0 }}>
+                            <div className="grid grid-cols-3 gap-x-3 gap-y-2" style={{ margin: 0, padding: 0 }}>
+                                {/* Código */}
+                                <div style={{ margin: 0, padding: 0 }}>
+                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>CÓDIGO</div>
+                                    <div className="text-sm font-black text-slate-800" style={{ lineHeight: 1 }}>
+                                        {codigo}
+                                    </div>
+                                </div>
+
+                                {/* Lote */}
+                                <div style={{ margin: 0, padding: 0 }}>
+                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>LOTE</div>
+                                    <div className="text-sm font-black text-slate-800" style={{ lineHeight: 1 }}>
+                                        {lote}
+                                    </div>
+                                </div>
+
+                                {/* Talla */}
+                                {talla && (
+                                    <div style={{ margin: 0, padding: 0 }}>
+                                        <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>TALLA</div>
+                                        <div className="text-sm font-black text-slate-800" style={{ lineHeight: 1 }}>
+                                            {talla}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Separator */}
+                                <div className="col-span-3 my-1 border-t border-slate-200"></div>
+
                                 {/* Cliente */}
-                                <div style={{ margin: 0, padding: 0, width: '40%', borderRight: '1px solid #e2e8f0', paddingRight: '8px' }}>
+                                <div style={{ margin: 0, padding: 0 }}>
                                     <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>CLIENTE</div>
-                                    <div className="text-sm font-black text-slate-800 truncate" style={{ lineHeight: 1 }}>
+                                    <div className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
                                         {clientName}
                                     </div>
                                 </div>
 
                                 {/* Marca */}
-                                <div style={{ margin: 0, padding: 0, width: '60%', paddingLeft: '12px' }}>
+                                <div className="col-span-2" style={{ margin: 0, padding: 0 }}>
                                     <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>MARCA</div>
-                                    <div className="text-sm font-black text-slate-800 truncate" style={{ lineHeight: 1 }}>
+                                    <div className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
                                         {brandName}
                                     </div>
                                 </div>
 
-                                {/* Separator */}
-                                <div className="w-full my-2 border-t border-slate-100"></div>
-
                                 {/* Presentación */}
-                                <div style={{ margin: 0, padding: 0, width: '100%' }}>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1 }}>PRESENTACIÓN:</span>
-                                        <span className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
-                                            {masterInfo}
-                                        </span>
+                                {masterInfo && (
+                                    <div className="col-span-3" style={{ margin: 0, padding: 0, marginTop: '4px' }}>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1 }}>PRESENTACIÓN:</span>
+                                            <span className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
+                                                {masterInfo}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     )}

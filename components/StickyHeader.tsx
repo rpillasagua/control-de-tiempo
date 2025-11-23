@@ -70,28 +70,13 @@ export default function StickyHeader({
         <div className="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-[#efefef] shadow-sm transition-all">
             <div className="px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
-                    {/* Left side - Key info */}
-                    <div className="flex items-center gap-4 text-xs font-mono text-[#8e8e8e] flex-wrap">
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-[#262626]">LOTE:</span>
-                            <span className="px-2 py-0.5 bg-gray-100 rounded text-[#262626] font-bold">{lote}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-[#262626]">COD:</span>
-                            <span className="px-2 py-0.5 bg-gray-100 rounded text-[#262626] font-bold">{codigo}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-[#262626]">TALLA:</span>
-                            <span className="px-2 py-0.5 bg-gray-100 rounded text-[#262626] font-bold">{talla}</span>
-                        </div>
-                    </div>
-
-                    {/* Right side - Analysis number & save state */}
+                    {/* Left side - Save state */}
                     <div className="flex items-center gap-4">
                         {getSaveStateDisplay()}
+                    </div>
 
+                    {/* Right side - Analysis number */}
+                    <div className="flex items-center gap-4">
                         <div
                             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
                             style={{ backgroundColor: colorHex }}
