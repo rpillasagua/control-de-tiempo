@@ -103,7 +103,9 @@ class GoogleDriveService {
    */
   private async findFolderInRoot(folderName: string): Promise<string | null> {
     try {
-      const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+      // Buscamos la carpeta por nombre y que no esté en la papelera.
+      // Eliminamos 'root' in parents para ser más flexibles y encontrarla si ya existe.
+      const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,

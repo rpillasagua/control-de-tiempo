@@ -6,6 +6,7 @@ import { User, LogOut, Loader2 } from 'lucide-react';
 import { googleAuthService, UserProfile } from '@/lib/googleAuthService';
 import GoogleLoginButton from '@/components/GoogleLoginButton';
 import AnalysisDashboard from '@/components/AnalysisDashboard';
+import DriveDiagnostic from '@/components/DriveDiagnostic';
 import { QualityAnalysis } from '@/lib/types';
 import { logger } from '@/lib/logger';
 
@@ -220,24 +221,12 @@ export default function Home() {
 
   if (loading) return <LoadingScreen />;
 
-  if (!isAuthenticated || !user) {
-    return <LoginPage onLoginTrigger={login} />;
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 pb-10">
-      <AppHeader user={user} onLogout={logout} />
-
-      <main className="animate-fade-in mt-6">
-        {loadingAnalyses ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
-            <p className="text-slate-400 text-sm font-medium">Obteniendo registros recientes...</p>
-          </div>
+          </div >
         ) : (
-          <AnalysisDashboard initialAnalyses={initialAnalyses} initialLastDoc={initialLastDoc} />
-        )}
-      </main>
-    </div>
+    <AnalysisDashboard initialAnalyses={initialAnalyses} initialLastDoc={initialLastDoc} />
+  )
+}
+      </main >
+    </div >
   );
 }
