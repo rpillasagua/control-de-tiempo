@@ -143,7 +143,7 @@ export default function NewMultiAnalysisPageContent() {
                 codigo,
                 lote,
                 talla,
-                tipoProducto: productType!,
+                productType: productType!,
                 status,
                 analystColor: analystColor!,
                 analyses: analyses.map(a => ({
