@@ -520,7 +520,7 @@ export default function NewMultiAnalysisPageContent() {
             <div className="min-h-screen p-4">
                 <div className="max-w-4xl mx-auto">
                     <ProductTypeSelector
-                        selectedType={productType}
+                        selectedType={productType || undefined}
                         onSelect={(type) => setProductType(type)}
                     />
                 </div>
