@@ -1001,9 +1001,9 @@ export default function NewMultiAnalysisPageContent() {
                         )
                     }
 
-                    {/* Uniformidad (Solo Entero y Cola) */}
+                    {/* Uniformidad (Entero, Cola y Valor Agregado) */}
                     {
-                        (productType === 'ENTERO' || productType === 'COLA') && (
+                        (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle>📏 Uniformidad</CardTitle>
