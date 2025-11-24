@@ -35,6 +35,28 @@ export function formatDate(date: Date = new Date()): string {
 }
 
 /**
+ * Obtiene la fecha de producción basada en el turno
+ * Si es antes de las 7:10 AM, pertenece al día anterior (Turno Noche)
+ */
+export function getProductionDate(date: Date = new Date()): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const totalMinutes = hours * 60 + minutes;
+
+  // 7:10 AM = 430 minutos
+  const dayShiftStart = 7 * 60 + 10;
+
+  // Si es antes del inicio del turno día (madrugada), restamos un día
+  if (totalMinutes < dayShiftStart) {
+    const previousDay = new Date(date);
+    previousDay.setDate(date.getDate() - 1);
+    return formatDate(previousDay);
+  }
+
+  return formatDate(date);
+}
+
+/**
  * Formatea la hora en formato HH:mm
  */
 export function formatTime(date: Date = new Date()): string {

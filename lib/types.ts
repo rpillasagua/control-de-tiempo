@@ -244,6 +244,8 @@ export interface Analysis {
   // Pesos con fotos opcionales
   pesoBruto?: PesoConFoto;
   pesoCongelado?: PesoConFoto;
+  pesoConGlaseo?: PesoConFoto;
+  pesoSinGlaseo?: PesoConFoto;
   pesoNeto?: PesoConFoto;
 
   // Control de pesos brutos (múltiples registros)

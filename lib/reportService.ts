@@ -21,6 +21,8 @@ interface FlattenedAnalysis {
     numero: number;
     pesoBruto?: number;
     pesoCongelado?: number;
+    pesoConGlaseo?: number;
+    pesoSinGlaseo?: number;
     pesoNeto?: number;
     conteo?: number;
     uniformidadGrandes?: number;
@@ -103,6 +105,8 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     numero: analysis.numero,
                     pesoBruto: analysis.pesoBruto?.valor,
                     pesoCongelado: analysis.pesoCongelado?.valor,
+                    pesoConGlaseo: analysis.pesoConGlaseo?.valor,
+                    pesoSinGlaseo: analysis.pesoSinGlaseo?.valor,
                     pesoNeto: analysis.pesoNeto?.valor,
                     conteo: analysis.conteo,
                     uniformidadGrandes: analysis.uniformidad?.grandes?.valor,
@@ -313,6 +317,7 @@ const createStandardProductSheet = (
         '#', // Número de análisis
         'Peso Bruto',
         'Peso Congelado',
+        ...(productType === 'VALOR_AGREGADO' ? ['Peso con Glaseo', 'Peso sin Glaseo'] : []),
         'Peso Neto',
         'Conteo',
         'Uniformidad Grandes',
@@ -357,6 +362,7 @@ const createStandardProductSheet = (
                     d.numero, // Número de análisis
                     d.pesoBruto || '-',
                     d.pesoCongelado || '-',
+                    ...(productType === 'VALOR_AGREGADO' ? [d.pesoConGlaseo || '-', d.pesoSinGlaseo || '-'] : []),
                     d.pesoNeto || '-',
                     d.conteo || '-',
                     d.uniformidadGrandes || '-',
@@ -383,6 +389,7 @@ const createStandardProductSheet = (
         { width: 5 },   // #
         { width: 12 },  // Peso Bruto
         { width: 14 },  // Peso Congelado
+        ...(productType === 'VALOR_AGREGADO' ? [{ width: 14 }, { width: 14 }] : []), // Pesos Glaseo
         { width: 12 },  // Peso Neto
         { width: 10 },  // Conteo
         { width: 15 },  // Uniformidad Grandes
