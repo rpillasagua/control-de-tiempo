@@ -396,7 +396,8 @@ class GoogleAuthService {
       logger.log('🔄 Refrescando token automáticamente...');
 
       if (this.tokenClient) {
-        this.tokenClient.requestAccessToken();
+        // CRÍTICO: usar prompt: 'none' para refresh silencioso sin popup
+        this.tokenClient.requestAccessToken({ prompt: 'none' });
       }
     }, delayMs);
   }
