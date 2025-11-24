@@ -120,15 +120,42 @@ export default function NewMultiAnalysisPageContent() {
 
     // Load initial data effect
     useEffect(() => {
-        const id = searchParams.get('id');
-        if (id) {
-            // Logic to load existing analysis would go here
-            // For now, just stop loading
+        const loadAnalysis = async () => {
+            const id = searchParams.get('id');
+            if (id) {
+                try {
+                    const { getAnalysisById } = await import('@/lib/analysisService');
+                    const data = await getAnalysisById(id);
+
+                    if (data) {
+                        setAnalysisId(data.id);
+                        setProductType(data.productType);
+                        setCodigo(data.codigo);
+                        setLote(data.lote);
+                        setTalla(data.talla || '');
+                        setAnalystColor(data.analystColor);
+                        setAnalyses(data.analyses);
+                        setGlobalPesoBruto(data.globalPesoBruto || {});
+                        setBasicsCompleted(true);
+
+                        // Si hay análisis, activar el primero
+                        if (data.analyses.length > 0) {
+                            setActiveAnalysisIndex(0);
+                        }
+                    } else {
+                        toast.error('Análisis no encontrado');
+                        router.push('/');
+                    }
+                } catch (error) {
+                    console.error('Error loading analysis:', error);
+                    toast.error('Error al cargar el análisis');
+                }
+            }
             setIsLoading(false);
-        } else {
-            setIsLoading(false);
-        }
-    }, [searchParams]);
+        };
+
+        loadAnalysis();
+    }, [searchParams, router]);
 
     const saveDocument = async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
         if (!analysisId || !basicsCompleted) return;
