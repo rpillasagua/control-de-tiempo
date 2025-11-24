@@ -581,11 +581,15 @@ class GoogleDriveService {
     const customMatch = url.match(/[?&]x-file-id=([^&]+)/);
     if (customMatch) return customMatch[1];
 
-    // 2. Formato: https://drive.google.com/uc?export=view&id=FILE_ID
+    // 2. Formato googleusercontent.com: https://lh3.googleusercontent.com/d/FILE_ID=s2000
+    const googleUserContentMatch = url.match(/googleusercontent\.com\/d\/([^=?&]+)/);
+    if (googleUserContentMatch) return googleUserContentMatch[1];
+
+    // 3. Formato: https://drive.google.com/uc?export=view&id=FILE_ID
     const match = url.match(/[?&]id=([^&]+)/);
     if (match) return match[1];
 
-    // 3. Formato: https://drive.google.com/file/d/FILE_ID/view
+    // 4. Formato: https://drive.google.com/file/d/FILE_ID/view
     const match2 = url.match(/\/file\/d\/([^/]+)/);
     if (match2) return match2[1];
 
