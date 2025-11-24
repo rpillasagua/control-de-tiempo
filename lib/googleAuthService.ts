@@ -153,18 +153,35 @@ class GoogleAuthService {
             const now = Date.now();
             const timeToExpiry = expiryTime - now;
 
-            if (timeToExpiry > 0 && timeToExpiry < 3600000) { // Si expira en menos de 1 hora
-              this.scheduleTokenRefresh(timeToExpiry - 300000); // Refresh 5 min antes
+            if (timeToExpiry > 0) {
+              // Si aún es válido, programar refresh
+              const refreshDelay = Math.max(0, timeToExpiry - 300000); // 5 min antes
+              this.scheduleTokenRefresh(refreshDelay);
+            } else {
+              // Si ya expiró (pero verifyToken dijo que era válido??), refrescar ya
+              logger.warn('⚠️ Token expirado según localStorage, refrescando...');
+              this.scheduleTokenRefresh(0);
             }
           }
           return;
         } else {
-          // Solo limpiar si verifyToken devuelve explícitamente false (inválido)
-          // Si verifyToken lanzó excepción (red), no llegamos aquí (o deberíamos manejarlo en verifyToken)
-          // En la nueva implementación de verifyToken, devuelve true si hay error de red,
-          // así que si llegamos aquí es porque es REALMENTE inválido.
-          logger.warn('⚠️ Token guardado expiró o es inválido, limpiando...');
-          this.clearStoredAuth();
+          // Si verifyToken falló, NO limpiar inmediatamente.
+          // Intentar un refresh silencioso si es posible
+          logger.warn('⚠️ Token guardado parece inválido, intentando refrescar...');
+
+          // Notificar listeners con el usuario aunque el token sea dudoso
+          // para que la UI no parpadee a "Login" inmediatamente
+          this.notifyListeners();
+
+          // Intentar refrescar inmediatamente
+          // Si falla el refresh, ahí sí se limpiará o pedirá login
+          if (this.tokenClient) {
+            // Pequeño delay para asegurar inicialización
+            setTimeout(() => this.scheduleTokenRefresh(0), 1000);
+          } else {
+            // Si no hay cliente, limpiar
+            this.clearStoredAuth();
+          }
         }
       }
     } catch (error) {
@@ -211,11 +228,16 @@ class GoogleAuthService {
         localStorage.setItem(this.TOKEN_STORAGE_KEY, this.accessToken);
       }
 
+      // Configurar refresh automático basado en expires_in si viene en la respuesta
+      const expiresIn = response.expires_in || 3600; // Por defecto 1 hora
+
+      // 🔥 CRÍTICO: Guardar tiempo de expiración para persistencia
+      const expiryTime = Date.now() + expiresIn * 1000;
+      localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
+
       // Cargar información del usuario
       await this.loadUserInfo();
 
-      // Configurar refresh automático basado en expires_in si viene en la respuesta
-      const expiresIn = response.expires_in || 3600; // Por defecto 1 hora
       const refreshBeforeExpiry = 300; // 5 minutos antes de expirar
       const refreshDelay = (expiresIn - refreshBeforeExpiry) * 1000;
 
