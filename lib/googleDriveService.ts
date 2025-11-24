@@ -81,12 +81,50 @@ class GoogleDriveService {
       }
 
       // Si no, buscar o crear la carpeta "descongelado" en el drive
+      // Si no, buscar o crear la carpeta "descongelado" en el drive
       logger.log('🔍 Buscando carpeta "descongelado"...');
-      const existingFolder = await this.findFolderInRoot(this.ROOT_FOLDER_NAME);
 
-      if (existingFolder) {
-        this.rootFolderId = existingFolder;
+      // Buscar TODAS las carpetas que coincidan
+      const query = `name='${this.ROOT_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
+        { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+      );
+      const data: GoogleDriveListResponse = await response.json();
+      const folders = data.files || [];
+
+      if (folders.length > 0) {
+        // Usar la primera encontrada como principal
+        this.rootFolderId = folders[0].id;
         logger.log('✅ Carpeta "descongelado" encontrada:', this.rootFolderId);
+
+        // Si hay duplicados, intentar limpiar los vacíos
+        if (folders.length > 1) {
+          logger.warn(`⚠️ Se encontraron ${folders.length} carpetas "descongelado". Intentando limpiar duplicados vacíos...`);
+
+          for (let i = 1; i < folders.length; i++) {
+            const duplicateId = folders[i].id;
+            try {
+              // Verificar si está vacía
+              const checkQuery = `'${duplicateId}' in parents and trashed=false`;
+              const checkRes = await fetch(
+                `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(checkQuery)}&pageSize=1`,
+                { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+              );
+              const checkData = await checkRes.json();
+
+              if (!checkData.files || checkData.files.length === 0) {
+                // Está vacía, eliminarla
+                logger.log(`🗑️ Eliminando carpeta duplicada vacía: ${duplicateId}`);
+                await this.deleteFile(duplicateId);
+              } else {
+                logger.warn(`⚠️ La carpeta duplicada ${duplicateId} NO está vacía. No se eliminará automáticamente.`);
+              }
+            } catch (e) {
+              logger.error(`Error verificando/eliminando duplicado ${duplicateId}:`, e);
+            }
+          }
+        }
       } else {
         logger.log('📁 Creando carpeta "descongelado"...');
         this.rootFolderId = await this.createRootFolder();
@@ -117,7 +155,16 @@ class GoogleDriveService {
       );
 
       const data: GoogleDriveListResponse = await response.json();
-      return data.files && data.files.length > 0 ? data.files[0].id : null;
+      const data: GoogleDriveListResponse = await response.json();
+
+      if (data.files && data.files.length > 0) {
+        if (data.files.length > 1) {
+          logger.warn(`⚠️ Se encontraron ${data.files.length} carpetas raíz "descongelado". Usando la primera.`);
+        }
+        return data.files[0].id;
+      }
+
+      return null;
     } catch (error) {
       logger.error('Error buscando carpeta en raíz:', error);
       return null;
@@ -225,7 +272,16 @@ class GoogleDriveService {
       );
 
       const data: GoogleDriveListResponse = await response.json();
-      return data.files && data.files.length > 0 ? data.files[0].id : null;
+      const data: GoogleDriveListResponse = await response.json();
+
+      if (data.files && data.files.length > 0) {
+        if (data.files.length > 1) {
+          logger.warn(`⚠️ Se encontraron ${data.files.length} carpetas con el nombre "${folderName}". Usando la primera.`);
+        }
+        return data.files[0].id;
+      }
+
+      return null;
     } catch (error) {
       logger.error('Error finding folder:', error);
       return null;
