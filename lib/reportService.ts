@@ -16,6 +16,7 @@ interface FlattenedAnalysis {
     talla: string;
     analystColor: string;
     observations: string;
+    status?: 'EN_PROGRESO' | 'COMPLETADO';
 
     // Datos del análisis individual
     numero: number;
@@ -101,6 +102,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     talla: doc.talla || '-',
                     analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
                     observations: analysis.observations || doc.observations || '-',
+                    status: doc.status,
 
                     numero: analysis.numero,
                     pesoBruto: analysis.pesoBruto?.valor,
@@ -129,6 +131,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                 talla: doc.talla || '-',
                 analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
                 observations: doc.observations || '-',
+                status: doc.status,
 
                 numero: 1,
                 pesoBruto: legacy.pesoBruto?.valor,
@@ -310,6 +313,7 @@ const createStandardProductSheet = (
     const headers = [
         'Hora',
         'Turno',
+        'Estado',
         'Lote',
         'Código',
         'Talla',
@@ -355,6 +359,7 @@ const createStandardProductSheet = (
                 const row = worksheet.addRow([
                     new Date(d.createdAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
                     d.shift === 'DIA' ? 'Día' : 'Noche',
+                    d.status === 'COMPLETADO' ? '✓ Completado' : 'En Progreso',
                     d.lote,
                     d.codigo,
                     d.talla,
@@ -382,6 +387,7 @@ const createStandardProductSheet = (
     const baseWidths = [
         { width: 10 },  // Hora
         { width: 10 },  // Turno
+        { width: 14 },  // Estado
         { width: 15 },  // Lote
         { width: 12 },  // Código
         { width: 10 },  // Talla
@@ -437,6 +443,7 @@ const createControlPesosSheet = (
     const headers = [
         'Hora',
         'Turno',
+        'Estado',
         'Lote',
         'Código',
         'Talla',
@@ -483,6 +490,7 @@ const createControlPesosSheet = (
                 const row = worksheet.addRow([
                     new Date(d.createdAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
                     d.shift === 'DIA' ? 'Día' : 'Noche',
+                    d.status === 'COMPLETADO' ? '✓ Completado' : 'En Progreso',
                     d.lote,
                     d.codigo,
                     d.talla,
@@ -503,6 +511,7 @@ const createControlPesosSheet = (
     const baseWidths = [
         { width: 10 },  // Hora
         { width: 10 },  // Turno
+        { width: 14 },  // Estado
         { width: 15 },  // Lote
         { width: 12 },  // Código
         { width: 10 },  // Talla

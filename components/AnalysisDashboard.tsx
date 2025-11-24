@@ -235,7 +235,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                   top: 0,
                   bottom: 0,
                   width: '8px',
-                  backgroundColor: analysis.analystColor ? ANALYST_COLOR_HEX[analysis.analystColor] : '#3b82f6',
+                  backgroundColor: (analysis.analystColor && ANALYST_COLOR_HEX[analysis.analystColor as keyof typeof ANALYST_COLOR_HEX]) || '#3b82f6',
                   borderTopLeftRadius: '24px',
                   borderBottomLeftRadius: '24px',
                   zIndex: 10

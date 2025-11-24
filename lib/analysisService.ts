@@ -318,9 +318,15 @@ export const getAnalysesByProductionDay = async (date: string): Promise<QualityA
     );
 
     // --- QUERY 2: Coincidencia Explícita ---
+    // Agregamos límite de tiempo para evitar incluir datos históricos muy antiguos
+    const dateLimit = new Date(year, month - 1, day);
+    dateLimit.setDate(dateLimit.getDate() - 30); // 30 días antes (aumentado desde 7)
+    const dateLimitIso = dateLimit.toISOString();
+
     const qExplicit = query(
       collection(db, ANALYSES_COLLECTION),
-      where('date', '==', date)
+      where('date', '==', date),
+      where('createdAt', '>=', dateLimitIso) // Solo análisis recientes
     );
 
     // Ejecutar ambas consultas
@@ -400,10 +406,16 @@ export const getAnalysesByShift = async (
     );
 
     // --- QUERY 2: Coincidencia Explícita ---
+    // Agregamos límite de tiempo para evitar incluir datos históricos muy antiguos
+    const dateLimit = new Date(year, month - 1, day);
+    dateLimit.setDate(dateLimit.getDate() - 30); // 30 días antes (aumentado desde 7)
+    const dateLimitIso = dateLimit.toISOString();
+
     const qExplicit = query(
       collection(db, ANALYSES_COLLECTION),
       where('date', '==', date),
-      where('shift', '==', shift)
+      where('shift', '==', shift),
+      where('createdAt', '>=', dateLimitIso) // Solo análisis recientes
     );
 
     // Ejecutar ambas consultas en paralelo
