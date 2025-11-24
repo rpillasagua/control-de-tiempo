@@ -129,7 +129,9 @@ export const DEFECTOS_VALOR_AGREGADO = [
   'PEGADOS_Y_AGRUPADOS',
   'SEMI_ROSADO',
   'ROSADOS',
-  'ROJOS'
+  'ROJOS',
+  'MALTRATADO',
+  'QUEBRADOS'
 ] as const;
 
 export const DEFECTO_LABELS: Record<string, string> = {
