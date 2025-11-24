@@ -105,8 +105,8 @@ export default function NewMultiAnalysisPageContent() {
         setCodigo(data.codigo);
         setLote(data.lote);
         setTalla(data.talla);
-        setColor(data.color);
-        setAnalystColor(data.analystColor);
+        // El formulario devuelve 'color', mapearlo a 'analystColor'
+        setAnalystColor(data.color);
         setBasicsCompleted(true);
         setAnalyses([{ numero: 1 }]);
         setAnalysisId(generateId());
@@ -205,6 +205,14 @@ export default function NewMultiAnalysisPageContent() {
                 shift: originalShift || getWorkShift(now),
                 globalPesoBruto: globalPesoBruto.fotoUrl ? globalPesoBruto : undefined,
             };
+
+            // DEBUG: Ver qué color se está guardando
+            console.log('🎨 Guardando análisis con color:', {
+                originalAnalystColor,
+                analystColor,
+                finalColor: document.analystColor,
+                lote: document.lote
+            });
 
             const { validateAnalysisData, getValidationErrors } = await import('@/lib/validation');
             const result = validateAnalysisData(document);
