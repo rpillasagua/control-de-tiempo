@@ -67,7 +67,7 @@ export const QualityAnalysisSchema = z.object({
     lote: z.string().min(1, 'El lote es obligatorio'),
     codigo: z.string().min(1, 'El código es obligatorio'),
     talla: z.string().optional(),
-    analystColor: z.enum(['red', 'blue', 'green', 'yellow']),
+    analystColor: z.enum(['red', 'blue', 'green', 'yellow']).optional(),
     analyses: z.array(AnalysisItemSchema).min(1, 'Debe haber al menos un análisis'),
     createdAt: z.string(),
     updatedAt: z.string().optional(),
