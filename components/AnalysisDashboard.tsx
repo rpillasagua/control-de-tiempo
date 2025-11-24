@@ -235,7 +235,19 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                   top: 0,
                   bottom: 0,
                   width: '8px',
-                  backgroundColor: (analysis.analystColor && ANALYST_COLOR_HEX[analysis.analystColor as keyof typeof ANALYST_COLOR_HEX]) || '#3b82f6',
+                  backgroundColor: (() => {
+                    // Debug: ver qué color tiene cada análisis
+                    if (!analysis.analystColor) {
+                      console.log(`⚠️ Análisis ${analysis.lote} sin color de analista`);
+                      return '#3b82f6'; // Azul por defecto
+                    }
+                    const color = ANALYST_COLOR_HEX[analysis.analystColor as keyof typeof ANALYST_COLOR_HEX];
+                    if (!color) {
+                      console.log(`⚠️ Análisis ${analysis.lote} tiene color inválido:`, analysis.analystColor);
+                      return '#3b82f6';
+                    }
+                    return color;
+                  })(),
                   borderTopLeftRadius: '24px',
                   borderBottomLeftRadius: '24px',
                   zIndex: 10
