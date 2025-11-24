@@ -12,43 +12,22 @@ export default function GoogleLoginButton({ onLoginSuccess }: GoogleLoginButtonP
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Efecto solo para inicialización de estado de carga si es necesario
   useEffect(() => {
-    // Inicializar Google Auth
-    const init = async () => {
-      try {
-        await googleAuthService.initialize();
-
-        // Suscribirse a cambios de autenticación
-        const unsubscribe = googleAuthService.subscribe((user) => {
-          if (user) {
-            onLoginSuccess?.();
-            setIsLoading(false);
-          }
-        });
-
-        return unsubscribe;
-      } catch (error) {
-        console.error('Error inicializando Google Auth:', error);
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-
-    const cleanupPromise = init();
-    return () => {
-      cleanupPromise.then(cleanup => cleanup && cleanup());
-    };
-  }, [onLoginSuccess]);
+    setIsInitializing(false);
+  }, []);
 
   const handleLogin = async () => {
     setIsLoading(true);
     try {
       await googleAuthService.login();
-      // El estado se actualizará a través de la suscripción
+      // Si el login es exitoso, llamamos al callback
+      onLoginSuccess?.();
     } catch (error: any) {
       console.error('Error al iniciar sesión:', error);
       const errorMessage = error?.message || 'Error desconocido';
       alert(`Error al iniciar sesión con Google:\n\n${errorMessage}\n\nVerifica que la URL de Vercel esté autorizada en Google Cloud Console.`);
+    } finally {
       setIsLoading(false);
     }
   };

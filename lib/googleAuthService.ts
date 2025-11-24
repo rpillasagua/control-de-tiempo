@@ -78,7 +78,7 @@ class GoogleAuthService {
         client_id: this.config.clientId,
         scope: this.config.scopes.join(' '),
         callback: this.onTokenResponse,
-        // ux_mode: 'popup' permite refresh silencioso sin redirigir toda la página
+        // ux_mode: 'popup', // Explícitamente popup para refresh silencioso
       });
 
       // MEJORÍA: Restaurar sesión desde localStorage (persiste entre navegador restarts)
@@ -153,9 +153,12 @@ class GoogleAuthService {
             const now = Date.now();
             const timeToExpiry = expiryTime - now;
 
+            logger.log(`📊 Debug expiry: now=${now}, expiryTime=${expiryTime}, timeToExpiry=${timeToExpiry}ms (${Math.floor(timeToExpiry / 60000)} min)`);
+
             if (timeToExpiry > 0) {
               // Si aún es válido, programar refresh
               const refreshDelay = Math.max(0, timeToExpiry - 300000); // 5 min antes
+              logger.log(`⏰ Refresh programado en ${Math.floor(refreshDelay / 60000)} minutos`);
               this.scheduleTokenRefresh(refreshDelay);
             } else {
               // Si ya expiró (pero verifyToken dijo que era válido??), refrescar ya
@@ -509,6 +512,7 @@ class GoogleAuthService {
   }
 
   private notifyListeners() {
+    logger.log(`📢 Notificando a ${this.listeners.length} listeners. Usuario:`, this.user ? this.user.name : 'null');
     this.listeners.forEach(listener => listener(this.user));
   }
 }
