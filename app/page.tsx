@@ -219,14 +219,24 @@ export default function Home() {
     return () => { isMounted = false; };
   }, [isAuthenticated, user]);
 
-  if (loading) return <LoadingScreen />;
+  if (!isAuthenticated || !user) {
+    return <LoginPage onLoginTrigger={login} />;
+  }
 
-          </div >
+  return (
+    <div className="min-h-screen bg-slate-50 pb-10">
+      <AppHeader user={user} onLogout={logout} />
+
+      <main className="animate-fade-in mt-6">
+        {loadingAnalyses ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
+            <p className="text-slate-400 text-sm font-medium">Obteniendo registros recientes...</p>
+          </div>
         ) : (
-    <AnalysisDashboard initialAnalyses={initialAnalyses} initialLastDoc={initialLastDoc} />
-  )
-}
-      </main >
-    </div >
+          <AnalysisDashboard initialAnalyses={initialAnalyses} initialLastDoc={initialLastDoc} />
+        )}
+      </main>
+    </div>
   );
 }
