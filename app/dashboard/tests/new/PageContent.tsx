@@ -19,7 +19,14 @@ import AnalysisTabs from '@/components/AnalysisTabs';
 import PhotoCapture from '@/components/PhotoCapture';
 import ControlPesosBrutos from '@/components/ControlPesosBrutos';
 import DefectSelector from '@/components/DefectSelector';
-import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import dynamic from 'next/dynamic';
+import { updateAnalysisField } from '@/lib/analysisUtils';
+
+// Lazy load heavy components
+const DeleteConfirmationModal = dynamic(() => import('@/components/DeleteConfirmationModal'), {
+    loading: () => null
+});
+
 import ViewModeSelector, { ViewMode } from '@/components/ViewModeSelector';
 
 // Types and Utils
@@ -325,7 +332,6 @@ export default function NewMultiAnalysisPageContent() {
             const user = googleAuthService.getUser();
 
             // Obtener URL anterior para limpieza
-            // Usamos analyses[targetIndex] para asegurar consistencia
             const targetAnalysis = analyses[targetIndex];
             let oldUrl: string | undefined;
 
@@ -349,60 +355,8 @@ export default function NewMultiAnalysisPageContent() {
                 user?.email
             ));
 
-            // Update analysis with photo URL using targetIndex
-            if (field === 'fotoCalidad') {
-                updateAnalysisAtIndex(targetIndex, { fotoCalidad: url });
-            } else if (field.startsWith('uniformidad_')) {
-                const tipo = field.split('_')[1] as 'grandes' | 'pequenos';
-                // Necesitamos leer el estado MÁS RECIENTE del análisis para no sobrescribir otros campos de uniformidad
-                // Usamos el callback de setAnalyses dentro de updateAnalysisAtIndex o leemos de 'analyses' (que podría ser stale en closure, pero updateAnalysisAtIndex usa functional update para el array)
-                // PERO, para objetos anidados como uniformidad, necesitamos cuidado.
-                // updateAnalysisAtIndex hace merge shallow: { ...analysis, ...updates }
-                // Así que debemos pasar el objeto uniformidad completo actualizado.
-
-                // Como estamos en una función async, 'analyses' puede ser viejo.
-                // Lo mejor es pasar una función a updateAnalysisAtIndex si fuera posible, pero por simplicidad y dado que uniformidad solo tiene 2 campos,
-                // podemos reconstruirlo con setAnalyses directo o mejorar updateAnalysisAtIndex.
-                // Vamos a usar setAnalyses directo aquí para máxima seguridad con nested state.
-
-                setAnalyses(prev => prev.map((analysis, index) => {
-                    if (index !== targetIndex) return analysis;
-
-                    const currentUniformidad = analysis.uniformidad || {};
-                    const currentTipo = currentUniformidad[tipo] || {};
-
-                    return {
-                        ...analysis,
-                        uniformidad: {
-                            ...currentUniformidad,
-                            [tipo]: {
-                                ...currentTipo,
-                                fotoUrl: url
-                            }
-                        }
-                    };
-                }));
-
-            } else {
-                // pesoBruto, pesoCongelado, pesoNeto
-                // Aquí también hay riesgo si el campo tiene otras propiedades (valor).
-                // updateAnalysisAtIndex hace shallow merge del root.
-                // Si pasamos { pesoBruto: { ...old, fotoUrl } }, necesitamos 'old'.
-                // Usaremos setAnalyses funcional para acceder al estado más reciente.
-
-                setAnalyses(prev => prev.map((analysis, index) => {
-                    if (index !== targetIndex) return analysis;
-
-                    const currentFieldValue = analysis[field as keyof Analysis] as any || {};
-                    return {
-                        ...analysis,
-                        [field]: {
-                            ...currentFieldValue,
-                            fotoUrl: url
-                        }
-                    };
-                }));
-            }
+            // Update analysis with photo URL using safe helper
+            setAnalyses(prev => updateAnalysisField(prev, targetIndex, field, url));
 
             // 🔥 CRÍTICO: Guardar inmediatamente después de subir foto
             // No esperar el auto-save de 1 segundo porque el usuario podría recargar
@@ -1203,67 +1157,16 @@ export default function NewMultiAnalysisPageContent() {
                         </div>
                     )}
 
-                    {/* Delete Button with Inline Confirmation */}
+                    {/* Delete Button */}
                     <div className="pt-4 flex justify-center">
-                        {!showDeleteModal ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    console.log('🗑️ Delete button clicked');
-                                    if (!analysisId) {
-                                        toast.error('Error: No hay análisis cargado para eliminar');
-                                        return;
-                                    }
-                                    setShowDeleteModal(true);
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium border border-red-200"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Borrar Análisis
-                            </button>
-                        ) : (
-                            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200 max-w-2xl w-full">
-                                <div className="flex-1 space-y-2">
-                                    <p className="text-sm font-medium text-red-800">
-                                        Escribe <span className="font-mono font-bold">confirmar</span> para eliminar:
-                                    </p>
-                                    <input
-                                        type="text"
-                                        value={confirmText}
-                                        onChange={(e) => setConfirmText(e.target.value)}
-                                        placeholder="confirmar"
-                                        className="w-full px-3 py-2 border border-red-300 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm"
-                                        autoFocus
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && confirmText.toLowerCase() === 'confirmar') {
-                                                handleDeleteAnalysis();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setShowDeleteModal(false);
-                                            setConfirmText('');
-                                        }}
-                                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteAnalysis}
-                                        disabled={confirmText.toLowerCase() !== 'confirmar'}
-                                        className={`px-3 py-2 text-sm font-bold rounded-lg ${confirmText.toLowerCase() === 'confirmar'
-                                            ? 'bg-red-500 hover:bg-red-600 text-white'
-                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => setShowDeleteModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium border border-red-200"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Borrar Análisis
+                        </button>
                     </div>
                 </div >
             </div >
