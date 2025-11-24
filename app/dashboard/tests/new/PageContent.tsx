@@ -360,6 +360,12 @@ export default function NewMultiAnalysisPageContent() {
                     };
                 }));
             }
+
+            // 🔥 CRÍTICO: Guardar inmediatamente después de subir foto
+            // No esperar el auto-save de 1 segundo porque el usuario podría recargar
+            console.log('💾 Guardando análisis inmediatamente después de subir foto...');
+            await saveDocument();
+            console.log('✅ Análisis guardado con nueva foto');
         } catch (error) {
             console.error('Error uploading photo:', error);
             toast.error('Error al subir la foto. Intenta de nuevo.');
@@ -422,6 +428,10 @@ export default function NewMultiAnalysisPageContent() {
                     )
                 };
             }));
+
+            // 🔥 Guardar inmediatamente
+            console.log('💾 Guardando después de subir foto de control pesos...');
+            await saveDocument();
         } catch (error) {
             console.error('Error uploading peso bruto photo:', error);
             toast.error('Error al subir la foto del peso bruto');
@@ -531,6 +541,10 @@ export default function NewMultiAnalysisPageContent() {
             ));
 
             setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
+
+            // 🔥 Guardar inmediatamente
+            console.log('💾 Guardando después de subir foto global...');
+            await saveDocument();
         } catch (error) {
             console.error('Error uploading global peso bruto photo:', error);
             toast.error('Error al subir la foto global');
