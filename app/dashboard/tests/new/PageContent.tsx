@@ -138,6 +138,9 @@ export default function NewMultiAnalysisPageContent() {
             const now = new Date();
             const productionDate = getProductionDate(now);
 
+            const { googleAuthService } = await import('@/lib/googleAuthService');
+            const user = googleAuthService.getUser();
+
             const document: QualityAnalysis = {
                 id: analysisId,
                 codigo,
@@ -156,6 +159,7 @@ export default function NewMultiAnalysisPageContent() {
                 })),
                 createdAt: now.toISOString(),
                 updatedAt: now.toISOString(),
+                createdBy: user?.email || 'unknown',
                 date: productionDate,
                 shift: getWorkShift(now),
                 globalPesoBruto: globalPesoBruto.fotoUrl ? globalPesoBruto : undefined,

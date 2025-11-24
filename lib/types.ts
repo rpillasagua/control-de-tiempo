@@ -301,6 +301,9 @@ export interface QualityAnalysis {
   status?: 'EN_PROGRESO' | 'COMPLETADO';
   completedAt?: string;
 
+  // Peso Bruto Global (para todo el documento/lote)
+  globalPesoBruto?: PesoConFoto;
+
   // Observaciones generales (Legacy support)
   observations?: string;
 }
