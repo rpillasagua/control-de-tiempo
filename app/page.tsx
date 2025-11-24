@@ -27,10 +27,13 @@ const useGoogleAuth = () => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        logger.log('🚀 Iniciando inicialización de Auth en page.tsx');
         await googleAuthService.initialize();
+        logger.log('✅ Inicialización completada en page.tsx');
 
         // La suscripción actualiza el estado automáticamente cuando el servicio cambia
         const unsubscribe = googleAuthService.subscribe((user) => {
+          logger.log('📥 Recibida actualización de usuario en page.tsx:', user ? user.name : 'null');
           setAuthState({
             isAuthenticated: !!user,
             user: user,
@@ -185,6 +188,7 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
 
 export default function Home() {
   const { isAuthenticated, user, loading, login, logout } = useGoogleAuth();
+
   const [initialAnalyses, setInitialAnalyses] = useState<QualityAnalysis[]>([]);
   const [initialLastDoc, setInitialLastDoc] = useState<any>(null);
   const [loadingAnalyses, setLoadingAnalyses] = useState(false);
@@ -218,6 +222,10 @@ export default function Home() {
 
     return () => { isMounted = false; };
   }, [isAuthenticated, user]);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   if (!isAuthenticated || !user) {
     return <LoginPage onLoginTrigger={login} />;

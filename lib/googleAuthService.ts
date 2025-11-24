@@ -500,12 +500,17 @@ class GoogleAuthService {
   }
 
   /**
-   * Suscribe a cambios en el estado de autenticación
+   * Suscribirse a cambios de estado de autenticación
+   * Implementa patrón BehaviorSubject: emite el valor actual inmediatamente al suscribirse
    */
   subscribe(listener: (user: UserProfile | null) => void): () => void {
     this.listeners.push(listener);
-    // Emitir estado actual inmediatamente
+
+    // Emitir estado actual inmediatamente para evitar race conditions
+    // Esto asegura que si el componente se suscribe después de la inicialización,
+    // reciba el estado correcto inmediatamente.
     listener(this.user);
+
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
