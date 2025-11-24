@@ -68,6 +68,12 @@ export default function NewMultiAnalysisPageContent() {
     const [globalPesoBruto, setGlobalPesoBruto] = useState<PesoConFoto>({});
     const [codeValidationError, setCodeValidationError] = useState<string | null>(null);
 
+    // Original metadata for editing (to preserve creation time/date/shift)
+    const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null);
+    const [originalCreatedBy, setOriginalCreatedBy] = useState<string | null>(null);
+    const [originalDate, setOriginalDate] = useState<string | null>(null);
+    const [originalShift, setOriginalShift] = useState<'DIA' | 'NOCHE' | null>(null);
+
     // Derived State
     const currentAnalysis = analyses[activeAnalysisIndex] || {};
     const productInfo = PRODUCT_DATA[codigo];
@@ -138,6 +144,12 @@ export default function NewMultiAnalysisPageContent() {
                         setGlobalPesoBruto(data.globalPesoBruto || {});
                         setBasicsCompleted(true);
 
+                        // Preserve original metadata
+                        setOriginalCreatedAt(data.createdAt);
+                        setOriginalCreatedBy(data.createdBy);
+                        setOriginalDate(data.date);
+                        setOriginalShift(data.shift);
+
                         // Si hay análisis, activar el primero
                         if (data.analyses.length > 0) {
                             setActiveAnalysisIndex(0);
@@ -184,11 +196,11 @@ export default function NewMultiAnalysisPageContent() {
                     pesoConGlaseo: a.pesoConGlaseo?.valor ? a.pesoConGlaseo : undefined,
                     pesoSinGlaseo: a.pesoSinGlaseo?.valor ? a.pesoSinGlaseo : undefined,
                 })),
-                createdAt: now.toISOString(),
+                createdAt: originalCreatedAt || now.toISOString(),
                 updatedAt: now.toISOString(),
-                createdBy: user?.email || 'unknown',
-                date: productionDate,
-                shift: getWorkShift(now),
+                createdBy: originalCreatedBy || user?.email || 'unknown',
+                date: originalDate || productionDate,
+                shift: originalShift || getWorkShift(now),
                 globalPesoBruto: globalPesoBruto.fotoUrl ? globalPesoBruto : undefined,
             };
 
