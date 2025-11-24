@@ -80,7 +80,17 @@ class GoogleDriveService {
         return;
       }
 
-      // Si no, buscar o crear la carpeta "descongelado" en el drive
+      // OPTIMIZACIÓN: Intentar cargar desde localStorage
+      const CACHE_KEY = 'google_drive_root_folder_id';
+      if (typeof window !== 'undefined') {
+        const cachedId = localStorage.getItem(CACHE_KEY);
+        if (cachedId) {
+          this.rootFolderId = cachedId;
+          logger.log('✅ Usando carpeta raíz desde caché:', this.rootFolderId);
+          return;
+        }
+      }
+
       // Si no, buscar o crear la carpeta "descongelado" en el drive
       logger.log('🔍 Buscando carpeta "descongelado"...');
 
@@ -97,6 +107,11 @@ class GoogleDriveService {
         // Usar la primera encontrada como principal
         this.rootFolderId = folders[0].id;
         logger.log('✅ Carpeta "descongelado" encontrada:', this.rootFolderId);
+
+        // Guardar en caché
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CACHE_KEY, this.rootFolderId);
+        }
 
         // Si hay duplicados, intentar limpiar los vacíos
         if (folders.length > 1) {
@@ -129,6 +144,11 @@ class GoogleDriveService {
         logger.log('📁 Creando carpeta "descongelado"...');
         this.rootFolderId = await this.createRootFolder();
         logger.log('✅ Carpeta "descongelado" creada:', this.rootFolderId);
+
+        // Guardar en caché
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CACHE_KEY, this.rootFolderId);
+        }
       }
     } catch (error) {
       logger.error('❌ Error inicializando Google Drive:', error);
@@ -704,12 +724,26 @@ class GoogleDriveService {
    */
   async deleteFile(fileId: string): Promise<void> {
     try {
-      await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${this.accessToken} `
         }
       });
+
+      if (!response.ok) {
+        // Si es 404, el archivo ya no existe, lo consideramos éxito
+        if (response.status === 404) {
+          logger.warn(`⚠️ Archivo ${fileId} no encontrado al intentar borrar (ya eliminado).`);
+          return;
+        }
+
+        const errorData = await response.json().catch(() => ({}));
+        logger.error(`❌ Error eliminando archivo ${fileId}:`, response.status, errorData);
+        throw new Error(`Delete failed: ${response.status} - ${JSON.stringify(errorData)}`);
+      }
+
+      logger.log(`✅ Archivo eliminado correctamente: ${fileId}`);
     } catch (error) {
       logger.error('Error deleting file:', error);
       throw error;

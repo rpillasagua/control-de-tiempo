@@ -82,7 +82,7 @@ export default function NewMultiAnalysisPageContent() {
     const clientName = productInfo?.client || '';
     const brandName = productInfo?.brand || '';
     const masterInfo = productInfo?.master || '';
-    const weightUnit = 'LB';
+    const weightUnit = productInfo?.unit || 'LB';
     const isDualBag = false;
 
     // Helper Functions
