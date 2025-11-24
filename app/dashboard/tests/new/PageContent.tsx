@@ -70,9 +70,10 @@ export default function NewMultiAnalysisPageContent() {
 
     // Derived State
     const currentAnalysis = analyses[activeAnalysisIndex] || {};
-    const clientName = PRODUCT_DATA.clients[codigo] || '';
-    const brandName = PRODUCT_DATA.brands[codigo] || '';
-    const masterInfo = PRODUCT_DATA.presentations[codigo] || '';
+    const productInfo = PRODUCT_DATA[codigo];
+    const clientName = productInfo?.client || '';
+    const brandName = productInfo?.brand || '';
+    const masterInfo = productInfo?.master || '';
     const weightUnit = 'lb';
     const isDualBag = false;
 
