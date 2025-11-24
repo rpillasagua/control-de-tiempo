@@ -25,12 +25,9 @@ export default function DeleteConfirmationModal({
     const [confirmText, setConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
 
-    console.log('🗑️ DeleteConfirmationModal render. isOpen:', isOpen, 'mounted:', mounted);
-
     useEffect(() => {
         setMounted(true);
         if (isOpen) {
-            console.log('🗑️ DeleteConfirmationModal opened (useEffect)');
             setConfirmText('');
             setIsDeleting(false);
             // Prevent body scroll when modal is open
@@ -42,21 +39,16 @@ export default function DeleteConfirmationModal({
     }, [isOpen]);
 
     if (!isOpen || !mounted) {
-        console.log('🗑️ DeleteConfirmationModal returning null');
         return null;
     }
 
     const handleConfirm = async () => {
-        console.log('🗑️ DeleteConfirmationModal: handleConfirm called');
         if (confirmText.toLowerCase() !== 'confirmar') {
-            console.log('❌ Confirmation text mismatch:', confirmText);
             return;
         }
 
         setIsDeleting(true);
-        console.log('Calling onConfirm...');
         await onConfirm();
-        console.log('onConfirm finished');
         setIsDeleting(false);
         onClose();
     };

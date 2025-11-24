@@ -72,23 +72,19 @@ class GoogleAuthService {
       // Cargar Google Identity Services
       await this.loadGoogleScript();
 
-      // MEJORÍA: Usar redirect en lugar de popup (evita bloqueo del navegador)
+      // MEJORÍA: Usar popup en lugar de redirect (refresh silencioso)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: this.config.clientId,
         scope: this.config.scopes.join(' '),
         callback: this.onTokenResponse,
-        ux_mode: 'redirect',
-        redirect_uri: typeof window !== 'undefined' ? window.location.origin : ''
+        // ux_mode: 'popup' permite refresh silencioso sin redirigir toda la página
       });
-
-      // Verificar si venimos de un redirect de Google Auth
-      await this.handleRedirectCallback();
 
       // MEJORÍA: Restaurar sesión desde localStorage (persiste entre navegador restarts)
       await this.syncFromPersistentStorage();
 
-      logger.log('✅ Google Auth inicializado (modo redirect)');
+      logger.log('✅ Google Auth inicializado (modo popup)');
     } catch (error) {
       logger.error('❌ Error inicializando Google Auth:', error);
       throw error;
@@ -218,8 +214,13 @@ class GoogleAuthService {
       // Cargar información del usuario
       await this.loadUserInfo();
 
-      // Configurar refresh automático (cada 50 minutos)
-      this.scheduleTokenRefresh(50 * 60 * 1000);
+      // Configurar refresh automático basado en expires_in si viene en la respuesta
+      const expiresIn = response.expires_in || 3600; // Por defecto 1 hora
+      const refreshBeforeExpiry = 300; // 5 minutos antes de expirar
+      const refreshDelay = (expiresIn - refreshBeforeExpiry) * 1000;
+
+      logger.log(`🔄 Token refresh programado en ${refreshDelay / 1000 / 60} minutos`);
+      this.scheduleTokenRefresh(refreshDelay);
 
       this.notifyListeners();
     }
@@ -400,9 +401,19 @@ class GoogleAuthService {
 
       throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
     } catch (error) {
-      logger.error('Error verificando token:', error);
-      this.clearStoredAuth();
-      throw error;
+      // IMPORTANTE: Solo limpiar auth si el error es un token realmente inválido
+      // Si el error es de red (offline, timeout), NO limpiar y retornar el token actual
+      if (error instanceof Error && error.message.includes('Sesión expirada')) {
+        // Este error ya viene de arriba, ya limpiamos, re-throw
+        throw error;
+      }
+
+      // Para otros errores (red, timeout), NO limpiar sesión
+      logger.warn('⚠️ Error verificando token (posible problema de red), usando token en caché:', error);
+
+      // Retornar el token actual asumiendo que es válido
+      // Esto permite que la app funcione offline o con problemas de red temporales
+      return this.accessToken;
     }
   }
 

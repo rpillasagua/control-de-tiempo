@@ -236,14 +236,12 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                   bottom: 0,
                   width: '8px',
                   backgroundColor: (() => {
-                    // Debug: ver qué color tiene cada análisis
+                    // Fallback a azul si no hay color
                     if (!analysis.analystColor) {
-                      console.log(`⚠️ Análisis ${analysis.lote} sin color de analista`);
                       return '#3b82f6'; // Azul por defecto
                     }
                     const color = ANALYST_COLOR_HEX[analysis.analystColor as keyof typeof ANALYST_COLOR_HEX];
                     if (!color) {
-                      console.log(`⚠️ Análisis ${analysis.lote} tiene color inválido:`, analysis.analystColor);
                       return '#3b82f6';
                     }
                     return color;

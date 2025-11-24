@@ -155,7 +155,6 @@ class GoogleDriveService {
       );
 
       const data: GoogleDriveListResponse = await response.json();
-      const data: GoogleDriveListResponse = await response.json();
 
       if (data.files && data.files.length > 0) {
         if (data.files.length > 1) {
@@ -271,7 +270,6 @@ class GoogleDriveService {
         }
       );
 
-      const data: GoogleDriveListResponse = await response.json();
       const data: GoogleDriveListResponse = await response.json();
 
       if (data.files && data.files.length > 0) {
@@ -490,85 +488,53 @@ class GoogleDriveService {
       try {
         await this.makeFilePublic(data.id);
         logger.log('✅ Permisos públicos configurados');
-
-        // Polling para verificar propagación de permisos (máximo 10s)
-        logger.log('⏳ Verificando propagación de permisos...');
-        const start = Date.now();
-        let propagated = false;
-
-        while (Date.now() - start < 10000) {
-          try {
-            // Intentar acceder al archivo sin autenticación (HEAD request)
-            // Usamos la URL de export=view que redirige si es público
-            const testUrl = `https://drive.google.com/uc?export=view&id=${data.id}`;
-            const checkResponse = await fetch(testUrl, { method: 'HEAD' });
-
-            // Si recibimos 200 OK o 3xx Redirección, es accesible
-            if (checkResponse.ok || checkResponse.status === 302 || checkResponse.status === 303) {
-              propagated = true;
-              logger.log(`✅ Permisos propagados en ${Date.now() - start}ms`);
-              break;
-            }
-          } catch (e) {
-            // Ignorar errores de red durante el check
-          }
-          await new Promise(r => setTimeout(r, 1000)); // Esperar 1s entre intentos
-        }
-
-        if (!propagated) {
-          logger.warn('⚠️ Timeout esperando confirmación de propagación, continuando de todos modos...');
-        }
       } catch (error) {
         logger.warn('⚠️ No se pudieron configurar permisos públicos:', error instanceof Error ? error.message : String(error));
-        // Continuar de todos modos
+        // Continuar de todos modos - la URL googleusercontent.com debería funcionar
       }
+
 
       // ESTRATEGIA DE URLs:
       // 1. thumbnailLink: Es la más confiable para <img> tags (googleusercontent.com), evitamos 403s.
       //    Viene pequeña (s220), así que la agrandamos a s2000.
       // 2. uc?export=view: Fallback si no hay thumbnail.
 
-      let publicUrl: string;
+      let publicUrl: string = '';
       let thumbnailLink = data.thumbnailLink;
 
-      // Si no hay thumbnailLink, intentamos obtenerlo nuevamente después de un breve delay
+      // SMART POLLING: Intentar obtener el thumbnailLink si no viene inmediatamente
+      // Esto soluciona el problema de propagación: esperamos activamente hasta que esté listo
       if (!thumbnailLink) {
-        logger.log('⚠️ thumbnailLink no disponible inmediatamente, reintentando obtener metadatos...');
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos
-        try {
-          const fileMetadata = await this.getFile(data.id);
-          if (fileMetadata && fileMetadata.thumbnailLink) {
-            thumbnailLink = fileMetadata.thumbnailLink;
-            logger.log('✅ thumbnailLink recuperado en segundo intento');
+        logger.log('⏳ Iniciando smart polling para thumbnail...');
+        const pollingStart = Date.now();
+        const MAX_POLLING_TIME = 10000; // 10 segundos máximo
+        const POLLING_INTERVAL = 500; // Revisar cada 500ms
+
+        while (Date.now() - pollingStart < MAX_POLLING_TIME) {
+          try {
+            const fileMetadata = await this.getFile(data.id);
+            if (fileMetadata && fileMetadata.thumbnailLink) {
+              thumbnailLink = fileMetadata.thumbnailLink;
+              logger.log(`✅ thumbnailLink recuperado en ${(Date.now() - pollingStart)}ms`);
+              break;
+            }
+          } catch (e) {
+            // Ignorar errores transitorios durante el polling
           }
-        } catch (e) {
-          logger.warn('⚠️ Falló el reintento de obtener metadatos:', e);
+          await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+        }
+
+        if (!thumbnailLink) {
+          logger.warn('⚠️ No se pudo obtener thumbnailLink después del polling. Usando fallback.');
         }
       }
 
       if (thumbnailLink) {
-        // Reemplazar el tamaño (=s220) por uno grande (=s2000) para mantener calidad
-        // Soportar múltiples formatos de URL de Drive
-        publicUrl = thumbnailLink
-          .replace(/=s\d+/, '=s2000')        // Formato estándar =s220
-          .replace(/[?&]sz=\d+/, '?sz=2000') // Formato alternativo ?sz=220
-          .replace(/\/s\d+\//, '/s2000/');   // Formato path /s220/
+        // SOLUCIÓN RÁPIDA: Usar formato googleusercontent.com más estable
+        // Este formato es más permanente que thumbnailLink dinámico
+        publicUrl = `https://lh3.googleusercontent.com/d/${data.id}=s2000`;
 
-        // Si no coincidió con ninguno (formato desconocido), intentar append
-        if (!publicUrl.includes('s2000')) {
-          if (publicUrl.includes('=')) publicUrl = publicUrl.replace(/=.*$/, '=s2000');
-          else publicUrl += '=s2000';
-        }
-
-        // IMPORTANT: Append the file ID to the URL so we can extract it later for deletion
-        // We use a custom parameter 'x-file-id' that won't affect Google's serving
-        if (publicUrl.includes('?')) {
-          publicUrl += `&x-file-id=${data.id}`;
-        } else {
-          publicUrl += `?x-file-id=${data.id}`;
-        }
-
-        logger.log(`🔗 Usando thumbnailLink optimizado: ${publicUrl}`);
+        logger.log(`🔗 Usando URL estable googleusercontent: ${publicUrl}`);
       } else {
         // Fallback a la URL directa
         publicUrl = `https://drive.google.com/uc?export=view&id=${data.id}`;

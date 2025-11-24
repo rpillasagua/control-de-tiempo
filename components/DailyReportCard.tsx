@@ -29,6 +29,7 @@ const DailyReportCard: React.FC<DailyReportCardProps> = ({ onClose }) => {
         setAnalyses([]);
 
         try {
+            console.log(`🔍 Searching analyses - Date: ${selectedDate}, Shift: ${selectedShift}`);
             const data = selectedShift === 'ALL'
                 ? await getAnalysesByProductionDay(selectedDate)
                 : await getAnalysesByShift(selectedDate, selectedShift);

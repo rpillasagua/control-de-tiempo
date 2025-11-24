@@ -66,6 +66,7 @@ export default function NewMultiAnalysisPageContent() {
     const [confirmText, setConfirmText] = useState('');
     const [viewMode, setViewMode] = useState<ViewMode>('COMPACTA');
     const [globalPesoBruto, setGlobalPesoBruto] = useState<PesoConFoto>({});
+    const [isCompleted, setIsCompleted] = useState(false);
     const [codeValidationError, setCodeValidationError] = useState<string | null>(null);
 
     // Original metadata for editing (to preserve creation time/date/shift/color)
@@ -152,6 +153,11 @@ export default function NewMultiAnalysisPageContent() {
                         setOriginalShift(data.shift);
                         setOriginalAnalystColor(data.analystColor);
 
+                        // Load completion status
+                        if (data.status === 'COMPLETADO') {
+                            setIsCompleted(true);
+                        }
+
                         // Si hay análisis, activar el primero
                         if (data.analyses.length > 0) {
                             setActiveAnalysisIndex(0);
@@ -182,13 +188,34 @@ export default function NewMultiAnalysisPageContent() {
             const { googleAuthService } = await import('@/lib/googleAuthService');
             const user = googleAuthService.getUser();
 
+            // Determine final status
+            let finalStatus = status;
+            if (isCompleted && status === 'EN_PROGRESO') {
+                finalStatus = 'COMPLETADO';
+            }
+
+            // Get existing completedAt if already completed
+            let completedAtValue: string | undefined = undefined;
+            if (finalStatus === 'COMPLETADO') {
+                if (status === 'COMPLETADO') {
+                    // Explicit completion action - set new time
+                    completedAtValue = now.toISOString();
+                } else {
+                    // Auto-save on already completed analysis - preserve existing time
+                    const { getAnalysisById } = await import('@/lib/analysisService');
+                    const existingData = await getAnalysisById(analysisId);
+                    completedAtValue = existingData?.completedAt || now.toISOString();
+                }
+            }
+
             const document: QualityAnalysis = {
                 id: analysisId,
                 codigo,
                 lote,
                 talla,
                 productType: productType!,
-                status,
+                status: finalStatus,
+                completedAt: completedAtValue,
                 analystColor: originalAnalystColor || analystColor!,
                 analyses: analyses.map(a => ({
                     ...a,
@@ -206,11 +233,12 @@ export default function NewMultiAnalysisPageContent() {
                 globalPesoBruto: globalPesoBruto.fotoUrl ? globalPesoBruto : undefined,
             };
 
-            // DEBUG: Ver qué color se está guardando
-            console.log('🎨 Guardando análisis con color:', {
-                originalAnalystColor,
-                analystColor,
-                finalColor: document.analystColor,
+            // DEBUG: Ver qué status se está guardando
+            console.log('💾 Guardando análisis:', {
+                statusRecibido: status,
+                isCompleted,
+                finalStatus,
+                completedAt: completedAtValue,
                 lote: document.lote
             });
 
@@ -225,6 +253,12 @@ export default function NewMultiAnalysisPageContent() {
             await saveAnalysis(document);
             setLastSaved(now);
             setSaveError(null);
+
+            // Update completion state
+            if (status === 'COMPLETADO') {
+                setIsCompleted(true);
+            }
+
             console.log('✅ Document saved');
         } catch (error) {
             console.error('Error saving:', error);
@@ -237,13 +271,14 @@ export default function NewMultiAnalysisPageContent() {
     // Auto-save when analyses change
     useEffect(() => {
         // No guardar si se está subiendo una foto (evita race condition)
-        if (basicsCompleted && analysisId && !isUploadingGlobal) {
+        // No guardar si el análisis ya está completado
+        if (basicsCompleted && analysisId && !isUploadingGlobal && !isCompleted) {
             const timer = setTimeout(() => {
                 saveDocument();
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [analyses, basicsCompleted, isUploadingGlobal]);
+    }, [analyses, basicsCompleted, isUploadingGlobal, isCompleted]);
 
     // Prevenir cierre de pestaña si hay subidas en progreso
     useEffect(() => {
@@ -1155,16 +1190,18 @@ export default function NewMultiAnalysisPageContent() {
                     </Card>
 
                     {/* Complete Analysis Button */}
-                    <div className="pt-8 flex justify-center">
-                        <button
-                            onClick={handleCompleteAnalysis}
-                            className="group relative flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
-                        >
-                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                            <CheckCircle2 className="w-6 h-6" />
-                            <span>Completar Análisis</span>
-                        </button>
-                    </div>
+                    {!isCompleted && (
+                        <div className="pt-8 flex justify-center">
+                            <button
+                                onClick={handleCompleteAnalysis}
+                                className="group relative flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                                <CheckCircle2 className="w-6 h-6" />
+                                <span>Completar Análisis</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Delete Button with Inline Confirmation */}
                     <div className="pt-4 flex justify-center">

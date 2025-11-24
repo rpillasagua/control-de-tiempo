@@ -43,6 +43,8 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   };
 
   useEffect(() => {
+    console.log(`🔍 PhotoCapture "${label}" - photoUrl changed:`, photoUrl ? `✅ ${photoUrl.substring(0, 80)}...` : '❌ Sin URL');
+
     setImageError(false);
     setErrorType('unknown');
     setIsLoading(!!photoUrl); // Mostrar loading si hay URL
@@ -375,18 +377,23 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
       ) : (
         <div className="flex items-center gap-2 w-full">
           {imageError ? (
-            <div className="flex items-center gap-3 w-full p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-              <div className="flex items-center gap-2 text-red-400 flex-1">
+            <div className="flex items-center gap-3 w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <div className="flex items-center gap-2 text-amber-400 flex-1">
                 <ImageOff className="w-4 h-4 flex-shrink-0" />
-                <span className="text-xs font-medium">
-                  {errorType === 'blob'
-                    ? '⏱️ Sesión expirada'
-                    : errorType === 'drive_auth'
-                      ? '🔐 Sin autenticación'
-                      : errorType === 'drive_permissions'
-                        ? '⚠️ Sin permisos'
-                        : '❌ Error de carga'}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold">
+                    ✅ Foto guardada en Drive
+                  </span>
+                  <span className="text-[10px] text-amber-300/80">
+                    {errorType === 'blob'
+                      ? 'Preview expiró (recarga la página)'
+                      : errorType === 'drive_auth'
+                        ? 'Requiere re-autenticación'
+                        : errorType === 'drive_permissions'
+                          ? 'Error temporal de permisos'
+                          : 'Error temporal de carga'}
+                  </span>
+                </div>
               </div>
               <div className="flex gap-2">
                 {errorType === 'blob' ? (

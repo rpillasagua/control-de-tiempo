@@ -430,11 +430,13 @@ export const getAnalysesByShift = async (
       }
     });
 
-    const analyses = Array.from(analysesMap.values());
-
-    // Ordenar en memoria por createdAt (más recientes primero)
-    analyses.sort((a, b) => {
-      return getTimestampMillis(b.createdAt) - getTimestampMillis(a.createdAt);
+    console.log(`🔍 Filtering by shift: '${shift}'`);
+    const analyses = Array.from(analysesMap.values()).filter(a => {
+      const match = a.shift === shift;
+      if (!match) {
+        console.log(`⚠️ Excluding analysis ${a.codigo} (Shift: ${a.shift})`);
+      }
+      return match;
     });
 
     console.log(`📊 Reporte ${date} ${shift}: ${analyses.length} análisis encontrados (Rango: ${snapshotRange.size}, Explícito: ${snapshotExplicit.size})`);
