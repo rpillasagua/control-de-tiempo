@@ -68,11 +68,12 @@ export default function NewMultiAnalysisPageContent() {
     const [globalPesoBruto, setGlobalPesoBruto] = useState<PesoConFoto>({});
     const [codeValidationError, setCodeValidationError] = useState<string | null>(null);
 
-    // Original metadata for editing (to preserve creation time/date/shift)
+    // Original metadata for editing (to preserve creation time/date/shift/color)
     const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null);
     const [originalCreatedBy, setOriginalCreatedBy] = useState<string | null>(null);
     const [originalDate, setOriginalDate] = useState<string | null>(null);
     const [originalShift, setOriginalShift] = useState<'DIA' | 'NOCHE' | null>(null);
+    const [originalAnalystColor, setOriginalAnalystColor] = useState<AnalystColor | null>(null);
 
     // Derived State
     const currentAnalysis = analyses[activeAnalysisIndex] || {};
@@ -149,6 +150,7 @@ export default function NewMultiAnalysisPageContent() {
                         setOriginalCreatedBy(data.createdBy);
                         setOriginalDate(data.date);
                         setOriginalShift(data.shift);
+                        setOriginalAnalystColor(data.analystColor);
 
                         // Si hay análisis, activar el primero
                         if (data.analyses.length > 0) {
@@ -187,7 +189,7 @@ export default function NewMultiAnalysisPageContent() {
                 talla,
                 productType: productType!,
                 status,
-                analystColor: analystColor!,
+                analystColor: originalAnalystColor || analystColor!,
                 analyses: analyses.map(a => ({
                     ...a,
                     pesoBruto: a.pesoBruto?.valor ? a.pesoBruto : undefined,
