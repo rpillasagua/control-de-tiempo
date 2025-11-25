@@ -68,11 +68,41 @@ class GoogleDriveService {
       // Obtener y configurar el token de acceso
       await this.ensureToken();
 
-      // Si ya tenemos un rootFolderId configurado, usarlo
+      // Si ya tenemos un rootFolderId configurado, validar que existe antes de usarlo
       if (this.config.rootFolderId) {
-        this.rootFolderId = this.config.rootFolderId;
-        logger.log('✅ Usando carpeta raíz existente:', this.rootFolderId);
-        return;
+        logger.log('🔍 Validando carpeta raíz configurada:', this.config.rootFolderId);
+        try {
+          // Intentar obtener metadata de la carpeta para verificar que existe
+          const verifyResponse = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${this.config.rootFolderId}?fields=id,name,trashed`,
+            { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+          );
+
+          if (verifyResponse.ok) {
+            const fileData = await verifyResponse.json();
+            // Verificar que no esté en la papelera
+            if (fileData.trashed) {
+              logger.warn('⚠️ La carpeta raíz configurada está en la papelera. Buscando/creando una nueva...');
+              // Limpiar caché inválido
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('google_drive_root_folder_id');
+              }
+            } else {
+              this.rootFolderId = this.config.rootFolderId;
+              logger.log('✅ Carpeta raíz validada:', this.rootFolderId);
+              return;
+            }
+          } else {
+            logger.warn('⚠️ La carpeta raíz configurada no existe o no es accesible. Buscando/creando una nueva...');
+            // Limpiar caché inválido
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('google_drive_root_folder_id');
+            }
+          }
+        } catch (error) {
+          logger.warn('⚠️ Error validando carpeta raíz:', error);
+          // Continuar con el flujo normal de búsqueda/creación
+        }
       }
 
       // Si ya tenemos la carpeta raíz en memoria, no buscarla de nuevo
@@ -80,14 +110,37 @@ class GoogleDriveService {
         return;
       }
 
-      // OPTIMIZACIÓN: Intentar cargar desde localStorage
+      // OPTIMIZACIÓN: Intentar cargar desde localStorage (con validación)
       const CACHE_KEY = 'google_drive_root_folder_id';
       if (typeof window !== 'undefined') {
         const cachedId = localStorage.getItem(CACHE_KEY);
         if (cachedId) {
-          this.rootFolderId = cachedId;
-          logger.log('✅ Usando carpeta raíz desde caché:', this.rootFolderId);
-          return;
+          logger.log('🔍 Validando carpeta raíz desde caché:', cachedId);
+          try {
+            // Validar que la carpeta en caché todavía existe
+            const verifyResponse = await fetch(
+              `https://www.googleapis.com/drive/v3/files/${cachedId}?fields=id,name,trashed`,
+              { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+            );
+
+            if (verifyResponse.ok) {
+              const fileData = await verifyResponse.json();
+              if (!fileData.trashed) {
+                this.rootFolderId = cachedId;
+                logger.log('✅ Carpeta raíz validada desde caché:', this.rootFolderId);
+                return;
+              } else {
+                logger.warn('⚠️ Carpeta en caché está en la papelera');
+                localStorage.removeItem(CACHE_KEY);
+              }
+            } else {
+              logger.warn('⚠️ Carpeta en caché no existe o no es accesible');
+              localStorage.removeItem(CACHE_KEY);
+            }
+          } catch (error) {
+            logger.warn('⚠️ Error validando caché:', error);
+            localStorage.removeItem(CACHE_KEY);
+          }
         }
       }
 
