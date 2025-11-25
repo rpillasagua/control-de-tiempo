@@ -26,12 +26,6 @@ export const updateAnalysisField = (
             const currentUniformidad = analysis.uniformidad || {};
             const currentTipo = currentUniformidad[tipo] || {};
 
-            console.log(`🔍 updateAnalysisField - Uniformidad ${tipo}:`, {
-                field,
-                value,
-                currentUniformidad,
-                currentTipo
-            });
 
             // Si el valor es un objeto (ej. actualización parcial), hacemos merge
             // Si es un string (ej. URL de foto), actualizamos solo fotoUrl
@@ -41,7 +35,7 @@ export const updateAnalysisField = (
 
             // Si value tiene 'fotoUrl', es una actualización de foto
             if (value && typeof value === 'object' && 'fotoUrl' in value) {
-                const updated = {
+                return {
                     ...analysis,
                     uniformidad: {
                         ...currentUniformidad,
@@ -51,13 +45,11 @@ export const updateAnalysisField = (
                         }
                     }
                 };
-                console.log(`✅ Updated analysis (object):`, updated.uniformidad);
-                return updated;
             }
 
             // Si value es string, asumimos que es la URL de la foto (caso común en handlePhotoCapture)
             if (typeof value === 'string') {
-                const updated = {
+                return {
                     ...analysis,
                     uniformidad: {
                         ...currentUniformidad,
@@ -67,7 +59,6 @@ export const updateAnalysisField = (
                         }
                     }
                 };
-                console.log(`✅ Updated analysis (string URL):`, updated.uniformidad);
                 return updated;
             }
 
