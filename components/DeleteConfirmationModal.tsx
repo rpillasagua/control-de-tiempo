@@ -56,8 +56,8 @@ export default function DeleteConfirmationModal({
     const isConfirmEnabled = confirmText.toLowerCase() === 'confirmar';
 
     return createPortal(
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-[#dbdbdb]">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-[#dbdbdb]" style={{ position: 'relative', zIndex: 1000000 }}>
 
                 {/* Header */}
                 <div className="p-6 border-b border-[#efefef] flex items-start justify-between bg-white">
