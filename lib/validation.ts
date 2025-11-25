@@ -8,7 +8,6 @@ import { z } from 'zod';
 export const PesoSchema = z.object({
     valor: z.number()
         .min(0, 'El peso no puede ser negativo')
-        .max(10000, 'El peso excede el máximo permitido')
         .optional(),
     fotoUrl: z.string().url().optional().or(z.literal(''))
 });
