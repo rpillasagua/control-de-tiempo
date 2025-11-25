@@ -581,67 +581,133 @@ export default function NewMultiAnalysisPageContent() {
                         <ViewModeSelector viewMode={viewMode} onModeChange={setViewMode} />
                     </div>
 
-                    {/* Información del Producto */}
+                    {/* Información del Producto - MODERNO CON COLORES VIBRANTES */}
                     {(clientName || brandName || masterInfo || codigo || lote || talla) && (
-                        <div className="bg-white border-l-4 border-blue-600 shadow-sm rounded-sm p-3" style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <div className="grid grid-cols-3 gap-x-3 gap-y-2" style={{ margin: 0, padding: 0 }}>
-                                {/* Código */}
-                                <div style={{ margin: 0, padding: 0 }}>
-                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>CÓDIGO</div>
-                                    <div className="text-sm font-black text-slate-800" style={{ lineHeight: 1 }}>
-                                        {codigo}
-                                    </div>
-                                </div>
-
-                                {/* Lote */}
-                                <div style={{ margin: 0, padding: 0 }}>
-                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>LOTE</div>
-                                    <div className="text-sm font-black text-slate-800" style={{ lineHeight: 1 }}>
-                                        {lote}
-                                    </div>
-                                </div>
-
-                                {/* Talla */}
-                                {talla && (
-                                    <div style={{ margin: 0, padding: 0 }}>
-                                        <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>TALLA</div>
-                                        <div className="text-sm font-black text-slate-800" style={{ lineHeight: 1 }}>
-                                            {talla}
+                        <div
+                            className="relative overflow-hidden rounded-2xl border-2 border-blue-200"
+                            style={{
+                                background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 50%, #E0E7FF 100%)',
+                                boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.2), 0 8px 10px -6px rgba(99, 102, 241, 0.15)'
+                            }}
+                        >
+                            {/* Content */}
+                            <div className="relative p-5">
+                                {/* Top section - Código, Lote, Talla con badges modernos */}
+                                <div className="grid grid-cols-3 gap-3 mb-4">
+                                    {/* Código - Badge Azul */}
+                                    <div
+                                        className="rounded-xl p-3 border-2 border-blue-300"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
+                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.25)'
+                                        }}
+                                    >
+                                        <div className="text-[10px] font-black tracking-wider text-blue-700 uppercase mb-1.5">CÓDIGO</div>
+                                        <div className="text-lg font-black text-blue-900">
+                                            {codigo}
                                         </div>
                                     </div>
-                                )}
 
-                                {/* Separator */}
-                                <div className="col-span-3 my-1 border-t border-slate-200"></div>
-
-                                {/* Cliente */}
-                                <div style={{ margin: 0, padding: 0 }}>
-                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>CLIENTE</div>
-                                    <div className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
-                                        {clientName}
+                                    {/* Lote - Badge Índigo */}
+                                    <div
+                                        className="rounded-xl p-3 border-2 border-indigo-300"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%)',
+                                            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.25)'
+                                        }}
+                                    >
+                                        <div className="text-[10px] font-black tracking-wider text-indigo-700 uppercase mb-1.5">LOTE</div>
+                                        <div className="text-lg font-black text-indigo-900">
+                                            {lote}
+                                        </div>
                                     </div>
+
+                                    {/* Talla - Badge Púrpura */}
+                                    {talla && (
+                                        <div
+                                            className="rounded-xl p-3 border-2 border-purple-300"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)',
+                                                boxShadow: '0 4px 6px -1px rgba(168, 85, 247, 0.25)'
+                                            }}
+                                        >
+                                            <div className="text-[10px] font-black tracking-wider text-purple-700 uppercase mb-1.5">TALLA</div>
+                                            <div className="text-lg font-black text-purple-900">
+                                                {talla}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Marca */}
-                                <div className="col-span-2" style={{ margin: 0, padding: 0 }}>
-                                    <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1, marginBottom: '2px' }}>MARCA</div>
-                                    <div className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
-                                        {brandName}
-                                    </div>
-                                </div>
+                                {/* Divider con gradiente visible */}
+                                <div
+                                    className="h-0.5 rounded-full my-4"
+                                    style={{
+                                        background: 'linear-gradient(90deg, transparent 0%, #3B82F6 50%, transparent 100%)'
+                                    }}
+                                ></div>
 
-                                {/* Presentación */}
-                                {masterInfo && (
-                                    <div className="col-span-3" style={{ margin: 0, padding: 0, marginTop: '4px' }}>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase" style={{ lineHeight: 1 }}>PRESENTACIÓN:</span>
-                                            <span className="text-sm font-bold text-slate-700 truncate" style={{ lineHeight: 1 }}>
+                                {/* Bottom section - Cliente, Marca, Presentación */}
+                                <div className="space-y-2.5">
+                                    {/* Cliente */}
+                                    <div className="flex items-baseline gap-2">
+                                        <span
+                                            className="text-[10px] font-black tracking-wider uppercase shrink-0 px-2 py-1 rounded"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            CLIENTE
+                                        </span>
+                                        <span className="text-base font-bold text-slate-900 truncate">
+                                            {clientName}
+                                        </span>
+                                    </div>
+
+                                    {/* Marca */}
+                                    <div className="flex items-baseline gap-2">
+                                        <span
+                                            className="text-[10px] font-black tracking-wider uppercase shrink-0 px-2 py-1 rounded"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            MARCA
+                                        </span>
+                                        <span className="text-base font-bold text-slate-900 truncate">
+                                            {brandName}
+                                        </span>
+                                    </div>
+
+                                    {/* Presentación */}
+                                    {masterInfo && (
+                                        <div className="flex items-baseline gap-2 pt-1">
+                                            <span
+                                                className="text-[10px] font-black tracking-wider uppercase shrink-0 px-2 py-1 rounded"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 100%)',
+                                                    color: 'white'
+                                                }}
+                                            >
+                                                PRESENTACIÓN
+                                            </span>
+                                            <span className="text-base font-bold text-slate-900">
                                                 {masterInfo}
                                             </span>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Barra inferior con gradiente arcoíris visible */}
+                            <div
+                                className="h-2"
+                                style={{
+                                    background: 'linear-gradient(90deg, #3B82F6 0%, #6366F1 33%, #A855F7 66%, #EC4899 100%)'
+                                }}
+                            ></div>
                         </div>
                     )}
 
