@@ -7,7 +7,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ({ className = '', error = false, success = false, type, ...props }, ref) => {
-        const baseClasses = "w-full px-2 py-6 text-base font-[600] rounded-[14px] focus:outline-none transition-all placeholder-slate-400"
+        const baseClasses = "w-full px-2 py-6 text-base font-[600] rounded-[14px] focus:outline-none transition-all placeholder-slate-400 text-center"
 
         const stateClasses = error
             ? "bg-red-50 text-red-900 border-2 border-red-200 focus:border-red-400 focus:shadow-lg"
