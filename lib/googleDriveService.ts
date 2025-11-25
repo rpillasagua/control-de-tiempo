@@ -705,18 +705,27 @@ class GoogleDriveService {
       logger.log('✅ Conectividad verificada');
 
       // Si hay una foto anterior, eliminarla primero
+      console.log('🔍 [DELETE DEBUG] oldPhotoUrl recibida:', oldPhotoUrl);
       if (oldPhotoUrl) {
         const oldFileId = this.extractFileIdFromUrl(oldPhotoUrl);
+        console.log('🔍 [DELETE DEBUG] ID extraído:', oldFileId);
         if (oldFileId) {
           try {
             logger.log(`🗑️ Eliminando foto anterior: ${oldFileId}`);
+            console.log(`🗑️ [DELETE DEBUG] Eliminando ID: ${oldFileId}`);
             await this.deleteFile(oldFileId);
             logger.log(`✅ Foto anterior eliminada: ${oldFileId}`);
+            console.log(`✅ [DELETE DEBUG] Eliminación exitosa`);
           } catch (error) {
             logger.warn('No se pudo eliminar la foto anterior:', error);
+            console.error('❌ [DELETE DEBUG] Error:', error);
             // Continuar aunque falle la eliminación
           }
+        } else {
+          console.warn('⚠️ [DELETE DEBUG] No se pudo extraer ID de la URL');
         }
+      } else {
+        console.log('ℹ️ [DELETE DEBUG] No hay foto anterior');
       }
 
       // Asegurar que la carpeta raíz "descongelado" existe
