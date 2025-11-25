@@ -135,6 +135,27 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
               <FileText className="h-5 w-5 flex-shrink-0" />
               <span className="truncate">Reporte</span>
             </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-3 text-base font-semibold transition-all flex items-center justify-center gap-2 min-w-0"
+              style={{
+                backgroundColor: 'transparent',
+                color: '#4B5563',
+                border: '2px solid #E5E7EB',
+                borderRadius: '12px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F3F4F6';
+                e.currentTarget.style.borderColor = '#D1D5DB';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = '#E5E7EB';
+              }}
+              title="Actualizar lista"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>
+            </button>
           </div>
 
           {/* Search Bar moderno */}
