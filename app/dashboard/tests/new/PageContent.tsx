@@ -94,6 +94,8 @@ export default function NewMultiAnalysisPageContent() {
     const weightUnit = productInfo?.unit || 'LB';
     const isDualBag = false;
 
+    const [isDeleting, setIsDeleting] = useState(false);
+
     // Hooks
     const {
         isSaving,
@@ -116,6 +118,7 @@ export default function NewMultiAnalysisPageContent() {
         globalPesoBruto,
         isCompleted,
         setIsCompleted,
+        isDeleting
     });
 
     const {
@@ -138,20 +141,9 @@ export default function NewMultiAnalysisPageContent() {
         setGlobalPesoBruto
     });
 
-    const [isDeleting, setIsDeleting] = useState(false);
 
-    // Auto-save effect (moved from hook to allow coordination with upload state)
-    useEffect(() => {
-        // No guardar si se está subiendo una foto (evita race condition)
-        // No guardar si el análisis ya está completado
-        // No guardar si se está eliminando
-        if (basicsCompleted && analysisId && !isUploadingGlobal && !isCompleted && !isDeleting) {
-            const timer = setTimeout(() => {
-                saveDocument();
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [analyses, basicsCompleted, isUploadingGlobal, isCompleted, analysisId, saveDocument, isDeleting]);
+
+
 
     // Prevenir cierre de pestaña si hay subidas en progreso
     useEffect(() => {

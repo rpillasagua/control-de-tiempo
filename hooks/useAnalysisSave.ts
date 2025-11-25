@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Analysis, QualityAnalysis, AnalystColor, PesoConFoto } from '@/lib/types';
 import { getWorkShift, getProductionDate } from '@/lib/utils';
 
@@ -19,6 +19,7 @@ interface UseAnalysisSaveProps {
     globalPesoBruto: PesoConFoto;
     isCompleted: boolean;
     setIsCompleted: (completed: boolean) => void;
+    isDeleting?: boolean;
 }
 
 export const useAnalysisSave = ({
@@ -38,10 +39,15 @@ export const useAnalysisSave = ({
     globalPesoBruto,
     isCompleted,
     setIsCompleted,
+    isDeleting = false
 }: UseAnalysisSaveProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+    // Refs for auto-save
+    const timeoutRef = useRef<NodeJS.Timeout>();
+    const previousDataRef = useRef<string>('');
 
     const saveDocument = useCallback(async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
         if (!analysisId || !basicsCompleted) return;
@@ -143,6 +149,62 @@ export const useAnalysisSave = ({
             setIsSaving(false);
         }
     }, [analysisId, basicsCompleted, isCompleted, codigo, lote, talla, productType, originalAnalystColor, analystColor, analyses, originalCreatedAt, originalCreatedBy, originalDate, originalShift, globalPesoBruto, setIsCompleted]);
+
+    // Auto-save Effect with Deep Equality Check
+    useEffect(() => {
+        if (!basicsCompleted || !analysisId || isCompleted || isDeleting) return;
+
+        // Create a data object to check for changes
+        // We only include fields that should trigger a save
+        const dataToCheck = {
+            analyses,
+            globalPesoBruto,
+            codigo,
+            lote,
+            talla,
+            analystColor,
+            productType
+        };
+
+        const currentDataString = JSON.stringify(dataToCheck);
+
+        // If data hasn't changed, don't schedule a save
+        if (currentDataString === previousDataRef.current) {
+            return;
+        }
+
+        // Update ref immediately to prevent multiple schedules for same data
+        previousDataRef.current = currentDataString;
+
+        // Clear existing timeout
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        // Schedule new save
+        timeoutRef.current = setTimeout(() => {
+            saveDocument();
+        }, 2000);
+
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [
+        analyses,
+        globalPesoBruto,
+        codigo,
+        lote,
+        talla,
+        analystColor,
+        productType,
+        basicsCompleted,
+        analysisId,
+        isCompleted,
+        isDeleting,
+        saveDocument
+    ]);
 
     return {
         isSaving,
