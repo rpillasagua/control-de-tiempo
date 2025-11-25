@@ -88,33 +88,30 @@ export default function DefectSelector({
     const existingItems: DefectItem[] = Object.entries(selectedDefects).map(([key, quantity]) => ({
       key,
       label: DEFECTO_LABELS[key] || key,
-      onClick={() => handleRemoveDefect(item.key)
-  }
-                    className = "p-2.5 rounded-[10px] transition-all duration-300 hover:scale-110"
-                    style = {{
-    background: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
-    color: '#DC2626'
-  }}
-title = "Eliminar defecto"
-  >
-  <X className="w-4 h-4" />
-                  </button >
-                )}
-              </div >
-            ))}
-          </div >
-        </div >
+      quantity
+    }));
+    setSelectedItems(existingItems);
+  }, []); // Solo ejecutar al montar
+
+  return (
+    <div className="space-y-4">
+      {/* Mensaje cuando no hay defectos */}
+      {selectedItems.length === 0 && (
+        <div className="text-center py-8 text-slate-500">
+          <div className="text-sm font-[500]">No hay defectos agregados</div>
+          <div className="text-xs mt-1">Busca y selecciona defectos para agregarlos</div>
+        </div>
       )}
 
-{/* Mensaje cuando no hay defectos */ }
-{
-  selectedItems.length === 0 && (
-    <div className="text-center py-8 text-slate-500">
-      <div className="text-sm font-[500]">No hay defectos agregados</div>
-      <div className="text-xs mt-1">Busca y selecciona defectos para agregarlos</div>
+      {/* Lista de defectos */}
+      <div className="space-y-2">
+        {selectedItems.map((item) => (
+          <div key={item.key} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="text-sm font-medium text-slate-700">{item.label}</div>
+            <div className="text-xs text-slate-500 mt-1">Cantidad: {item.quantity}</div>
+          </div>
+        ))}
+      </div>
     </div>
-  )
-}
-    </div >
   );
 }
