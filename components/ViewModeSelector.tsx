@@ -11,32 +11,56 @@ interface ViewModeSelectorProps {
 }
 
 /**
- * Componente para seleccionar el modo de vista
+ * Componente para seleccionar el modo de vista - MODERNIZADO
  */
 export default function ViewModeSelector({ viewMode, onModeChange }: ViewModeSelectorProps) {
   return (
-    <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+    <div
+      className="flex p-1 rounded-[14px] border-2"
+      style={{
+        background: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)',
+        borderColor: '#CBD5E1'
+      }}
+    >
       <button
+        type="button"
         onClick={() => onModeChange('SUELTA')}
-        className={`p-2 rounded-md transition-all flex items-center gap-2 ${viewMode === 'SUELTA'
-            ? 'bg-white shadow-sm text-blue-600 ring-1 ring-black/5'
-            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+        className={`px-4 py-2.5 rounded-[10px] transition-all duration-300 flex items-center gap-2 font-[600] text-sm ${viewMode === 'SUELTA'
+            ? 'text-white shadow-lg scale-105'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           }`}
+        style={
+          viewMode === 'SUELTA'
+            ? {
+              background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+              boxShadow: '0 6px 12px -3px rgba(59, 130, 246, 0.4)'
+            }
+            : undefined
+        }
         title="Vista Detallada"
       >
         <Maximize2 size={18} />
-        <span className="text-xs font-medium hidden sm:inline">Detallada</span>
+        <span className="hidden sm:inline">Detallada</span>
       </button>
       <button
+        type="button"
         onClick={() => onModeChange('COMPACTA')}
-        className={`p-2 rounded-md transition-all flex items-center gap-2 ${viewMode === 'COMPACTA'
-            ? 'bg-white shadow-sm text-blue-600 ring-1 ring-black/5'
-            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+        className={`px-4 py-2.5 rounded-[10px] transition-all duration-300 flex items-center gap-2 font-[600] text-sm ${viewMode === 'COMPACTA'
+            ? 'text-white shadow-lg scale-105'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           }`}
+        style={
+          viewMode === 'COMPACTA'
+            ? {
+              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+              boxShadow: '0 6px 12px -3px rgba(99, 102, 241, 0.4)'
+            }
+            : undefined
+        }
         title="Vista Compacta"
       >
         <Minimize2 size={18} />
-        <span className="text-xs font-medium hidden sm:inline">Compacta</span>
+        <span className="hidden sm:inline">Compacta</span>
       </button>
     </div>
   );
