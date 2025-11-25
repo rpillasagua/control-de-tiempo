@@ -133,89 +133,56 @@ export default function NewMultiAnalysisPageContent() {
         }
     };
 
-    // Cargar y suscribirse a cambios en tiempo real del análisis
+    // Load initial data effect
     useEffect(() => {
-        const id = searchParams.get('id');
-        if (!id) {
-            setIsLoading(false);
-            return;
-        }
+        const loadAnalysis = async () => {
+            const id = searchParams.get('id');
+            if (id) {
+                try {
+                    const { getAnalysisById } = await import('@/lib/analysisService');
+                    const data = await getAnalysisById(id);
 
-        let unsubscribe: (() => void) | null = null;
+                    if (data) {
+                        setAnalysisId(data.id);
+                        setProductType(data.productType);
+                        setCodigo(data.codigo);
+                        setLote(data.lote);
+                        setTalla(data.talla || '');
+                        setAnalystColor(data.analystColor);
+                        setAnalyses(data.analyses);
+                        setGlobalPesoBruto(data.globalPesoBruto || {});
+                        setBasicsCompleted(true);
 
-        const setupSubscription = async () => {
-            try {
-                const { subscribeToAnalysis } = await import('@/lib/analysisService');
+                        // Preserve original metadata
+                        setOriginalCreatedAt(data.createdAt);
+                        setOriginalCreatedBy(data.createdBy);
+                        setOriginalDate(data.date);
+                        setOriginalShift(data.shift);
+                        setOriginalAnalystColor(data.analystColor);
 
-                console.log(`🔔 Suscribiéndose a cambios en tiempo real para: ${id}`);
-
-                unsubscribe = subscribeToAnalysis(
-                    id,
-                    (data) => {
-                        if (data) {
-                            console.log('📥 Datos actualizados recibidos del servidor');
-
-                            // Solo actualizar si no estamos subiendo fotos
-                            // para evitar que se sobreescriban los cambios locales
-                            if (!isUploadingGlobal) {
-                                setAnalysisId(data.id);
-                                setProductType(data.productType);
-                                setCodigo(data.codigo);
-                                setLote(data.lote);
-                                setTalla(data.talla || '');
-                                setAnalystColor(data.analystColor);
-                                setAnalyses(data.analyses);
-                                setGlobalPesoBruto(data.globalPesoBruto || {});
-                                setBasicsCompleted(true);
-
-                                // Preserve original metadata
-                                setOriginalCreatedAt(data.createdAt);
-                                setOriginalCreatedBy(data.createdBy);
-                                setOriginalDate(data.date);
-                                setOriginalShift(data.shift);
-                                setOriginalAnalystColor(data.analystColor);
-
-                                // Load completion status
-                                if (data.status === 'COMPLETADO') {
-                                    setIsCompleted(true);
-                                }
-
-                                // Si hay análisis, mantener el índice activo o activar el primero
-                                if (data.analyses.length > 0 && activeAnalysisIndex === 0) {
-                                    setActiveAnalysisIndex(0);
-                                }
-                            } else {
-                                console.log('⏸️ Subida en progreso, ignorando actualización para evitar sobrescribir');
-                            }
-                        } else {
-                            toast.error('Análisis eliminado por otro usuario');
-                            router.push('/');
+                        // Load completion status
+                        if (data.status === 'COMPLETADO') {
+                            setIsCompleted(true);
                         }
-                        setIsLoading(false);
-                    },
-                    (error) => {
-                        console.error('Error en suscripción:', error);
-                        toast.error('Error al cargar el análisis en tiempo real');
-                        setIsLoading(false);
+
+                        // Si hay análisis, activar el primero
+                        if (data.analyses.length > 0) {
+                            setActiveAnalysisIndex(0);
+                        }
+                    } else {
+                        toast.error('Análisis no encontrado');
+                        router.push('/');
                     }
-                );
-            } catch (error) {
-                console.error('Error setting up subscription:', error);
-                toast.error('Error al configurar sincronización');
-                setIsLoading(false);
+                } catch (error) {
+                    console.error('Error loading analysis:', error);
+                    toast.error('Error al cargar el análisis');
+                }
             }
+            setIsLoading(false);
         };
 
-        setupSubscription();
-
-        // Cleanup: cancelar suscripción cuando el componente se desmonte
-        return () => {
-            if (unsubscribe) {
-                console.log('🔕 Cancelando suscripción en tiempo real');
-                unsubscribe();
-            }
-        };
-    }, [searchParams, router, isUploadingGlobal, activeAnalysisIndex]);
+        loadAnalysis();
+    }, [searchParams, router]);
 
     const saveDocument = async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
         if (!analysisId || !basicsCompleted) return;
