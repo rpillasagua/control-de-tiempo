@@ -224,14 +224,33 @@ export default function NewMultiAnalysisPageContent() {
                 status: finalStatus,
                 completedAt: completedAtValue,
                 analystColor: originalAnalystColor || analystColor!,
-                analyses: analyses.map(a => ({
-                    ...a,
-                    pesoBruto: (a.pesoBruto?.valor || a.pesoBruto?.fotoUrl) ? a.pesoBruto : undefined,
-                    pesoCongelado: (a.pesoCongelado?.valor || a.pesoCongelado?.fotoUrl) ? a.pesoCongelado : undefined,
-                    pesoNeto: (a.pesoNeto?.valor || a.pesoNeto?.fotoUrl) ? a.pesoNeto : undefined,
-                    pesoConGlaseo: (a.pesoConGlaseo?.valor || a.pesoConGlaseo?.fotoUrl) ? a.pesoConGlaseo : undefined,
-                    pesoSinGlaseo: (a.pesoSinGlaseo?.valor || a.pesoSinGlaseo?.fotoUrl) ? a.pesoSinGlaseo : undefined,
-                })),
+                analyses: analyses.map(a => {
+                    // Limpiar uniformidad: solo guardar si tiene valores o fotos
+                    const hasUniformidadData = a.uniformidad && (
+                        (a.uniformidad.grandes?.valor || a.uniformidad.grandes?.fotoUrl) ||
+                        (a.uniformidad.pequenos?.valor || a.uniformidad.pequenos?.fotoUrl)
+                    );
+
+                    // Limpiar sub-objetos de uniformidad
+                    const cleanUniformidad = hasUniformidadData ? {
+                        grandes: (a.uniformidad?.grandes?.valor || a.uniformidad?.grandes?.fotoUrl)
+                            ? a.uniformidad.grandes
+                            : undefined,
+                        pequenos: (a.uniformidad?.pequenos?.valor || a.uniformidad?.pequenos?.fotoUrl)
+                            ? a.uniformidad.pequenos
+                            : undefined,
+                    } : undefined;
+
+                    return {
+                        ...a,
+                        pesoBruto: (a.pesoBruto?.valor || a.pesoBruto?.fotoUrl) ? a.pesoBruto : undefined,
+                        pesoCongelado: (a.pesoCongelado?.valor || a.pesoCongelado?.fotoUrl) ? a.pesoCongelado : undefined,
+                        pesoNeto: (a.pesoNeto?.valor || a.pesoNeto?.fotoUrl) ? a.pesoNeto : undefined,
+                        pesoConGlaseo: (a.pesoConGlaseo?.valor || a.pesoConGlaseo?.fotoUrl) ? a.pesoConGlaseo : undefined,
+                        pesoSinGlaseo: (a.pesoSinGlaseo?.valor || a.pesoSinGlaseo?.fotoUrl) ? a.pesoSinGlaseo : undefined,
+                        uniformidad: cleanUniformidad,
+                    };
+                }),
                 createdAt: originalCreatedAt || now.toISOString(),
                 updatedAt: now.toISOString(),
                 createdBy: originalCreatedBy || user?.email || 'unknown',
