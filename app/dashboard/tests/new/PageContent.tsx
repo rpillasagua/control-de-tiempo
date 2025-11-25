@@ -377,6 +377,10 @@ export default function NewMultiAnalysisPageContent() {
             // Update analysis with photo URL using safe helper
             setAnalyses(prev => updateAnalysisField(prev, targetIndex, field, url));
 
+            // 🔥 CRÍTICO: Esperar un momento para que React actualice el estado
+            // Esto evita la race condition donde saveDocument usa el estado viejo
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // 🔥 CRÍTICO: Guardar inmediatamente después de subir foto
             // No esperar el auto-save de 1 segundo porque el usuario podría recargar
             console.log('💾 Guardando análisis inmediatamente después de subir foto...');
@@ -444,6 +448,9 @@ export default function NewMultiAnalysisPageContent() {
                     )
                 };
             }));
+
+            // 🔥 CRÍTICO: Esperar un momento para que React actualice el estado
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // 🔥 Guardar inmediatamente
             console.log('💾 Guardando después de subir foto de control pesos...');
@@ -557,6 +564,9 @@ export default function NewMultiAnalysisPageContent() {
             ));
 
             setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
+
+            // 🔥 CRÍTICO: Esperar un momento para que React actualice el estado
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // 🔥 Guardar inmediatamente
             console.log('💾 Guardando después de subir foto global...');
