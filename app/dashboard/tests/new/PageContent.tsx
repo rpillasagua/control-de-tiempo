@@ -502,17 +502,29 @@ export default function NewMultiAnalysisPageContent() {
 
     return (
         <div className="min-h-screen pb-20">
-            {/* Floating Save Indicator (top-right corner) */}
+            {/* Floating Save Indicator - MODERNIZADO */}
             {(isSaving || saveError) && (
                 <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                     {isSaving ? (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg shadow-lg text-xs font-medium">
-                            <Clock className="w-3.5 h-3.5 animate-spin" />
+                        <div
+                            className="flex items-center gap-2 px-4 py-3 text-white rounded-[14px] text-sm font-[600] border-2 border-blue-400/50"
+                            style={{
+                                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                                boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)'
+                            }}
+                        >
+                            <Clock className="w-4 h-4 animate-spin" />
                             <span>Guardando...</span>
                         </div>
                     ) : saveError ? (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg shadow-lg text-xs font-medium">
-                            <AlertCircle className="w-3.5 h-3.5" />
+                        <div
+                            className="flex items-center gap-2 px-4 py-3 text-white rounded-[14px] text-sm font-[600] border-2 border-red-400/50"
+                            style={{
+                                background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                                boxShadow: '0 8px 16px -4px rgba(239, 68, 68, 0.4)'
+                            }}
+                        >
+                            <AlertCircle className="w-4 h-4" />
                             <span>Error al guardar</span>
                         </div>
                     ) : null}
@@ -526,7 +538,19 @@ export default function NewMultiAnalysisPageContent() {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => router.back()}
-                                className="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all"
+                                className="p-2.5 rounded-[14px] text-slate-400 hover:text-white transition-all duration-300 hover:scale-110 border-2 border-transparent hover:border-blue-500/30"
+                                style={{
+                                    background: 'transparent',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%)';
+                                    e.currentTarget.style.boxShadow = '0 6px 12px -3px rgba(59, 130, 246, 0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 title="Volver"
                             >
                                 <ArrowLeft size={20} />
