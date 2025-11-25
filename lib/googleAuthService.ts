@@ -396,6 +396,8 @@ class GoogleAuthService {
 
   /**
    * Programa refresh automático del token
+   * IMPORTANTE: Ya no intenta refresh silencioso (causa errores CORS)
+   * En su lugar, dispara evento para que la UI notifique al usuario
    */
   private scheduleTokenRefresh(delayMs: number) {
     // Limpiar timer anterior
@@ -403,12 +405,17 @@ class GoogleAuthService {
       clearTimeout(this.tokenRefreshTimer);
     }
 
-    this.tokenRefreshTimer = setTimeout(async () => {
-      logger.log('🔄 Refrescando token automáticamente...');
+    this.tokenRefreshTimer = setTimeout(() => {
+      logger.log('⚠️ Token próximo a expirar - solicitando re-autenticación del usuario');
 
-      if (this.tokenClient) {
-        // CRÍTICO: usar prompt: 'none' para refresh silencioso sin popup
-        this.tokenClient.requestAccessToken({ prompt: 'none' });
+      // Disparar evento para que la UI muestre notificación
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('google-token-expiring', {
+          detail: {
+            expiresIn: 300, // 5 minutos
+            message: 'Tu sesión está por expirar'
+          }
+        }));
       }
     }, delayMs);
   }

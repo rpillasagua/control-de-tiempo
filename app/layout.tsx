@@ -4,6 +4,7 @@ import { Inter, Outfit } from 'next/font/google';
 import { Toaster } from '@/components/Toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ServiceWorkerManager from '@/components/ServiceWorkerManager';
+import TokenExpiryNotifier from '@/components/TokenExpiryNotifier';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
@@ -58,6 +59,7 @@ export default function RootLayout({
           {children}
         </ErrorBoundary>
         <Toaster />
+        <TokenExpiryNotifier />
         <ServiceWorkerManager />
       </body>
     </html>
