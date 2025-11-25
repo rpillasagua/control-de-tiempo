@@ -27,7 +27,7 @@ const DeleteConfirmationModal = dynamic(() => import('@/components/DeleteConfirm
     loading: () => null
 });
 
-import ViewModeSelector, { ViewMode } from '@/components/ViewModeSelector';
+import ViewModeSelector, { ViewMode, useViewMode } from '@/components/ViewModeSelector';
 
 // Types and Utils
 import {
@@ -73,7 +73,7 @@ export default function NewMultiAnalysisPageContent() {
         description: 'Esta acción eliminará el análisis permanentemente',
         action: async () => { }
     });
-    const [viewMode, setViewMode] = useState<ViewMode>('COMPACTA');
+    const { viewMode, setViewMode } = useViewMode();
     const [globalPesoBruto, setGlobalPesoBruto] = useState<PesoConFoto>({});
     const [isCompleted, setIsCompleted] = useState(false);
     const [codeValidationError, setCodeValidationError] = useState<string | null>(null);
@@ -191,6 +191,7 @@ export default function NewMultiAnalysisPageContent() {
         setAnalysisId(generateId());
     };
 
+    // Handle full analysis deletion
     const handleDeleteAnalysis = async () => {
         if (!analysisId) return;
         try {
@@ -709,6 +710,7 @@ export default function NewMultiAnalysisPageContent() {
                                 onDeleteRequest={handlePesoBrutoDelete}
                                 onPhotoCapture={handlePesoBrutoPhotoCapture}
                                 isPhotoUploading={isPesoBrutoUploading}
+                                viewMode={viewMode}
                             />
                         )
                     }
@@ -721,78 +723,115 @@ export default function NewMultiAnalysisPageContent() {
                                     <CardTitle>⚖️ Control de Pesos</CardTitle>
                                 </CardHeader>
                                 <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                    {/* Peso Bruto */}
-                                    {!isDualBag && (
-                                        <>
-                                            <WeightInputRow
-                                                label="Peso Bruto"
-                                                value={currentAnalysis.pesoBruto?.valor}
-                                                photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
-                                                onChange={(val) => handleWeightChange('pesoBruto', parseFloat(val))}
-                                                onPhotoClick={() => document.getElementById(`file-pesoBruto-${activeAnalysisIndex}`)?.click()}
-                                                isUploading={isFieldUploading('pesoBruto')}
-                                            />
-                                            <input
-                                                type="file"
-                                                id={`file-pesoBruto-${activeAnalysisIndex}`}
-                                                className="hidden"
-                                                accept="image/*"
-                                                capture="environment"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) handlePhotoCapture('pesoBruto', file);
-                                                }}
-                                            />
-                                        </>
-                                    )}
+                                    <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-4' : 'space-y-6 md:space-y-4'}>
+                                        {/* Peso Bruto */}
+                                        {!isDualBag && (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <Label>Peso Bruto ({weightUnit})</Label>
+                                                    {currentAnalysis.pesoBruto?.valor && (
+                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={currentAnalysis.pesoBruto?.valor || ''}
+                                                    onChange={(e) => handleWeightChange('pesoBruto', parseFloat(e.target.value))}
+                                                />
+                                                <PhotoCapture
+                                                    key={`pesoBruto-${activeAnalysisIndex}`}
+                                                    label="Foto Peso Bruto"
+                                                    photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
+                                                    isUploading={isFieldUploading('pesoBruto')}
+                                                />
+                                            </div>
+                                        )}
 
-                                    {/* Peso Neto */}
-                                    <>
-                                        <WeightInputRow
-                                            label="Peso Neto"
-                                            value={currentAnalysis.pesoNeto?.valor}
-                                            photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
-                                            onChange={(val) => handleWeightChange('pesoNeto', parseFloat(val))}
-                                            onPhotoClick={() => document.getElementById(`file-pesoNeto-${activeAnalysisIndex}`)?.click()}
-                                            isUploading={isFieldUploading('pesoNeto')}
-                                        />
-                                        <input
-                                            type="file"
-                                            id={`file-pesoNeto-${activeAnalysisIndex}`}
-                                            className="hidden"
-                                            accept="image/*"
-                                            capture="environment"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) handlePhotoCapture('pesoNeto', file);
-                                            }}
-                                        />
-                                    </>
+                                        {/* Peso Congelado */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Peso Congelado ({weightUnit})</Label>
+                                                {currentAnalysis.pesoCongelado?.valor && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                value={currentAnalysis.pesoCongelado?.valor || ''}
+                                                onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
+                                            />
+                                            <PhotoCapture
+                                                key={`pesoCongelado-${activeAnalysisIndex}`}
+                                                label="Foto Peso Congelado"
+                                                photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
+                                                onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
+                                                isUploading={isFieldUploading('pesoCongelado')}
+                                            />
+                                        </div>
 
-                                    {/* Glaseo (Solo para COLA y VALOR_AGREGADO) */}
-                                    {(productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
-                                        <>
-                                            <WeightInputRow
-                                                label="Glaseo"
-                                                value={currentAnalysis.glaseo?.valor}
-                                                photoUrl={currentAnalysis.glaseo?.fotoUrl}
-                                                onChange={(val) => handleWeightChange('glaseo', parseFloat(val))}
-                                                onPhotoClick={() => document.getElementById(`file-glaseo-${activeAnalysisIndex}`)?.click()}
-                                                isUploading={isFieldUploading('glaseo')}
+                                        {/* Peso Neto */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Peso Neto ({weightUnit})</Label>
+                                                {currentAnalysis.pesoNeto?.valor && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                value={currentAnalysis.pesoNeto?.valor || ''}
+                                                onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
                                             />
-                                            <input
-                                                type="file"
-                                                id={`file-glaseo-${activeAnalysisIndex}`}
-                                                className="hidden"
-                                                accept="image/*"
-                                                capture="environment"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) handlePhotoCapture('glaseo', file);
-                                                }}
+                                            <PhotoCapture
+                                                key={`pesoNeto-${activeAnalysisIndex}`}
+                                                label="Foto Peso Neto"
+                                                photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
+                                                onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
+                                                isUploading={isFieldUploading('pesoNeto')}
                                             />
-                                        </>
-                                    )}
+                                        </div>
+
+                                        {/* Glaseo (Solo para COLA y VALOR_AGREGADO) */}
+                                        {(productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <Label>Glaseo (%)</Label>
+                                                    {currentAnalysis.glaseo?.valor && (
+                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={currentAnalysis.glaseo?.valor || ''}
+                                                    onChange={(e) => handleWeightChange('glaseo', parseFloat(e.target.value))}
+                                                />
+                                                <PhotoCapture
+                                                    key={`glaseo-${activeAnalysisIndex}`}
+                                                    label="Foto Glaseo"
+                                                    photoUrl={currentAnalysis.glaseo?.fotoUrl}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('glaseo', file)}
+                                                    isUploading={isFieldUploading('glaseo')}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         )

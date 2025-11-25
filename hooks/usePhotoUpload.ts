@@ -79,7 +79,7 @@ export const usePhotoUpload = ({
             if (field.startsWith('uniformidad_')) {
                 const tipo = field.split('_')[1];
                 fieldPath = `uniformidad.${tipo}.fotoUrl`;
-            } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo'].includes(field)) {
+            } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo', 'glaseo'].includes(field)) {
                 fieldPath = `${field}.fotoUrl`;
             }
 
