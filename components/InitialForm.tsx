@@ -98,6 +98,33 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         return trimmed;
     };
 
+    // Helper para normalizar lote
+    const getNormalizedLote = (input: string, type?: ProductType) => {
+        let trimmed = input.trim().toUpperCase();
+        if (!trimmed) return trimmed;
+
+        // Limpiar mainPart de 'VA' si lo tiene pegado o separado
+        let mainPart = trimmed.split('-')[0].trim().replace(/\s*VA\s*$/, '');
+        let yearPart = trimmed.includes('-') ? trimmed.split('-')[1].trim() : '25';
+
+        // Si mainPart es numérico, hacer padding a 7 dígitos
+        if (/^\d+$/.test(mainPart)) {
+            mainPart = mainPart.padStart(7, '0');
+        }
+
+        // Reconstruir
+        let normalized = `${mainPart}-${yearPart}`;
+
+        // Agregar VA si es Valor Agregado
+        if (type === 'VALOR_AGREGADO') {
+            if (!normalized.endsWith(' VA')) {
+                normalized += ' VA';
+            }
+        }
+
+        return normalized;
+    };
+
     const validateField = (field: keyof AnalysisData) => {
         let error = '';
         if (field === 'lote' && !formData.lote.trim()) error = 'El lote es requerido';
@@ -131,21 +158,30 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         const isTallaValid = validateField('talla');
         const isColorValid = validateField('color');
 
-        // Marcar todos los campos como tocados para que se muestren los errores
+        // Marcar todos los campos como tocados
         setTouched({ lote: true, codigo: true, talla: true, color: true });
 
         if (!isLoteValid || !isCodigoValid || !isTallaValid || !isColorValid) {
-            // Scroll to top para que se vea el error
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
         setIsSubmitting(true);
         try {
-            // Enviar datos con el código normalizado
             const normalizedCode = getNormalizedCode(formData.codigo);
+
+            let pType = initialData?.productType;
+            if (!pType && normalizedCode) {
+                const product = PRODUCT_DATA[normalizedCode];
+                if (product) pType = product.type;
+            }
+
+            const normalizedLote = getNormalizedLote(formData.lote, pType);
+
             await onComplete({
                 ...formData,
+                lote: normalizedLote,
+                talla: formData.talla.trim(),
                 codigo: normalizedCode
             });
         } catch (error) {

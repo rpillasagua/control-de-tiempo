@@ -43,8 +43,14 @@ export default function DriveDiagnostic() {
                 if (rootId) {
                     addLog('Verificando contenido de carpeta raíz...');
                     // @ts-ignore
-                    const folderName = await googleDriveService.getFile(rootId).then((f: any) => f.name).catch((e: any) => `Error: ${e.message}`);
-                    addLog(`Nombre de carpeta raíz: ${folderName}`);
+                    const fileData = await googleDriveService.getFile(rootId);
+                    addLog(`Nombre de carpeta raíz: ${fileData.name}`);
+
+                    if (fileData.webViewLink) {
+                        addLog(`🔗 Link directo: ${fileData.webViewLink}`);
+                        // Expose link to UI via a special log format or state if needed, 
+                        // but for now logging it is enough as it appears in the diagnostic box.
+                    }
                 }
 
             } catch (error: any) {
@@ -64,7 +70,15 @@ export default function DriveDiagnostic() {
             <CardContent>
                 <div className="bg-slate-950 text-green-400 p-4 rounded-lg font-mono text-xs h-96 overflow-y-auto">
                     {logs.map((log, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-800 pb-1">{log}</div>
+                        <div key={i} className="mb-1 border-b border-slate-800 pb-1">
+                            {log.includes('🔗 Link directo:') ? (
+                                <span>
+                                    🔗 Link directo: <a href={log.split('🔗 Link directo: ')[1]} target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300">{log.split('🔗 Link directo: ')[1]}</a>
+                                </span>
+                            ) : (
+                                log
+                            )}
+                        </div>
                     ))}
                 </div>
             </CardContent>

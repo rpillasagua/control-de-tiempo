@@ -138,17 +138,20 @@ export default function NewMultiAnalysisPageContent() {
         setGlobalPesoBruto
     });
 
+    const [isDeleting, setIsDeleting] = useState(false);
+
     // Auto-save effect (moved from hook to allow coordination with upload state)
     useEffect(() => {
         // No guardar si se está subiendo una foto (evita race condition)
         // No guardar si el análisis ya está completado
-        if (basicsCompleted && analysisId && !isUploadingGlobal && !isCompleted) {
+        // No guardar si se está eliminando
+        if (basicsCompleted && analysisId && !isUploadingGlobal && !isCompleted && !isDeleting) {
             const timer = setTimeout(() => {
                 saveDocument();
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [analyses, basicsCompleted, isUploadingGlobal, isCompleted, analysisId, saveDocument]);
+    }, [analyses, basicsCompleted, isUploadingGlobal, isCompleted, analysisId, saveDocument, isDeleting]);
 
     // Prevenir cierre de pestaña si hay subidas en progreso
     useEffect(() => {
@@ -194,6 +197,7 @@ export default function NewMultiAnalysisPageContent() {
     // Handle full analysis deletion
     const handleDeleteAnalysis = async () => {
         if (!analysisId) return;
+        setIsDeleting(true); // Stop auto-save immediately
         try {
             const { deleteAnalysis } = await import('@/lib/analysisService');
             await deleteAnalysis(analysisId);
@@ -202,6 +206,7 @@ export default function NewMultiAnalysisPageContent() {
         } catch (error) {
             console.error('Error deleting analysis:', error);
             toast.error('Error al eliminar el análisis');
+            setIsDeleting(false); // Resume if failed
         }
     };
 
@@ -1052,9 +1057,7 @@ export default function NewMultiAnalysisPageContent() {
                     {
                         productType !== 'CONTROL_PESOS' && (
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>🐛 Defectos de Calidad</CardTitle>
-                                </CardHeader>
+
                                 <CardContent>
                                     <DefectSelector
                                         key={`defects-${activeAnalysisIndex}-${analysisId}`}
