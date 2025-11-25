@@ -140,7 +140,7 @@ export default function DefectSelector({
 
   return (
     <div className="space-y-4">
-      {/* Barra de búsqueda */}
+      {/* Barra de búsqueda - MODERNIZADA */}
       <div className="relative">
         <div className="relative">
           <input
@@ -155,27 +155,46 @@ export default function DefectSelector({
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             onKeyDown={handleKeyDown}
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-5 py-4 rounded-[14px] text-base font-[500] border-2 transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
+              borderColor: '#CBD5E1',
+              color: '#1E293B'
+            }}
           />
         </div>
 
-        {/* Sugerencias de autocompletado */}
+        {/* Sugerencias de autocompletado - MODERNIZADAS */}
         {showSuggestions && searchTerm && (
-          <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div
+            className="absolute z-10 w-full mt-2 rounded-[14px] shadow-lg max-h-48 overflow-y-auto border-2 border-blue-200"
+            style={{
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+              boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.2)'
+            }}
+          >
             {filteredSuggestions.length > 0 ? (
               filteredSuggestions.map((defecto) => (
                 <button
                   key={defecto}
                   type="button"
                   onClick={() => handleAddDefect(defecto)}
-                  className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg"
+                  className="w-full px-4 py-3 text-left font-[500] hover:bg-blue-50 flex items-center gap-2 first:rounded-t-[14px] last:rounded-b-[14px] transition-colors"
+                  style={{ color: '#1E293B' }}
                 >
-                  <Plus className="w-4 h-4 text-blue-400" />
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                    }}
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                  </div>
                   <span>{DEFECTO_LABELS[defecto]}</span>
                 </button>
               ))
             ) : (
-              <div className="px-4 py-2 text-gray-400 text-sm">
+              <div className="px-4 py-3 text-slate-500 text-sm">
                 No se encontraron defectos
               </div>
             )}
@@ -187,14 +206,24 @@ export default function DefectSelector({
       {selectedItems.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-gray-300">Defectos Agregados:</h4>
+            <h4 className="text-sm font-bold text-slate-700">Defectos Agregados:</h4>
             <button
               type="button"
               onClick={() => setIsEditMode(!isEditMode)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isEditMode
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-sm font-[600] transition-all duration-300 hover:scale-105"
+              style={
+                isEditMode
+                  ? {
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    boxShadow: '0 6px 12px -3px rgba(16, 185, 129, 0.4)',
+                    color: 'white'
+                  }
+                  : {
+                    background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                    boxShadow: '0 6px 12px -3px rgba(59, 130, 246, 0.4)',
+                    color: 'white'
+                  }
+              }
               title={isEditMode ? 'Finalizar edición' : 'Editar defectos'}
             >
               {isEditMode ? (
@@ -214,21 +243,31 @@ export default function DefectSelector({
             {selectedItems.map((item) => (
               <div
                 key={item.key}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-gray-800 border border-gray-600 rounded-lg"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-[14px] border-2"
+                style={{
+                  background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+                  borderColor: '#E2E8F0',
+                  boxShadow: '0 2px 6px -1px rgba(0, 0, 0, 0.08)'
+                }}
               >
                 <div className="flex-1 min-w-0">
-                  <span className="text-white font-medium block truncate">{item.label}</span>
+                  <span className="text-slate-900 font-[600] block truncate">{item.label}</span>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <label className="text-sm text-gray-300 whitespace-nowrap">Cantidad:</label>
+                  <label className="text-sm text-slate-600 font-[500] whitespace-nowrap">Cantidad:</label>
                   <input
                     type="number"
                     min="0"
                     value={item.quantity}
                     onChange={(e) => handleQuantityChange(item.key, e.target.value)}
                     placeholder="0"
-                    className="w-20 sm:w-24 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 sm:w-24 px-4 py-2.5 rounded-[10px] text-center font-[600] border-2 focus:outline-none transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)',
+                      borderColor: '#CBD5E1',
+                      color: '#1E293B'
+                    }}
                   />
                 </div>
 
@@ -236,7 +275,11 @@ export default function DefectSelector({
                   <button
                     type="button"
                     onClick={() => handleRemoveDefect(item.key)}
-                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
+                    className="p-2.5 rounded-[10px] transition-all duration-300 hover:scale-110"
+                    style={{
+                      background: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
+                      color: '#DC2626'
+                    }}
                     title="Eliminar defecto"
                   >
                     <X className="w-4 h-4" />
@@ -250,8 +293,8 @@ export default function DefectSelector({
 
       {/* Mensaje cuando no hay defectos */}
       {selectedItems.length === 0 && (
-        <div className="text-center py-8 text-gray-400">
-          <div className="text-sm">No hay defectos agregados</div>
+        <div className="text-center py-8 text-slate-500">
+          <div className="text-sm font-[500]">No hay defectos agregados</div>
           <div className="text-xs mt-1">Busca y selecciona defectos para agregarlos</div>
         </div>
       )}
