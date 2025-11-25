@@ -29,7 +29,16 @@ export async function compressImage(
     try {
         console.log(`📦 Compressing image: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
-        const compressedFile = await imageCompression(file, compressionOptions);
+        // Create a promise that rejects after a timeout (e.g., 10 seconds)
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Compression timed out')), 10000);
+        });
+
+        // Race between compression and timeout
+        const compressedFile = await Promise.race([
+            imageCompression(file, compressionOptions),
+            timeoutPromise
+        ]);
 
         console.log(
             `✅ Compression complete: ${compressedFile.name} (${(compressedFile.size / 1024 / 1024).toFixed(2)} MB) - ${((1 - compressedFile.size / file.size) * 100).toFixed(1)}% reduction`
@@ -38,7 +47,20 @@ export async function compressImage(
         return compressedFile;
     } catch (error) {
         console.error('❌ Error compressing image:', error);
-        // If compression fails, return the original file
+
+        // If it failed with WebWorker, try without it (fallback for some mobile devices)
+        if (compressionOptions.useWebWorker) {
+            console.warn('⚠️ Retrying compression without WebWorker...');
+            try {
+                const fallbackOptions = { ...compressionOptions, useWebWorker: false };
+                const compressedFile = await imageCompression(file, fallbackOptions);
+                return compressedFile;
+            } catch (retryError) {
+                console.error('❌ Error in fallback compression:', retryError);
+            }
+        }
+
+        // If all fails, return the original file
         console.warn('⚠️ Returning original file due to compression error');
         return file;
     }
