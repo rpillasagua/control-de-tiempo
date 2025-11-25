@@ -365,6 +365,14 @@ export default function NewMultiAnalysisPageContent() {
                 oldUrl = currentFieldValue?.fotoUrl;
             }
 
+            console.log('📸 [DEBUG] handlePhotoCapture:', {
+                field,
+                targetIndex,
+                hasTargetAnalysis: !!targetAnalysis,
+                oldUrl,
+                currentFieldValue: targetAnalysis[field as keyof Analysis]
+            });
+
             const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
                 file,
                 codigo,
@@ -418,6 +426,12 @@ export default function NewMultiAnalysisPageContent() {
             const registro = targetAnalysis.pesosBrutos?.find(r => r.id === registroId);
             const oldUrl = registro?.fotoUrl;
 
+            console.log('📸 [DEBUG] handlePesoBrutoPhotoCapture:', {
+                registroId,
+                targetIndex,
+                oldUrl
+            });
+
             const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
                 file,
                 codigo,
@@ -467,12 +481,20 @@ export default function NewMultiAnalysisPageContent() {
     const extractFileIdFromUrl = (url: string): string | null => {
         if (!url) return null;
 
-        // Formato: https://drive.google.com/uc?export=view&id=FILE_ID
+        // 1. Check for our custom x-file-id parameter first (most reliable for our app)
+        const customMatch = url.match(/[?&]x-file-id=([^&]+)/);
+        if (customMatch) return customMatch[1];
+
+        // 2. Formato googleusercontent.com: https://lh3.googleusercontent.com/d/FILE_ID=s2000
+        const googleUserContentMatch = url.match(/googleusercontent\.com\/d\/([^=?&]+)/);
+        if (googleUserContentMatch) return googleUserContentMatch[1];
+
+        // 3. Formato: https://drive.google.com/uc?export=view&id=FILE_ID
         // o https://drive.google.com/thumbnail?id=FILE_ID&sz=w800
         const match = url.match(/[?&]id=([^&]+)/);
         if (match) return match[1];
 
-        // Formato: https://drive.google.com/file/d/FILE_ID/view
+        // 4. Formato: https://drive.google.com/file/d/FILE_ID/view
         const match2 = url.match(/\/file\/d\/([^/]+)/);
         if (match2) return match2[1];
 
