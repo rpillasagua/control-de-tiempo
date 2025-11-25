@@ -19,8 +19,8 @@ import AnalysisTabs from '@/components/AnalysisTabs';
 import PhotoCapture from '@/components/PhotoCapture';
 import ControlPesosBrutos from '@/components/ControlPesosBrutos';
 import DefectSelector from '@/components/DefectSelector';
+import { WeightInputRow } from '@/components/WeightInputRow';
 import dynamic from 'next/dynamic';
-import { updateAnalysisField } from '@/lib/analysisUtils';
 
 // Lazy load heavy components
 const DeleteConfirmationModal = dynamic(() => import('@/components/DeleteConfirmationModal'), {
@@ -32,16 +32,17 @@ import ViewModeSelector, { ViewMode } from '@/components/ViewModeSelector';
 // Types and Utils
 import {
     ProductType,
-    QualityAnalysis,
     AnalystColor,
     Analysis,
     PesoBrutoRegistro,
     ANALYST_COLOR_HEX,
     PesoConFoto
 } from '@/lib/types';
-import { getWorkShift, formatDate, getProductionDate, generateId } from '@/lib/utils';
+import { generateId } from '@/lib/utils';
 import { useWeightInput } from '@/hooks/useWeightInput';
 import { PRODUCT_DATA } from '@/lib/product-data';
+import { usePhotoUpload } from '@/hooks/usePhotoUpload';
+import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 
 export default function NewMultiAnalysisPageContent() {
     const router = useRouter();
@@ -59,18 +60,19 @@ export default function NewMultiAnalysisPageContent() {
     const [codigo, setCodigo] = useState('');
     const [lote, setLote] = useState('');
     const [talla, setTalla] = useState('');
-    const [color, setColor] = useState('');
     const [analystColor, setAnalystColor] = useState<AnalystColor | null>(null);
 
     // UI State
-    const [isUploadingGlobal, setIsUploadingGlobal] = useState(false);
-    const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
-    const [photos, setPhotos] = useState<Record<string, File>>({});
-    const [saveError, setSaveError] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [confirmText, setConfirmText] = useState('');
+    const [deleteModalConfig, setDeleteModalConfig] = useState<{
+        title: string;
+        description: string;
+        action: () => Promise<void>;
+    }>({
+        title: 'Eliminar Análisis',
+        description: 'Esta acción eliminará el análisis permanentemente',
+        action: async () => { }
+    });
     const [viewMode, setViewMode] = useState<ViewMode>('COMPACTA');
     const [globalPesoBruto, setGlobalPesoBruto] = useState<PesoConFoto>({});
     const [isCompleted, setIsCompleted] = useState(false);
@@ -91,6 +93,76 @@ export default function NewMultiAnalysisPageContent() {
     const masterInfo = productInfo?.master || '';
     const weightUnit = productInfo?.unit || 'LB';
     const isDualBag = false;
+
+    // Hooks
+    const {
+        isSaving,
+        saveError,
+        saveDocument
+    } = useAnalysisSave({
+        analysisId,
+        basicsCompleted,
+        analyses,
+        codigo,
+        lote,
+        talla,
+        productType,
+        analystColor,
+        originalAnalystColor,
+        originalCreatedAt,
+        originalCreatedBy,
+        originalDate,
+        originalShift,
+        globalPesoBruto,
+        isCompleted,
+        setIsCompleted,
+    });
+
+    const {
+        isUploadingGlobal,
+        uploadingPhotos,
+        handlePhotoCapture,
+        handlePesoBrutoPhotoCapture,
+        handleGlobalPesoBrutoPhoto,
+        isFieldUploading,
+        isPesoBrutoUploading
+    } = usePhotoUpload({
+        analysisId: analysisId!,
+        analyses,
+        setAnalyses,
+        activeAnalysisIndex,
+        codigo,
+        lote,
+        saveDocument,
+        globalPesoBruto,
+        setGlobalPesoBruto
+    });
+
+    // Auto-save effect (moved from hook to allow coordination with upload state)
+    useEffect(() => {
+        // No guardar si se está subiendo una foto (evita race condition)
+        // No guardar si el análisis ya está completado
+        if (basicsCompleted && analysisId && !isUploadingGlobal && !isCompleted) {
+            const timer = setTimeout(() => {
+                saveDocument();
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [analyses, basicsCompleted, isUploadingGlobal, isCompleted, analysisId, saveDocument]);
+
+    // Prevenir cierre de pestaña si hay subidas en progreso
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isUploadingGlobal) {
+                e.preventDefault();
+                e.returnValue = ''; // Mensaje estándar del navegador
+                return '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isUploadingGlobal]);
 
     // Helper Functions
     const updateAnalysisAtIndex = (index: number, updates: Partial<Analysis>) => {
@@ -113,7 +185,6 @@ export default function NewMultiAnalysisPageContent() {
         setCodigo(data.codigo);
         setLote(data.lote);
         setTalla(data.talla);
-        // El formulario devuelve 'color', mapearlo a 'analystColor'
         setAnalystColor(data.color);
         setBasicsCompleted(true);
         setAnalyses([{ numero: 1 }]);
@@ -133,400 +204,130 @@ export default function NewMultiAnalysisPageContent() {
         }
     };
 
-    // Load initial data effect
+    const handleDeleteIndividualAnalysis = async (index: number) => {
+        setDeleteModalConfig({
+            title: `Eliminar Análisis #${index + 1}`,
+            description: `¿Estás seguro? Esta acción eliminará solo el análisis #${index + 1} y sus fotos asociadas.`,
+            action: async () => {
+                const analysisToDelete = analyses[index];
+
+                // 1. Collect all photo URLs to delete
+                const photosToDelete: string[] = [];
+
+                // Helper to add if exists
+                const addIfUrl = (url?: string) => {
+                    if (url && url.includes('drive.google.com')) {
+                        const match = url.match(/id=([^&]+)/);
+                        if (match && match[1]) photosToDelete.push(match[1]);
+                    }
+                };
+
+                addIfUrl(analysisToDelete.fotoCalidad);
+                analysisToDelete.pesosBrutos?.forEach(p => addIfUrl(p.fotoUrl));
+                addIfUrl(analysisToDelete.uniformidad?.grandes?.fotoUrl);
+                addIfUrl(analysisToDelete.uniformidad?.pequenos?.fotoUrl);
+
+                // 2. Delete photos from Drive
+                if (photosToDelete.length > 0) {
+                    try {
+                        const { googleDriveService } = await import('@/lib/googleDriveService');
+                        await Promise.all(photosToDelete.map(id => googleDriveService.deleteFile(id)));
+                        toast.success(`${photosToDelete.length} fotos eliminadas`);
+                    } catch (error) {
+                        console.error('Error deleting photos:', error);
+                        toast.error('Error al eliminar algunas fotos');
+                    }
+                }
+
+                // 3. Update State
+                const newAnalyses = [...analyses];
+                newAnalyses.splice(index, 1);
+
+                // Re-assign numbers
+                const updatedAnalyses = newAnalyses.map((a, i) => ({ ...a, numero: i + 1 }));
+
+                setAnalyses(updatedAnalyses);
+
+                // Adjust active index if needed
+                if (activeAnalysisIndex >= updatedAnalyses.length) {
+                    setActiveAnalysisIndex(Math.max(0, updatedAnalyses.length - 1));
+                }
+
+                toast.success(`Análisis #${index + 1} eliminado`);
+            }
+        });
+        setShowDeleteModal(true);
+    };
+
+    const handleSmartDelete = () => {
+        if (analyses.length <= 1) {
+            // Delete entire report
+            setDeleteModalConfig({
+                title: 'Eliminar Reporte Completo',
+                description: 'Al ser el único análisis, esta acción eliminará todo el reporte, incluyendo todas las fotos y carpetas asociadas.',
+                action: handleDeleteAnalysis
+            });
+        } else {
+            // Delete current analysis only
+            handleDeleteIndividualAnalysis(activeAnalysisIndex);
+        }
+        setShowDeleteModal(true);
+    };
+
+    // Load initial data effect with real-time subscription
     useEffect(() => {
+        let unsubscribe: (() => void) | undefined;
+
         const loadAnalysis = async () => {
             const id = searchParams.get('id');
             if (id) {
                 try {
-                    const { getAnalysisById } = await import('@/lib/analysisService');
-                    const data = await getAnalysisById(id);
+                    const { subscribeToAnalysis } = await import('@/lib/analysisService');
 
-                    if (data) {
-                        setAnalysisId(data.id);
-                        setProductType(data.productType);
-                        setCodigo(data.codigo);
-                        setLote(data.lote);
-                        setTalla(data.talla || '');
-                        setAnalystColor(data.analystColor);
-                        setAnalyses(data.analyses);
-                        setGlobalPesoBruto(data.globalPesoBruto || {});
-                        setBasicsCompleted(true);
+                    unsubscribe = subscribeToAnalysis(id, (data) => {
+                        if (data) {
+                            setAnalysisId(data.id);
+                            setProductType(data.productType);
+                            setCodigo(data.codigo);
+                            setLote(data.lote);
+                            setTalla(data.talla || '');
+                            setAnalystColor(data.analystColor);
+                            setAnalyses(data.analyses);
+                            setGlobalPesoBruto(data.globalPesoBruto || {});
+                            setBasicsCompleted(true);
 
-                        // Preserve original metadata
-                        setOriginalCreatedAt(data.createdAt);
-                        setOriginalCreatedBy(data.createdBy);
-                        setOriginalDate(data.date);
-                        setOriginalShift(data.shift);
-                        setOriginalAnalystColor(data.analystColor);
+                            setOriginalCreatedAt(data.createdAt);
+                            setOriginalCreatedBy(data.createdBy);
+                            setOriginalDate(data.date);
+                            setOriginalShift(data.shift);
+                            setOriginalAnalystColor(data.analystColor);
 
-                        // Load completion status
-                        if (data.status === 'COMPLETADO') {
-                            setIsCompleted(true);
+                            if (data.status === 'COMPLETADO') {
+                                setIsCompleted(true);
+                            }
+                        } else {
+                            toast.error('Análisis no encontrado');
+                            router.push('/');
                         }
+                        setIsLoading(false);
+                    });
 
-                        // Si hay análisis, activar el primero
-                        if (data.analyses.length > 0) {
-                            setActiveAnalysisIndex(0);
-                        }
-                    } else {
-                        toast.error('Análisis no encontrado');
-                        router.push('/');
-                    }
                 } catch (error) {
-                    console.error('Error loading analysis:', error);
+                    console.error('Error setting up analysis subscription:', error);
                     toast.error('Error al cargar el análisis');
+                    setIsLoading(false);
                 }
+            } else {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
 
         loadAnalysis();
-    }, [searchParams, router]);
 
-    const saveDocument = async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
-        if (!analysisId || !basicsCompleted) return;
-
-        setIsSaving(true);
-        try {
-            const now = new Date();
-            const productionDate = getProductionDate(now);
-
-            const { googleAuthService } = await import('@/lib/googleAuthService');
-            const user = googleAuthService.getUser();
-
-            // Determine final status
-            let finalStatus = status;
-            if (isCompleted && status === 'EN_PROGRESO') {
-                finalStatus = 'COMPLETADO';
-            }
-
-            // Get existing completedAt if already completed
-            let completedAtValue: string | undefined = undefined;
-            if (finalStatus === 'COMPLETADO') {
-                if (status === 'COMPLETADO') {
-                    // Explicit completion action - set new time
-                    completedAtValue = now.toISOString();
-                } else {
-                    // Auto-save on already completed analysis - preserve existing time
-                    const { getAnalysisById } = await import('@/lib/analysisService');
-                    const existingData = await getAnalysisById(analysisId);
-                    completedAtValue = existingData?.completedAt || now.toISOString();
-                }
-            }
-
-            const document: QualityAnalysis = {
-                id: analysisId,
-                codigo,
-                lote,
-                talla,
-                productType: productType!,
-                status: finalStatus,
-                completedAt: completedAtValue,
-                analystColor: originalAnalystColor || analystColor!,
-                analyses: analyses.map(a => {
-                    // Limpiar uniformidad: solo guardar si tiene valores o fotos
-                    const hasUniformidadData = a.uniformidad && (
-                        (a.uniformidad.grandes?.valor || a.uniformidad.grandes?.fotoUrl) ||
-                        (a.uniformidad.pequenos?.valor || a.uniformidad.pequenos?.fotoUrl)
-                    );
-
-                    // Limpiar sub-objetos de uniformidad
-                    const cleanUniformidad = hasUniformidadData ? {
-                        grandes: (a.uniformidad?.grandes?.valor || a.uniformidad?.grandes?.fotoUrl)
-                            ? a.uniformidad.grandes
-                            : undefined,
-                        pequenos: (a.uniformidad?.pequenos?.valor || a.uniformidad?.pequenos?.fotoUrl)
-                            ? a.uniformidad.pequenos
-                            : undefined,
-                    } : undefined;
-
-                    return {
-                        ...a,
-                        pesoBruto: (a.pesoBruto?.valor || a.pesoBruto?.fotoUrl) ? a.pesoBruto : undefined,
-                        pesoCongelado: (a.pesoCongelado?.valor || a.pesoCongelado?.fotoUrl) ? a.pesoCongelado : undefined,
-                        pesoNeto: (a.pesoNeto?.valor || a.pesoNeto?.fotoUrl) ? a.pesoNeto : undefined,
-                        pesoConGlaseo: (a.pesoConGlaseo?.valor || a.pesoConGlaseo?.fotoUrl) ? a.pesoConGlaseo : undefined,
-                        pesoSinGlaseo: (a.pesoSinGlaseo?.valor || a.pesoSinGlaseo?.fotoUrl) ? a.pesoSinGlaseo : undefined,
-                        uniformidad: cleanUniformidad,
-                    };
-                }),
-                createdAt: originalCreatedAt || now.toISOString(),
-                updatedAt: now.toISOString(),
-                createdBy: originalCreatedBy || user?.email || 'unknown',
-                date: originalDate || productionDate,
-                shift: originalShift || getWorkShift(now),
-                globalPesoBruto: globalPesoBruto.fotoUrl ? globalPesoBruto : undefined,
-            };
-
-            // DEBUG: Ver qué status se está guardando
-            console.log('💾 Guardando análisis:', {
-                statusRecibido: status,
-                isCompleted,
-                finalStatus,
-                completedAt: completedAtValue,
-                lote: document.lote
-            });
-
-            const { validateAnalysisData, getValidationErrors } = await import('@/lib/validation');
-            const result = validateAnalysisData(document);
-            if (!result.success) {
-                const errors = getValidationErrors(result.error);
-                console.warn('⚠️ Validación fallida en auto-save:', errors);
-            }
-
-            const { saveAnalysis } = await import('@/lib/analysisService');
-            await saveAnalysis(document);
-            setLastSaved(now);
-            setSaveError(null);
-
-            // Update completion state
-            if (status === 'COMPLETADO') {
-                setIsCompleted(true);
-            }
-
-            console.log('✅ Document saved');
-        } catch (error) {
-            console.error('Error saving:', error);
-            setSaveError('Error al guardar');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    // Auto-save when analyses change
-    useEffect(() => {
-        // No guardar si se está subiendo una foto (evita race condition)
-        // No guardar si el análisis ya está completado
-        if (basicsCompleted && analysisId && !isUploadingGlobal && !isCompleted) {
-            const timer = setTimeout(() => {
-                saveDocument();
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [analyses, basicsCompleted, isUploadingGlobal, isCompleted]);
-
-    // Prevenir cierre de pestaña si hay subidas en progreso
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (isUploadingGlobal) {
-                e.preventDefault();
-                e.returnValue = ''; // Mensaje estándar del navegador
-                return '';
-            }
+        return () => {
+            if (unsubscribe) unsubscribe();
         };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [isUploadingGlobal]);
-
-    // Helper para reintentar subidas
-    const uploadWithRetry = async (uploadFn: () => Promise<string>, retries = 3) => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                return await uploadFn();
-            } catch (error) {
-                if (i === retries - 1) throw error;
-                const delay = Math.min(1000 * Math.pow(2, i), 5000); // Exponential backoff
-                console.log(`⚠️ Error subiendo foto, reintentando en ${delay}ms... (Intento ${i + 1}/${retries})`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-        throw new Error('Max retries reached');
-    };
-
-    // Photo upload handlers
-    const handlePhotoCapture = async (field: string, file: File) => {
-        const targetIndex = activeAnalysisIndex; // Capturar índice actual
-        const key = `${targetIndex}-${field}`;
-        setPhotos(prev => ({ ...prev, [key]: file }));
-        setUploadingPhotos(prev => new Set(prev).add(key));
-        setIsUploadingGlobal(true); // Bloquear auto-save
-
-        try {
-            const { googleDriveService } = await import('@/lib/googleDriveService');
-            await googleDriveService.initialize();
-
-            const { googleAuthService } = await import('@/lib/googleAuthService');
-            const user = googleAuthService.getUser();
-
-            // Obtener URL anterior para limpieza
-            const targetAnalysis = analyses[targetIndex];
-            let oldUrl: string | undefined;
-
-            if (field === 'fotoCalidad') {
-                oldUrl = targetAnalysis.fotoCalidad;
-            } else if (field.startsWith('uniformidad_')) {
-                const tipo = field.split('_')[1] as 'grandes' | 'pequenos';
-                oldUrl = targetAnalysis.uniformidad?.[tipo]?.fotoUrl;
-            } else {
-                // pesoBruto, pesoCongelado, pesoNeto
-                const currentFieldValue = targetAnalysis[field as keyof Analysis] as any;
-                oldUrl = currentFieldValue?.fotoUrl;
-            }
-
-            console.log('📸 [DEBUG] handlePhotoCapture:', {
-                field,
-                targetIndex,
-                hasTargetAnalysis: !!targetAnalysis,
-                oldUrl,
-                currentFieldValue: targetAnalysis[field as keyof Analysis]
-            });
-
-            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
-                file,
-                codigo,
-                lote,
-                `${field}_analysis${targetIndex + 1}`,
-                oldUrl, // Pasar URL anterior
-                user?.email
-            ));
-
-            // Update analysis with photo URL using safe helper
-            setAnalyses(prev => updateAnalysisField(prev, targetIndex, field, url));
-
-            // 🔥 CRÍTICO: Esperar un momento para que React actualice el estado
-            // Esto evita la race condition donde saveDocument usa el estado viejo
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // 🔥 CRÍTICO: Guardar inmediatamente después de subir foto
-            // No esperar el auto-save de 1 segundo porque el usuario podría recargar
-            console.log('💾 Guardando análisis inmediatamente después de subir foto...');
-            await saveDocument();
-            console.log('✅ Análisis guardado con nueva foto');
-        } catch (error) {
-            console.error('Error uploading photo:', error);
-            toast.error('Error al subir la foto. Intenta de nuevo.');
-        } finally {
-            setUploadingPhotos(prev => {
-                const next = new Set(prev);
-                next.delete(key);
-                return next;
-            });
-            setIsUploadingGlobal(false); // Desbloquear auto-save (disparará el useEffect)
-        }
-    };
-
-    const handlePesoBrutoPhotoCapture = async (registroId: string, file: File) => {
-        const targetIndex = activeAnalysisIndex; // Capturar índice actual
-        const key = `${targetIndex}-pesobruto-${registroId}`;
-        setUploadingPhotos(prev => new Set(prev).add(key));
-        setIsUploadingGlobal(true); // Bloquear auto-save
-
-        try {
-            const { googleDriveService } = await import('@/lib/googleDriveService');
-            await googleDriveService.initialize();
-
-            const { googleAuthService } = await import('@/lib/googleAuthService');
-            const user = googleAuthService.getUser();
-
-            // Obtener URL anterior
-            // Usamos analyses[targetIndex]
-            const targetAnalysis = analyses[targetIndex];
-            const registro = targetAnalysis.pesosBrutos?.find(r => r.id === registroId);
-            const oldUrl = registro?.fotoUrl;
-
-            console.log('📸 [DEBUG] handlePesoBrutoPhotoCapture:', {
-                registroId,
-                targetIndex,
-                oldUrl
-            });
-
-            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
-                file,
-                codigo,
-                lote,
-                `peso_bruto_${registroId}_analysis${targetIndex + 1}`,
-                oldUrl, // Pasar URL anterior
-                user?.email
-            ));
-
-            // Update the specific registro using functional update on setAnalyses
-            setAnalyses(prev => prev.map((analysis, index) => {
-                if (index !== targetIndex) return analysis;
-
-                return {
-                    ...analysis,
-                    pesosBrutos: analysis.pesosBrutos?.map(r =>
-                        r.id === registroId ? { ...r, fotoUrl: url } : r
-                    )
-                };
-            }));
-
-            // 🔥 CRÍTICO: Esperar un momento para que React actualice el estado
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // 🔥 Guardar inmediatamente
-            console.log('💾 Guardando después de subir foto de control pesos...');
-            await saveDocument();
-        } catch (error) {
-            console.error('Error uploading peso bruto photo:', error);
-            toast.error('Error al subir la foto del peso bruto');
-        } finally {
-            setUploadingPhotos(prev => {
-                const next = new Set(prev);
-                next.delete(key);
-                return next;
-            });
-            setIsUploadingGlobal(false); // Desbloquear auto-save
-        }
-    };
-
-    const isPesoBrutoUploading = (registroId: string) => {
-        const key = `${activeAnalysisIndex}-pesobruto-${registroId}`;
-        return uploadingPhotos.has(key);
-    };
-
-    // Helper para extraer ID de archivo de URL de Google Drive
-    const extractFileIdFromUrl = (url: string): string | null => {
-        if (!url) return null;
-
-        // 1. Check for our custom x-file-id parameter first (most reliable for our app)
-        const customMatch = url.match(/[?&]x-file-id=([^&]+)/);
-        if (customMatch) return customMatch[1];
-
-        // 2. Formato googleusercontent.com: https://lh3.googleusercontent.com/d/FILE_ID=s2000
-        const googleUserContentMatch = url.match(/googleusercontent\.com\/d\/([^=?&]+)/);
-        if (googleUserContentMatch) return googleUserContentMatch[1];
-
-        // 3. Formato: https://drive.google.com/uc?export=view&id=FILE_ID
-        // o https://drive.google.com/thumbnail?id=FILE_ID&sz=w800
-        const match = url.match(/[?&]id=([^&]+)/);
-        if (match) return match[1];
-
-        // 4. Formato: https://drive.google.com/file/d/FILE_ID/view
-        const match2 = url.match(/\/file\/d\/([^/]+)/);
-        if (match2) return match2[1];
-
-        return null;
-    };
-
-    // Handler for deleting peso bruto registro (including Drive cleanup)
-    const handlePesoBrutoDelete = async (registro: PesoBrutoRegistro) => {
-        // Si el registro tiene foto, intentar eliminarla de Google Drive
-        if (registro?.fotoUrl && !registro.fotoUrl.startsWith('blob:')) {
-            try {
-                const { googleDriveService } = await import('@/lib/googleDriveService');
-
-                // Extraer el ID del archivo desde la URL
-                const fileId = extractFileIdFromUrl(registro.fotoUrl);
-
-                if (fileId) {
-                    await googleDriveService.deleteFile(fileId);
-                    console.log('✅ Foto de peso bruto eliminada de Google Drive');
-                }
-            } catch (error) {
-                console.warn('⚠️ No se pudo eliminar la foto de Google Drive:', error);
-                // Continuar aunque falle la eliminación de la foto
-                throw error; // Re-throw para que el componente maneje el error
-            }
-        }
-    };
-
-    const isFieldUploading = (field: string) => {
-        const key = `${activeAnalysisIndex}-${field}`;
-        return uploadingPhotos.has(key);
-    };
+    }, [searchParams, router]);
 
     // Handler for pesos brutos
     const handlePesosBrutosChange = (registros: PesoBrutoRegistro[]) => {
@@ -539,28 +340,69 @@ export default function NewMultiAnalysisPageContent() {
     };
 
     // Use the new hook for weight inputs
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { handleWeightChange } = useWeightInput(currentAnalysis, updateCurrentAnalysis);
 
+    // Handler for deleting peso bruto registro (including Drive cleanup)
+    const handlePesoBrutoDelete = async (registro: PesoBrutoRegistro) => {
+        // Si el registro tiene foto, intentar eliminarla de Google Drive
+        if (registro?.fotoUrl && !registro.fotoUrl.startsWith('blob:')) {
+            try {
+                const { googleDriveService } = await import('@/lib/googleDriveService');
+
+                // Helper para extraer ID de archivo de URL de Google Drive
+                const extractFileIdFromUrl = (url: string): string | null => {
+                    if (!url) return null;
+                    const customMatch = url.match(/[?&]x-file-id=([^&]+)/);
+                    if (customMatch) return customMatch[1];
+                    const googleUserContentMatch = url.match(/googleusercontent\.com\/d\/([^=?&]+)/);
+                    if (googleUserContentMatch) return googleUserContentMatch[1];
+                    const match = url.match(/[?&]id=([^&]+)/);
+                    if (match) return match[1];
+                    const match2 = url.match(/\/file\/d\/([^/]+)/);
+                    if (match2) return match2[1];
+                    return null;
+                };
+
+                const fileId = extractFileIdFromUrl(registro.fotoUrl);
+
+                if (fileId) {
+                    await googleDriveService.deleteFile(fileId);
+                    console.log('✅ Foto de peso bruto eliminada de Google Drive');
+                }
+
+                // 🔥 Transactional delete from Firestore
+                if (analysisId && currentAnalysis.pesosBrutos) {
+                    const index = currentAnalysis.pesosBrutos.findIndex(r => r.id === registro.id);
+                    if (index !== -1) {
+                        const { deleteAnalysisPhoto } = await import('@/lib/analysisService');
+                        await deleteAnalysisPhoto(analysisId, activeAnalysisIndex, `pesosBrutos.${index}.fotoUrl`);
+                        console.log('✅ Foto eliminada de Firestore transaccionalmente');
+                    }
+                }
+
+            } catch (error) {
+                console.warn('⚠️ No se pudo eliminar la foto de Google Drive:', error);
+                // No lanzamos error para permitir que la UI elimine el registro visualmente
+            }
+        }
+    };
+
     const validateCurrentAnalysis = (): { isValid: boolean; missingFields: string[] } => {
-        // Skip validation for Control Pesos for now (or implement specific logic if needed)
         if (productType === 'CONTROL_PESOS') return { isValid: true, missingFields: [] };
 
         const missing: string[] = [];
 
         // 1. Validar Pesos
-        // Peso Bruto (si no es Dual Bag)
         if (!isDualBag) {
             if (!currentAnalysis.pesoBruto?.valor) missing.push('Peso Bruto (Valor)');
             if (!currentAnalysis.pesoBruto?.fotoUrl) missing.push('Peso Bruto (Foto)');
         }
 
-        // Peso Neto
         if (!currentAnalysis.pesoNeto?.valor) missing.push('Peso Neto (Valor)');
         if (!currentAnalysis.pesoNeto?.fotoUrl) missing.push('Peso Neto (Foto)');
 
-        // Peso Congelado
-        if (!currentAnalysis.pesoCongelado?.valor) missing.push('Peso Congelado (Valor)');
-        if (!currentAnalysis.pesoCongelado?.fotoUrl) missing.push('Peso Congelado (Foto)');
+
 
         // 2. Validar Conteo
         if (!currentAnalysis.conteo) missing.push('Conteo');
@@ -584,7 +426,6 @@ export default function NewMultiAnalysisPageContent() {
     const handleCompleteAnalysis = async () => {
         if (!analysisId) return;
 
-        // Validar antes de completar
         const validation = validateCurrentAnalysis();
         if (!validation.isValid) {
             toast.error('Faltan campos requeridos para completar el análisis', {
@@ -601,11 +442,8 @@ export default function NewMultiAnalysisPageContent() {
         }
 
         try {
-            // Guardar como completado
             await saveDocument('COMPLETADO');
             toast.success('¡Análisis completado exitosamente!');
-
-            // Pequeño delay para asegurar que el toast se vea antes de redirigir
             setTimeout(() => {
                 router.push('/');
                 router.refresh();
@@ -613,49 +451,6 @@ export default function NewMultiAnalysisPageContent() {
         } catch (error) {
             console.error('Error completing analysis:', error);
             toast.error('Error al completar el análisis');
-        }
-    };
-
-    // Loading state
-    // Handler especial para foto global de peso bruto
-    const handleGlobalPesoBrutoPhoto = async (file: File) => {
-        const key = 'global-pesoBruto';
-        setPhotos(prev => ({ ...prev, [key]: file }));
-        setUploadingPhotos(prev => new Set(prev).add(key));
-        setIsUploadingGlobal(true);
-
-        try {
-            const { googleDriveService } = await import('@/lib/googleDriveService');
-            await googleDriveService.initialize();
-            const { googleAuthService } = await import('@/lib/googleAuthService');
-            const user = googleAuthService.getUser();
-
-            const oldUrl = globalPesoBruto.fotoUrl;
-
-            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
-                file,
-                codigo,
-                lote,
-                'peso_bruto_global',
-                oldUrl,
-                user?.email
-            ));
-
-            setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
-
-            // 🔥 Guardar inmediatamente
-            console.log('💾 Guardando después de subir foto global...');
-            await saveDocument();
-        } catch (error) {
-            console.error('Error uploading global peso bruto photo:', error);
-            toast.error('Error al subir la foto global');
-        } finally {
-            setUploadingPhotos(prev => {
-                const next = new Set(prev);
-                next.delete(key);
-                return next;
-            });
-            setIsUploadingGlobal(false);
         }
     };
 
@@ -670,7 +465,6 @@ export default function NewMultiAnalysisPageContent() {
         );
     }
 
-    // Step 1: Product Type Selection
     if (!productType) {
         return (
             <div className="min-h-screen p-4">
@@ -684,12 +478,10 @@ export default function NewMultiAnalysisPageContent() {
         );
     }
 
-    // Step 2: Initial Form (Lote, Código, Talla, Color)
     if (!basicsCompleted) {
         return (
             <div className="min-h-screen p-4">
                 <div className="max-w-4xl mx-auto">
-                    {/* Botón Volver al Dashboard */}
                     <button
                         onClick={() => router.push('/')}
                         className="flex items-center gap-2 px-4 py-2.5 mb-6 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-lg transition-all border border-slate-800 hover:border-slate-700"
@@ -706,9 +498,6 @@ export default function NewMultiAnalysisPageContent() {
             </div>
         );
     }
-
-    // Step 3: Multi-Analysis Form with Tabs
-    const colorHex = analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9';
 
     return (
         <div className="min-h-screen pb-20">
@@ -758,7 +547,6 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Sample number badge and analyst color */}
                         <div className="flex items-center gap-3">
-                            {/* Sample badge */}
                             <div
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
                                 style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
@@ -767,7 +555,6 @@ export default function NewMultiAnalysisPageContent() {
                                 <span>Muestra {activeAnalysisIndex + 1}/{analyses.length}</span>
                             </div>
 
-                            {/* Analyst color indicator */}
                             <div
                                 className="w-5 h-5 rounded-full border border-slate-700 shadow-sm"
                                 style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
@@ -775,8 +562,6 @@ export default function NewMultiAnalysisPageContent() {
                             />
                         </div>
                     </div>
-
-
                 </div>
 
                 {/* Analysis Tabs */}
@@ -859,264 +644,161 @@ export default function NewMultiAnalysisPageContent() {
                         </div>
                     )}
 
+
                     {/* Alerta de Error de Validación */}
-                    {codeValidationError && (
-                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                            <p className="text-red-400 font-medium">⚠️ {codeValidationError}</p>
-                        </div>
-                    )}
-
-                    {/* GLOBAL PESO BRUTO (Solo para códigos especiales) */}
-                    {isDualBag && (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
-                        <Card className="border-blue-200 bg-blue-50/30">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-blue-800">
-                                    ⚖️ Peso Bruto Global (Cartón)
-                                    <span className="text-xs font-normal bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                                        Aplica a todos los análisis
-                                    </span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-blue-900">Peso Bruto Cartón ({weightUnit.toLowerCase()})</Label>
-                                            {globalPesoBruto.valor && (
-                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={globalPesoBruto.valor || ''}
-                                            onChange={(e) => setGlobalPesoBruto(prev => ({ ...prev, valor: parseFloat(e.target.value) || undefined }))}
-                                            className="border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <PhotoCapture
-                                            label="Foto Peso Bruto Global"
-                                            photoUrl={globalPesoBruto.fotoUrl}
-                                            onPhotoCapture={handleGlobalPesoBrutoPhoto}
-                                            isUploading={uploadingPhotos.has('global-pesoBruto')}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Pesos Section */}
-                    {(productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>⚖️ Pesos {isDualBag ? '(Por Funda)' : ''}</CardTitle>
-                                <CardDescription>Registra los pesos con fotos</CardDescription>
-                            </CardHeader>
-                            <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6'}>
-                                <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
-                                    {/* Peso Bruto (Ocultar si es Dual Bag) */}
-                                    {!isDualBag && (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <Label required>Peso Bruto ({weightUnit.toLowerCase()})</Label>
-                                                {currentAnalysis.pesoBruto?.valor && (
-                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                value={currentAnalysis.pesoBruto?.valor || ''}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                    pesoBruto: {
-                                                        ...currentAnalysis.pesoBruto,
-                                                        valor: parseFloat(e.target.value) || undefined
-                                                    }
-                                                })}
-                                            />
-                                            <PhotoCapture
-                                                key={`pesoBruto-${activeAnalysisIndex}`}
-                                                label="Foto Peso Bruto"
-                                                photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
-                                                onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
-                                                isUploading={isFieldUploading('pesoBruto')}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Peso Congelado */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <Label>Peso Congelado ({weightUnit.toLowerCase()})</Label>
-                                            {currentAnalysis.pesoCongelado?.valor && (
-                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={currentAnalysis.pesoCongelado?.valor || ''}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                pesoCongelado: {
-                                                    ...currentAnalysis.pesoCongelado,
-                                                    valor: parseFloat(e.target.value) || undefined
-                                                }
-                                            })}
-                                        />
-                                        <PhotoCapture
-                                            key={`pesoCongelado-${activeAnalysisIndex}`}
-                                            label="Foto Peso Congelado"
-                                            photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
-                                            onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
-                                            isUploading={isFieldUploading('pesoCongelado')}
-                                        />
-                                    </div>
-
-                                    {/* Peso con Glaseo (Solo Valor Agregado) */}
-                                    {productType === 'VALOR_AGREGADO' && (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <Label>Peso con Glaseo ({weightUnit.toLowerCase()})</Label>
-                                                {currentAnalysis.pesoConGlaseo?.valor && (
-                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                value={currentAnalysis.pesoConGlaseo?.valor || ''}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                    pesoConGlaseo: {
-                                                        ...currentAnalysis.pesoConGlaseo,
-                                                        valor: parseFloat(e.target.value) || undefined
-                                                    }
-                                                })}
-                                            />
-                                            <PhotoCapture
-                                                key={`pesoConGlaseo-${activeAnalysisIndex}`}
-                                                label="Foto Peso con Glaseo"
-                                                photoUrl={currentAnalysis.pesoConGlaseo?.fotoUrl}
-                                                onPhotoCapture={(file) => handlePhotoCapture('pesoConGlaseo', file)}
-                                                isUploading={isFieldUploading('pesoConGlaseo')}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Peso sin Glaseo (Solo Valor Agregado) */}
-                                    {productType === 'VALOR_AGREGADO' && (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <Label>Peso sin Glaseo ({weightUnit.toLowerCase()})</Label>
-                                                {currentAnalysis.pesoSinGlaseo?.valor && (
-                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                value={currentAnalysis.pesoSinGlaseo?.valor || ''}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                    pesoSinGlaseo: {
-                                                        ...currentAnalysis.pesoSinGlaseo,
-                                                        valor: parseFloat(e.target.value) || undefined
-                                                    }
-                                                })}
-                                            />
-                                            <PhotoCapture
-                                                key={`pesoSinGlaseo-${activeAnalysisIndex}`}
-                                                label="Foto Peso sin Glaseo"
-                                                photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
-                                                onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
-                                                isUploading={isFieldUploading('pesoSinGlaseo')}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Peso Neto */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <Label>Peso Neto ({weightUnit.toLowerCase()})</Label>
-                                            {currentAnalysis.pesoNeto?.valor && (
-                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={currentAnalysis.pesoNeto?.valor || ''}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                pesoNeto: {
-                                                    ...currentAnalysis.pesoNeto,
-                                                    valor: parseFloat(e.target.value) || undefined
-                                                }
-                                            })}
-                                        />
-                                        <PhotoCapture
-                                            key={`pesoNeto-${activeAnalysisIndex}`}
-                                            label="Foto Peso Neto"
-                                            photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
-                                            onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
-                                            isUploading={isFieldUploading('pesoNeto')}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Conteo */}
-                                <div className="pt-4 border-t border-slate-800">
-                                    <div className="max-w-xs">
-                                        <Label htmlFor="conteo">Conteo</Label>
-                                        <Input
-                                            id="conteo"
-                                            type="number"
-                                            placeholder="0"
-                                            value={currentAnalysis.conteo || ''}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                conteo: parseInt(e.target.value) || undefined
-                                            })}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card >
-                    )
+                    {
+                        codeValidationError && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                <p className="text-red-400 font-medium">⚠️ {codeValidationError}</p>
+                            </div>
+                        )
                     }
 
-                    {/* Control de Pesos Brutos */}
+                    {/* GLOBAL PESO BRUTO (Solo para códigos especiales) */}
+                    {
+                        isDualBag && (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                            <Card className="border-blue-200 bg-blue-50/30">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-blue-800">
+                                        ⚖️ Peso Bruto Global (Cartón)
+                                        <span className="text-xs font-normal bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                                            Aplica a todos los análisis
+                                        </span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-blue-900">Peso Bruto Cartón ({weightUnit.toLowerCase()})</Label>
+                                                {globalPesoBruto.valor && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                value={globalPesoBruto.valor || ''}
+                                                onChange={(e) => setGlobalPesoBruto(prev => ({ ...prev, valor: parseFloat(e.target.value) || undefined }))}
+                                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <PhotoCapture
+                                                label="Foto Peso Bruto Global"
+                                                photoUrl={globalPesoBruto.fotoUrl}
+                                                onPhotoCapture={handleGlobalPesoBrutoPhoto}
+                                                isUploading={uploadingPhotos.has('global-pesoBruto')}
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    }
+
+                    {/* Control de Pesos Brutos (Solo para CONTROL_PESOS) */}
                     {
                         productType === 'CONTROL_PESOS' && (
                             <ControlPesosBrutos
                                 registros={currentAnalysis.pesosBrutos || []}
                                 onChange={handlePesosBrutosChange}
-                                onPhotoCapture={handlePesoBrutoPhotoCapture}
                                 onDeleteRequest={handlePesoBrutoDelete}
+                                onPhotoCapture={handlePesoBrutoPhotoCapture}
                                 isPhotoUploading={isPesoBrutoUploading}
-                                viewMode={viewMode === 'COMPACTA' ? 'COMPACTA' : 'SUELTA'}
-                                unit={weightUnit}
                             />
                         )
                     }
 
-                    {/* Uniformidad (Entero, Cola y Valor Agregado) */}
+                    {/* Pesos Section */}
+                    {
+                        (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>⚖️ Control de Pesos</CardTitle>
+                                </CardHeader>
+                                <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
+                                    {/* Peso Bruto */}
+                                    {!isDualBag && (
+                                        <>
+                                            <WeightInputRow
+                                                label="Peso Bruto"
+                                                value={currentAnalysis.pesoBruto?.valor}
+                                                photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
+                                                onChange={(val) => handleWeightChange('pesoBruto', parseFloat(val))}
+                                                onPhotoClick={() => document.getElementById(`file-pesoBruto-${activeAnalysisIndex}`)?.click()}
+                                                isUploading={isFieldUploading('pesoBruto')}
+                                            />
+                                            <input
+                                                type="file"
+                                                id={`file-pesoBruto-${activeAnalysisIndex}`}
+                                                className="hidden"
+                                                accept="image/*"
+                                                capture="environment"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handlePhotoCapture('pesoBruto', file);
+                                                }}
+                                            />
+                                        </>
+                                    )}
+
+                                    {/* Peso Neto */}
+                                    <>
+                                        <WeightInputRow
+                                            label="Peso Neto"
+                                            value={currentAnalysis.pesoNeto?.valor}
+                                            photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
+                                            onChange={(val) => handleWeightChange('pesoNeto', parseFloat(val))}
+                                            onPhotoClick={() => document.getElementById(`file-pesoNeto-${activeAnalysisIndex}`)?.click()}
+                                            isUploading={isFieldUploading('pesoNeto')}
+                                        />
+                                        <input
+                                            type="file"
+                                            id={`file-pesoNeto-${activeAnalysisIndex}`}
+                                            className="hidden"
+                                            accept="image/*"
+                                            capture="environment"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handlePhotoCapture('pesoNeto', file);
+                                            }}
+                                        />
+                                    </>
+
+                                    {/* Glaseo (Solo para COLA y VALOR_AGREGADO) */}
+                                    {(productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                                        <>
+                                            <WeightInputRow
+                                                label="Glaseo"
+                                                value={currentAnalysis.glaseo?.valor}
+                                                photoUrl={currentAnalysis.glaseo?.fotoUrl}
+                                                onChange={(val) => handleWeightChange('glaseo', parseFloat(val))}
+                                                onPhotoClick={() => document.getElementById(`file-glaseo-${activeAnalysisIndex}`)?.click()}
+                                                isUploading={isFieldUploading('glaseo')}
+                                            />
+                                            <input
+                                                type="file"
+                                                id={`file-glaseo-${activeAnalysisIndex}`}
+                                                className="hidden"
+                                                accept="image/*"
+                                                capture="environment"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handlePhotoCapture('glaseo', file);
+                                                }}
+                                            />
+                                        </>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )
+                    }
+
+                    {/* Uniformidad Section */}
                     {
                         (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
                             <Card>
@@ -1248,29 +930,40 @@ export default function NewMultiAnalysisPageContent() {
                     </Card>
 
                     {/* Complete Analysis Button */}
-                    {!isCompleted && (
-                        <div className="pt-8 flex justify-center">
+                    {
+                        !isCompleted && (
+                            <div className="pt-8 flex justify-center">
+                                <button
+                                    onClick={handleCompleteAnalysis}
+                                    className="group relative flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                                    <CheckCircle2 className="w-6 h-6" />
+                                    <span>Completar Análisis</span>
+                                </button>
+                            </div>
+                        )
+                    }
+
+                    {/* Delete Section - Styled like DailyReportCard */}
+                    <div className="pt-8 pb-4 flex justify-center">
+                        <div
+                            className="bg-white p-[25px] rounded-[24px] w-full max-w-[340px] text-center"
+                            style={{
+                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                            }}
+                        >
+
+
                             <button
-                                onClick={handleCompleteAnalysis}
-                                className="group relative flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                                type="button"
+                                onClick={handleSmartDelete}
+                                className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[16px] rounded-[14px] text-[16px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-all active:scale-[0.98]"
                             >
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                                <CheckCircle2 className="w-6 h-6" />
-                                <span>Completar Análisis</span>
+                                <Trash2 className="w-5 h-5" />
+                                <span>Borrar Análisis</span>
                             </button>
                         </div>
-                    )}
-
-                    {/* Delete Button */}
-                    <div className="pt-4 flex justify-center">
-                        <button
-                            type="button"
-                            onClick={() => setShowDeleteModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium border border-red-200"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Borrar Análisis
-                        </button>
                     </div>
                 </div >
             </div >
@@ -1291,11 +984,13 @@ export default function NewMultiAnalysisPageContent() {
             <DeleteConfirmationModal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleDeleteAnalysis}
+                onConfirm={deleteModalConfig.action}
                 analysisCode={codigo}
                 analysisLote={lote}
-                type="confirmar"
+                title={deleteModalConfig.title}
+                description={deleteModalConfig.description}
             />
         </div >
     );
 }
+

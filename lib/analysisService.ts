@@ -13,7 +13,10 @@ import {
   startAfter,
   Timestamp,
   DocumentReference,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  runTransaction,
+  onSnapshot,
+  Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { QualityAnalysis } from './types';
@@ -547,6 +550,158 @@ export const searchAnalyses = async (searchTerm: string): Promise<QualityAnalysi
  * Renueva permisos de fotos en un análisis existente
  * Útil para arreglar problemas de permisos expirados
  */
+/**
+ * Guarda la URL de una foto de forma transaccional para evitar race conditions
+ * Actualiza SOLO el campo específico de la foto sin sobrescribir el resto del documento
+ */
+export const saveAnalysisPhotoUrl = async (
+  analysisId: string,
+  analysisIndex: number,
+  fieldPath: string,
+  photoUrl: string
+): Promise<void> => {
+  if (!db) throw new Error('Firestore no está configurado');
+
+  const analysisRef = getAnalysisRef(analysisId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(analysisRef);
+      if (!docSnap.exists()) {
+        throw new Error(`Documento ${analysisId} no existe`);
+      }
+
+      const data = docSnap.data() as QualityAnalysis;
+      const analyses = [...(data.analyses || [])];
+
+      if (!analyses[analysisIndex]) {
+        throw new Error(`Análisis índice ${analysisIndex} no existe`);
+      }
+
+      // Helper para actualizar campo anidado
+      const updateNestedField = (obj: any, path: string, value: any) => {
+        const keys = path.split('.');
+        let current = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!current[keys[i]]) current[keys[i]] = {};
+          current = current[keys[i]];
+        }
+        current[keys[keys.length - 1]] = value;
+      };
+
+      // Actualizar el campo específico en el objeto de análisis correcto
+      updateNestedField(analyses[analysisIndex], fieldPath, photoUrl);
+
+      transaction.update(analysisRef, {
+        analyses: analyses,
+        updatedAt: Timestamp.now()
+      });
+    });
+
+    logger.log(`✅ Foto guardada transaccionalmente: ${fieldPath}`);
+  } catch (error) {
+    logger.error('❌ Error guardando foto transaccionalmente:', error);
+    throw error;
+  }
+};
+
+/**
+ * Elimina una foto de forma transaccional
+ */
+export const deleteAnalysisPhoto = async (
+  analysisId: string,
+  analysisIndex: number,
+  fieldPath: string
+): Promise<void> => {
+  if (!db) throw new Error('Firestore no está configurado');
+
+  const analysisRef = getAnalysisRef(analysisId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(analysisRef);
+      if (!docSnap.exists()) {
+        throw new Error(`Documento ${analysisId} no existe`);
+      }
+
+      const data = docSnap.data() as QualityAnalysis;
+      const analyses = [...(data.analyses || [])];
+
+      if (!analyses[analysisIndex]) {
+        throw new Error(`Análisis índice ${analysisIndex} no existe`);
+      }
+
+      // Helper para eliminar campo anidado (set to null/undefined)
+      const deleteNestedField = (obj: any, path: string) => {
+        const keys = path.split('.');
+        let current = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!current[keys[i]]) return; // Path no existe
+          current = current[keys[i]];
+        }
+        // Borrar la propiedad o ponerla en null
+        const lastKey = keys[keys.length - 1];
+        if (current[lastKey]) {
+          // Si es un objeto complejo (ej: PesoConFoto), quizás solo queramos borrar la URL
+          // Pero aquí asumimos que el fieldPath apunta a la propiedad que contiene la URL o el objeto foto
+          // Si fieldPath es 'pesoBruto.fotoUrl', borramos solo la URL.
+          delete current[lastKey];
+        }
+      };
+
+      deleteNestedField(analyses[analysisIndex], fieldPath);
+
+      transaction.update(analysisRef, {
+        analyses: analyses,
+        updatedAt: Timestamp.now()
+      });
+    });
+
+    logger.log(`✅ Foto eliminada transaccionalmente: ${fieldPath}`);
+  } catch (error) {
+    logger.error('❌ Error eliminando foto transaccionalmente:', error);
+    throw error;
+  }
+};
+
+/**
+ * Guarda la URL de una foto GLOBAL (peso bruto global) de forma transaccional
+ */
+export const saveGlobalPhotoUrl = async (
+  analysisId: string,
+  photoUrl: string
+): Promise<void> => {
+  if (!db) throw new Error('Firestore no está configurado');
+
+  const analysisRef = getAnalysisRef(analysisId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(analysisRef);
+      if (!docSnap.exists()) {
+        throw new Error(`Documento ${analysisId} no existe`);
+      }
+
+      const data = docSnap.data() as QualityAnalysis;
+      const globalPesoBruto = { ...(data.globalPesoBruto || {}), fotoUrl: photoUrl };
+
+      transaction.update(analysisRef, {
+        globalPesoBruto: globalPesoBruto,
+        updatedAt: Timestamp.now()
+      });
+    });
+
+    logger.log(`✅ Foto global guardada transaccionalmente`);
+  } catch (error) {
+    logger.error('❌ Error guardando foto global transaccionalmente:', error);
+    throw error;
+  }
+};
+
+/**
+ * Renueva permisos de fotos en un análisis existente
+ * Útil para arreglar problemas de permisos expirados
+ */
 export const renewAnalysisPhotoPermissions = async (analysisId: string): Promise<void> => {
   try {
     logger.log(`🔄 Renovando permisos de fotos para análisis: ${analysisId}`);
@@ -605,6 +760,58 @@ export const renewAnalysisPhotoPermissions = async (analysisId: string): Promise
   }
 };
 
+/**
+ * Suscribe a los análisis más recientes
+ * Usa onSnapshot para actualizaciones en tiempo real y soporte offline
+ */
+export const subscribeToRecentAnalyses = (
+  callback: (analyses: QualityAnalysis[], lastDoc: any) => void,
+  limitCount: number = 50
+): Unsubscribe => {
+  if (!db) throw new Error('Firestore no está configurado');
+
+  const q = query(
+    collection(db, ANALYSES_COLLECTION),
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const analyses = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as QualityAnalysis));
+
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+    callback(analyses, lastDoc);
+  }, (error) => {
+    logger.error('❌ Error en suscripción de análisis:', error);
+  });
+};
+
+/**
+ * Suscribe a un análisis específico por ID
+ */
+export const subscribeToAnalysis = (
+  analysisId: string,
+  callback: (analysis: QualityAnalysis | null) => void
+): Unsubscribe => {
+  if (!db) throw new Error('Firestore no está configurado');
+
+  const analysisRef = getAnalysisRef(analysisId);
+
+  return onSnapshot(analysisRef, (doc) => {
+    if (doc.exists()) {
+      callback({ id: doc.id, ...doc.data() } as QualityAnalysis);
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    logger.error(`❌ Error en suscripción del análisis ${analysisId}:`, error);
+  });
+};
+
 export default {
   saveAnalysis,
   updateAnalysis,
@@ -616,5 +823,10 @@ export default {
   getAnalysesByShift,
   deleteAnalysis,
   searchAnalyses,
-  renewAnalysisPhotoPermissions
+  renewAnalysisPhotoPermissions,
+  saveAnalysisPhotoUrl,
+  deleteAnalysisPhoto,
+  saveGlobalPhotoUrl,
+  subscribeToRecentAnalyses,
+  subscribeToAnalysis
 };

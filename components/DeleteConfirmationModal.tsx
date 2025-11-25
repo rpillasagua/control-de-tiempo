@@ -11,6 +11,8 @@ interface DeleteConfirmationModalProps {
     analysisCode?: string;
     analysisLote?: string;
     type?: 'confirmar';
+    title?: string;
+    description?: string;
 }
 
 export default function DeleteConfirmationModal({
@@ -19,7 +21,9 @@ export default function DeleteConfirmationModal({
     onConfirm,
     analysisCode,
     analysisLote,
-    type = 'confirmar'
+    type = 'confirmar',
+    title = 'Eliminar Análisis',
+    description = 'Esta acción es irreversible'
 }: DeleteConfirmationModalProps) {
     const [mounted, setMounted] = useState(false);
     const [confirmText, setConfirmText] = useState('');
@@ -56,91 +60,97 @@ export default function DeleteConfirmationModal({
     const isConfirmEnabled = confirmText.toLowerCase() === 'confirmar';
 
     return createPortal(
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-            <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-[#dbdbdb]" style={{ position: 'relative', zIndex: 1000000 }}>
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <style jsx global>{`
+                @keyframes floatUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
 
-                {/* Header */}
-                <div className="p-6 border-b border-[#efefef] flex items-start justify-between bg-white">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-[#262626]">Eliminar Análisis</h3>
-                            <p className="text-sm text-[#8e8e8e]">Esta acción no se puede deshacer</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="text-[#8e8e8e] hover:text-[#262626] transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+            <div
+                className="bg-white w-[90%] max-w-[340px] p-[25px] rounded-[24px] relative text-left overflow-hidden"
+                style={{
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    animation: 'floatUp 0.3s ease-out',
+                    zIndex: 1000000
+                }}
+            >
+                {/* Botón Cerrar (X) */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-[20px] right-[20px] bg-[#F3F4F6] border-none w-[32px] h-[32px] rounded-full text-[#6B7280] text-[16px] cursor-pointer flex items-center justify-center transition-colors hover:bg-[#E5E7EB] hover:text-black"
+                    aria-label="Cerrar"
+                >
+                    <X className="h-4 w-4" />
+                </button>
 
-                {/* Content */}
-                <div className="p-6 bg-white">
-                    <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                        <p className="text-sm text-red-800 mb-2 font-medium">
-                            Estás a punto de eliminar permanentemente el análisis:
+                {/* Títulos */}
+                <h2 className="m-0 text-[22px] font-[800] text-[#111827]">{title}</h2>
+                <p className="mt-[5px] mb-[25px] text-[14px] text-[#6B7280]">{description}</p>
+
+                {/* Warning Box */}
+                <div className="bg-red-50 border border-red-100 rounded-[16px] p-[16px] mb-[20px]">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                        </div>
+                        <p className="text-[13px] font-[600] text-red-800 m-0">
+                            Estás a punto de eliminar:
                         </p>
-                        <div className="flex flex-col gap-1 pl-2 border-l-2 border-red-200">
-                            {analysisCode && (
-                                <span className="text-sm text-red-700">
-                                    Código: <span className="font-mono font-bold">{analysisCode}</span>
-                                </span>
-                            )}
-                            {analysisLote && (
-                                <span className="text-sm text-red-700">
-                                    Lote: <span className="font-mono font-bold">{analysisLote}</span>
-                                </span>
-                            )}
-                        </div>
+                    </div>
+                    <div className="pl-[44px]">
+                        {analysisCode && (
+                            <div className="text-[13px] text-red-700 mb-1">
+                                Código: <span className="font-mono font-bold bg-white/50 px-1 rounded">{analysisCode}</span>
+                            </div>
+                        )}
+                        {analysisLote && (
+                            <div className="text-[13px] text-red-700">
+                                Lote: <span className="font-mono font-bold bg-white/50 px-1 rounded">{analysisLote}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Footer with inline confirmation input */}
-                <div className="p-4 bg-[#fafafa] border-t border-[#efefef]">
-                    <div className="flex flex-col gap-3">
-                        {/* Confirmation instruction and input */}
-                        <div className="flex items-center gap-3">
-                            <label className="text-sm font-medium text-[#262626] whitespace-nowrap">
-                                Escribe <span className="font-mono font-bold text-red-500">confirmar</span>:
-                            </label>
-                            <input
-                                type="text"
-                                value={confirmText}
-                                onChange={(e) => setConfirmText(e.target.value)}
-                                placeholder="confirmar"
-                                className="flex-1 px-3 py-2 border border-[#dbdbdb] rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm bg-white text-black"
-                                autoFocus
-                            />
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={onClose}
-                                className="px-4 py-2 text-sm font-medium text-[#262626] bg-white border border-[#dbdbdb] rounded-lg hover:bg-gray-50 transition-colors"
-                                disabled={isDeleting}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleConfirm}
-                                disabled={!isConfirmEnabled || isDeleting}
-                                className={`
-                                    px-4 py-2 text-sm font-bold text-white rounded-lg transition-all
-                                    ${isConfirmEnabled
-                                        ? 'bg-red-500 hover:bg-red-600 shadow-sm'
-                                        : 'bg-gray-300 cursor-not-allowed'}
-                                `}
-                            >
-                                {isDeleting ? 'Eliminando...' : 'Eliminar permanentemente'}
-                            </button>
-                        </div>
+                {/* Input Confirmación */}
+                <div className="mb-[20px]">
+                    <label className="block text-[13px] font-[600] text-[#374151] mb-[8px]">
+                        Escribe <span className="font-mono text-red-500">confirmar</span> para continuar
+                    </label>
+                    <div className="flex items-center bg-[#F3F4F6] rounded-[12px] px-[16px] py-[12px] border-2 border-transparent transition-all focus-within:bg-white focus-within:border-red-500 focus-within:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]">
+                        <span className="mr-[10px] text-[18px]">✍️</span>
+                        <input
+                            type="text"
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            placeholder="confirmar"
+                            className="border-none bg-transparent w-full text-[15px] text-[#1F2937] outline-none font-[500]"
+                            autoFocus
+                        />
                     </div>
                 </div>
+
+                {/* Botón Eliminar */}
+                <button
+                    onClick={handleConfirm}
+                    disabled={!isConfirmEnabled || isDeleting}
+                    className={`w-full border-none p-[16px] rounded-[14px] text-[16px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed ${isConfirmEnabled
+                        ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:bg-red-600'
+                        : 'bg-gray-200 text-gray-400'
+                        }`}
+                >
+                    {isDeleting ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Eliminando...</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>Eliminar Definitivamente</span>
+                        </>
+                    )}
+                </button>
             </div>
         </div>,
         document.body

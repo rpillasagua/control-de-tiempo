@@ -94,3 +94,20 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onerror = error => reject(error);
   });
 }
+
+/**
+ * Helper para reintentar subidas
+ */
+export const uploadWithRetry = async (uploadFn: () => Promise<string>, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await uploadFn();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      const delay = Math.min(1000 * Math.pow(2, i), 5000); // Exponential backoff
+      console.log(`⚠️ Error subiendo foto, reintentando en ${delay}ms... (Intento ${i + 1}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Max retries reached');
+};

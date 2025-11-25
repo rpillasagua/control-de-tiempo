@@ -218,6 +218,14 @@ class GoogleAuthService {
    */
   private onTokenResponse = async (response: TokenResponse) => {
     if (response.error) {
+      // Ignorar error 'interaction_required' que ocurre cuando falla el refresh silencioso
+      if (response.error === 'interaction_required') {
+        logger.warn('⚠️ Refresh silencioso falló (interaction_required). El usuario debe re-autenticar.');
+        // No mostramos alert, solo limpiamos la sesión para que la UI pida login
+        this.clearStoredAuth();
+        return;
+      }
+
       logger.error('❌ Error en autenticación Google:', response.error);
       alert(`Error de autenticación: ${response.error}`);
       return;
