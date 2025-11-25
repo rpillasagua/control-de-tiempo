@@ -31,8 +31,8 @@ export default function AnalysisTabs({
                         type="button"
                         onClick={() => onTabChange(index)}
                         className={`
-                            relative flex items-center justify-center min-w-14 h-14 rounded-2xl
-                            transition-all duration-300 font-black text-lg
+                            relative flex items-center justify-center min-w-28 h-28 rounded-2xl
+                            transition-all duration-300 font-black text-2xl
                             ${isActive
                                 ? 'text-white shadow-2xl scale-105 ring-4 ring-offset-4 ring-offset-slate-900'
                                 : 'bg-slate-800/90 text-slate-400 hover:bg-slate-700 hover:text-white hover:scale-105 border-2 border-slate-700'
