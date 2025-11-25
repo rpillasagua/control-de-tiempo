@@ -541,8 +541,64 @@ export default function NewMultiAnalysisPageContent() {
     // Use the new hook for weight inputs
     const { handleWeightChange } = useWeightInput(currentAnalysis, updateCurrentAnalysis);
 
+    const validateCurrentAnalysis = (): { isValid: boolean; missingFields: string[] } => {
+        // Skip validation for Control Pesos for now (or implement specific logic if needed)
+        if (productType === 'CONTROL_PESOS') return { isValid: true, missingFields: [] };
+
+        const missing: string[] = [];
+
+        // 1. Validar Pesos
+        // Peso Bruto (si no es Dual Bag)
+        if (!isDualBag) {
+            if (!currentAnalysis.pesoBruto?.valor) missing.push('Peso Bruto (Valor)');
+            if (!currentAnalysis.pesoBruto?.fotoUrl) missing.push('Peso Bruto (Foto)');
+        }
+
+        // Peso Neto
+        if (!currentAnalysis.pesoNeto?.valor) missing.push('Peso Neto (Valor)');
+        if (!currentAnalysis.pesoNeto?.fotoUrl) missing.push('Peso Neto (Foto)');
+
+        // Peso Congelado
+        if (!currentAnalysis.pesoCongelado?.valor) missing.push('Peso Congelado (Valor)');
+        if (!currentAnalysis.pesoCongelado?.fotoUrl) missing.push('Peso Congelado (Foto)');
+
+        // 2. Validar Conteo
+        if (!currentAnalysis.conteo) missing.push('Conteo');
+
+        // 3. Validar Uniformidad
+        if (!currentAnalysis.uniformidad?.grandes?.valor) missing.push('Uniformidad Grandes (Valor)');
+        if (!currentAnalysis.uniformidad?.grandes?.fotoUrl) missing.push('Uniformidad Grandes (Foto)');
+        if (!currentAnalysis.uniformidad?.pequenos?.valor) missing.push('Uniformidad Pequeños (Valor)');
+        if (!currentAnalysis.uniformidad?.pequenos?.fotoUrl) missing.push('Uniformidad Pequeños (Foto)');
+
+        // 4. Validar Defectos (Al menos uno > 0)
+        const hasDefects = currentAnalysis.defectos && Object.values(currentAnalysis.defectos as Record<string, number>).some((val: number) => val > 0);
+        if (!hasDefects) missing.push('Defectos (Al menos uno)');
+
+        return {
+            isValid: missing.length === 0,
+            missingFields: missing
+        };
+    };
+
     const handleCompleteAnalysis = async () => {
         if (!analysisId) return;
+
+        // Validar antes de completar
+        const validation = validateCurrentAnalysis();
+        if (!validation.isValid) {
+            toast.error('Faltan campos requeridos para completar el análisis', {
+                description: (
+                    <ul className="list-disc pl-4 mt-2 text-sm">
+                        {validation.missingFields.map(field => (
+                            <li key={field}>{field}</li>
+                        ))}
+                    </ul>
+                ),
+                duration: 5000,
+            });
+            return;
+        }
 
         try {
             // Guardar como completado
