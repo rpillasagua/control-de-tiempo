@@ -502,8 +502,8 @@ export default function NewMultiAnalysisPageContent() {
 
     return (
         <div className="min-h-screen pb-20">
-            {/* Floating Save Indicator - MODERNIZADO */}
-            {(isSaving || saveError) && (
+            {/* Floating Save Indicator - Solo errores */}
+            {saveError && (
                 <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                     {isSaving ? (
                         <div
