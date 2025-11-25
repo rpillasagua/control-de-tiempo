@@ -79,7 +79,7 @@ export default function DeleteConfirmationModal({
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-4 bg-white">
+                <div className="p-6 bg-white">
                     <div className="bg-red-50 border border-red-100 rounded-lg p-4">
                         <p className="text-sm text-red-800 mb-2 font-medium">
                             Estás a punto de eliminar permanentemente el análisis:
@@ -97,43 +97,49 @@ export default function DeleteConfirmationModal({
                             )}
                         </div>
                     </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-[#262626]">
-                            Escribe <span className="font-mono font-bold text-red-500">confirmar</span> para continuar:
-                        </label>
-                        <input
-                            type="text"
-                            value={confirmText}
-                            onChange={(e) => setConfirmText(e.target.value)}
-                            placeholder="confirmar"
-                            className="w-full px-3 py-2 border border-[#dbdbdb] rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm bg-white text-black"
-                            autoFocus
-                        />
-                    </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-[#fafafa] border-t border-[#efefef] flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-[#262626] bg-white border border-[#dbdbdb] rounded-lg hover:bg-gray-50 transition-colors"
-                        disabled={isDeleting}
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={!isConfirmEnabled || isDeleting}
-                        className={`
-                            px-4 py-2 text-sm font-bold text-white rounded-lg transition-all
-                            ${isConfirmEnabled
-                                ? 'bg-red-500 hover:bg-red-600 shadow-sm'
-                                : 'bg-gray-300 cursor-not-allowed'}
-                        `}
-                    >
-                        {isDeleting ? 'Eliminando...' : 'Eliminar permanentemente'}
-                    </button>
+                {/* Footer with inline confirmation input */}
+                <div className="p-4 bg-[#fafafa] border-t border-[#efefef]">
+                    <div className="flex flex-col gap-3">
+                        {/* Confirmation instruction and input */}
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-[#262626] whitespace-nowrap">
+                                Escribe <span className="font-mono font-bold text-red-500">confirmar</span>:
+                            </label>
+                            <input
+                                type="text"
+                                value={confirmText}
+                                onChange={(e) => setConfirmText(e.target.value)}
+                                placeholder="confirmar"
+                                className="flex-1 px-3 py-2 border border-[#dbdbdb] rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm bg-white text-black"
+                                autoFocus
+                            />
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-sm font-medium text-[#262626] bg-white border border-[#dbdbdb] rounded-lg hover:bg-gray-50 transition-colors"
+                                disabled={isDeleting}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirm}
+                                disabled={!isConfirmEnabled || isDeleting}
+                                className={`
+                                    px-4 py-2 text-sm font-bold text-white rounded-lg transition-all
+                                    ${isConfirmEnabled
+                                        ? 'bg-red-500 hover:bg-red-600 shadow-sm'
+                                        : 'bg-gray-300 cursor-not-allowed'}
+                                `}
+                            >
+                                {isDeleting ? 'Eliminando...' : 'Eliminar permanentemente'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>,
