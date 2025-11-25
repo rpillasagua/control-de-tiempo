@@ -13,7 +13,8 @@ import {
   startAfter,
   Timestamp,
   DocumentReference,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { QualityAnalysis } from './types';
@@ -145,6 +146,49 @@ export const getAnalysisById = async (analysisId: string): Promise<QualityAnalys
     return null;
   } catch (error) {
     logger.error('❌ Error obteniendo análisis:', error);
+    throw error;
+  }
+};
+
+/**
+ * Suscribirse a cambios en tiempo real de un análisis
+ * Devuelve una función de cleanup para cancelar la suscripción
+ */
+export const subscribeToAnalysis = (
+  analysisId: string,
+  onUpdate: (analysis: QualityAnalysis | null) => void,
+  onError?: (error: Error) => void
+): () => void => {
+  if (!db) {
+    throw new Error('Firestore no está configurado');
+  }
+
+  try {
+    const analysisRef = getAnalysisRef(analysisId);
+
+    const unsubscribe = onSnapshot(
+      analysisRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const analysis = docSnap.data() as QualityAnalysis;
+          console.log(`🔄 Análisis actualizado en tiempo real: ${analysisId}`);
+          onUpdate(analysis);
+        } else {
+          console.log(`⚠️ Análisis eliminado: ${analysisId}`);
+          onUpdate(null);
+        }
+      },
+      (error) => {
+        logger.error('❌ Error en suscripción en tiempo real:', error);
+        if (onError) {
+          onError(error);
+        }
+      }
+    );
+
+    return unsubscribe;
+  } catch (error) {
+    logger.error('❌ Error creando suscripción:', error);
     throw error;
   }
 };
@@ -609,6 +653,7 @@ export default {
   saveAnalysis,
   updateAnalysis,
   getAnalysisById,
+  subscribeToAnalysis,
   getAnalysesByDate,
   getAnalysesByDateRange,
   getRecentAnalyses,
