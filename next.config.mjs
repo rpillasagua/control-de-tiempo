@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuración para SPA + PWA
-  output: 'export', // Exportar como SPA estática
-  distDir: 'out', // Directorio de salida
+  // output: 'export', // Exportar como SPA estática
+
   images: {
     unoptimized: true, // Requerido para export estático
     formats: ['image/avif', 'image/webp'], // Formatos modernos

@@ -166,7 +166,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
 
       {(photoUrl || localPreviewUrl) && !imageError ? (
         <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${compact ? 'py-1' : ''}`}>
-          <div className="relative w-full sm:w-32 h-48 sm:h-24 flex-shrink-0 group">
+          <div className={`relative ${compact ? 'w-20 h-20' : 'w-full sm:w-32 h-48 sm:h-24'} flex-shrink-0 group`}>
             <img
               src={localPreviewUrl || photoUrl}
               alt={label}

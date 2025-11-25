@@ -129,7 +129,7 @@ export default function ControlPesosBrutos({
           <p className="text-xs mt-1 text-gray-500">Haz clic en "Agregar Peso" para comenzar</p>
         </div>
       ) : (
-        <div className={`${isCompact ? 'space-y-3' : 'space-y-4'}`}>
+        <div className={isCompact ? 'grid grid-cols-2 md:grid-cols-3 gap-3' : 'space-y-4'}>
           {registros.map((registro, index) => (
             <PesoItem
               key={registro.id}
