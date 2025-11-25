@@ -359,7 +359,10 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
             <button
               type="button"
               onClick={handleCameraClick}
-              className={`px-4 ${compact ? 'py-1.5 text-xs' : 'py-2.5 text-sm'} font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex-1 sm:flex-none shadow-lg shadow-blue-500/20`}
+              className={`${compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'} font-[600] bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-2 border-blue-400/50 hover:from-blue-600 hover:to-indigo-700 hover:border-blue-300 rounded-[14px] transition-all active:scale-[0.98] flex-1 sm:flex-none shadow-lg hover:shadow-xl`}
+              style={{
+                boxShadow: '0 6px 15px -3px rgba(59, 130, 246, 0.3)'
+              }}
             >
               Cambiar
             </button>
@@ -367,7 +370,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               <button
                 type="button"
                 onClick={onPhotoRemove}
-                className={`px-4 ${compact ? 'py-1.5 text-xs' : 'py-2.5 text-sm'} font-medium bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors flex-1 sm:flex-none`}
+                className={`${compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'} font-[600] bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 rounded-[14px] transition-all active:scale-[0.98] flex-1 sm:flex-none hover:shadow-md`}
               >
                 Eliminar
               </button>
@@ -445,12 +448,15 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
             <button
               type="button"
               onClick={handleCameraClick}
-              className={`flex items-center justify-center gap-3 px-4 ${compact ? 'py-2' : 'py-4'} bg-white/5 text-gray-300 border border-white/10 rounded-xl hover:bg-white/10 transition-all hover:scale-[1.01] active:scale-[0.99] w-full group`}
+              className={`flex items-center justify-center gap-3 px-4 ${compact ? 'py-3' : 'py-4'} bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-300 border-2 border-blue-500/30 hover:from-blue-500/20 hover:to-indigo-500/20 hover:border-blue-400/50 rounded-[14px] transition-all active:scale-[0.98] w-full group shadow-lg hover:shadow-xl font-[600]`}
+              style={{
+                boxShadow: '0 6px 15px -3px rgba(59, 130, 246, 0.2)'
+              }}
             >
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
-                <Camera className="w-4 h-4 text-blue-400" />
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:shadow-lg transition-all">
+                <Camera className="w-5 h-5 text-white" />
               </div>
-              <span className="text-sm font-medium">Tomar foto de {label}</span>
+              <span className="text-sm">Tomar foto de {label}</span>
             </button>
           )}
         </div>

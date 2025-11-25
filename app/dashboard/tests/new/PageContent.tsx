@@ -919,6 +919,45 @@ export default function NewMultiAnalysisPageContent() {
                         )
                     }
 
+                    {/* Conteo Section */}
+                    {
+                        productType !== 'CONTROL_PESOS' && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>🔢 Conteo</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label>Número de piezas</Label>
+                                            {currentAnalysis.conteo && (
+                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
+                                            value={currentAnalysis.conteo || ''}
+                                            onChange={(e) => {
+                                                const count = parseInt(e.target.value) || undefined;
+                                                setAnalyses(prev => {
+                                                    const updated = [...prev];
+                                                    updated[activeAnalysisIndex] = {
+                                                        ...updated[activeAnalysisIndex],
+                                                        conteo: count
+                                                    };
+                                                    return updated;
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    }
+
                     {/* Defectos de Calidad */}
                     {
                         productType !== 'CONTROL_PESOS' && (
@@ -974,10 +1013,12 @@ export default function NewMultiAnalysisPageContent() {
                             <div className="pt-8 flex justify-center">
                                 <button
                                     onClick={handleCompleteAnalysis}
-                                    className="group relative flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                                    className="w-full max-w-[340px] bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400/50 hover:from-green-600 hover:to-emerald-700 hover:border-green-300 p-[14px] rounded-[14px] text-[15px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
+                                    style={{
+                                        boxShadow: '0 10px 20px -5px rgba(34, 197, 94, 0.3)'
+                                    }}
                                 >
-                                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                                    <CheckCircle2 className="w-6 h-6" />
+                                    <CheckCircle2 className="w-5 h-5" />
                                     <span>Completar Análisis</span>
                                 </button>
                             </div>
@@ -997,9 +1038,9 @@ export default function NewMultiAnalysisPageContent() {
                             <button
                                 type="button"
                                 onClick={handleSmartDelete}
-                                className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[16px] rounded-[14px] text-[16px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-all active:scale-[0.98]"
+                                className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] hover:shadow-md"
                             >
-                                <Trash2 className="w-5 h-5" />
+                                <Trash2 className="w-4 h-4" />
                                 <span>Borrar Análisis</span>
                             </button>
                         </div>
