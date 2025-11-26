@@ -404,6 +404,12 @@ export const usePhotoUpload = ({
 
     const retryPhotoUpload = useCallback(async (photo: PendingPhoto) => {
         try {
+            // Skip if already uploading
+            if (photo.status === 'uploading') {
+                console.log(`⏭️ Skipping ${photo.field} - already uploading`);
+                return;
+            }
+
             if (photo.field.startsWith('pesobruto-')) {
                 const registroId = photo.field.replace('pesobruto-', '');
                 await handlePesoBrutoPhotoCapture(registroId, photo.file as File);
@@ -423,9 +429,18 @@ export const usePhotoUpload = ({
             await photoStorageService.initialize();
             const failedPhotos = await photoStorageService.getFailedPhotos();
 
-            toast.info(`Reintentando ${failedPhotos.length} fotos...`);
+            // Filter out photos that are already uploading
+            const photosToRetry = failedPhotos.filter(p => p.status !== 'uploading');
 
-            for (const photo of failedPhotos) {
+            if (photosToRetry.length === 0) {
+                toast.info('No hay fotos fallidas para reintentar');
+                return;
+            }
+
+            console.log(`🔄 Reintentando ${photosToRetry.length} fotos (${failedPhotos.length - photosToRetry.length} ya en proceso)`);
+            toast.info(`Reintentando ${photosToRetry.length} fotos...`);
+
+            for (const photo of photosToRetry) {
                 await retryPhotoUpload(photo);
             }
         } catch (error) {
