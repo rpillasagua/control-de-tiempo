@@ -18,7 +18,7 @@ export function useTokenExpiryNotification() {
             const minutesLeft = Math.floor(expiresIn / 60);
 
             // Mostrar notificación PROMINENTE que no se auto-cierra
-            toast.warning('⏰ Tu sesión está por expirar', {
+            const warningToastId = toast.warning('⏰ Tu sesión está por expirar', {
                 description: `Quedan ${minutesLeft} minutos. Haz clic en "Renovar Sesión" para continuar sin interrupciones.`,
                 action: {
                     label: '🔄 Renovar Sesión',
@@ -29,13 +29,18 @@ export function useTokenExpiryNotification() {
 
                             await googleAuthService.login();
 
-                            // Cerrar loading y mostrar éxito
+                            // Cerrar AMBOS toasts (loading y warning original)
                             toast.dismiss(loadingToast);
+                            toast.dismiss(warningToastId);
+
+                            // Mostrar éxito
                             toast.success('✅ Sesión renovada exitosamente', {
-                                description: 'Puedes continuar trabajando sin problemas'
+                                description: 'Puedes continuar trabajando sin problemas',
+                                duration: 3000
                             });
                         } catch (error) {
                             console.error('Error renovando sesión:', error);
+                            toast.dismiss(warningToastId);
                             toast.error('❌ Error al renovar sesión', {
                                 description: 'Intenta recargar la página (F5) para continuar',
                                 duration: 10000
