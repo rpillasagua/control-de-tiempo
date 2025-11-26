@@ -842,7 +842,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
                                                     onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
                                                     isUploading={isFieldUploading('pesoBruto')}
-                                                    context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoBruto` }}
+                                                    context={{ analysisId: analysisId || '', field: 'pesoBruto' }}
                                                 />
                                             </div>
                                         )}
@@ -870,7 +870,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
                                                 isUploading={isFieldUploading('pesoCongelado')}
-                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoCongelado` }}
+                                                context={{ analysisId: analysisId || '', field: 'pesoCongelado' }}
                                             />
                                         </div>
 
@@ -900,7 +900,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         photoUrl={currentAnalysis.pesoSubmuestra?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoSubmuestra', file)}
                                                         isUploading={isFieldUploading('pesoSubmuestra')}
-                                                        context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoSubmuestra` }}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoSubmuestra' }}
                                                     />
                                                 </div>
 
@@ -927,7 +927,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
                                                         isUploading={isFieldUploading('pesoSinGlaseo')}
-                                                        context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoSinGlaseo` }}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo' }}
                                                     />
                                                 </div>
                                             </>
@@ -956,7 +956,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
                                                 isUploading={isFieldUploading('pesoNeto')}
-                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoNeto` }}
+                                                context={{ analysisId: analysisId || '', field: 'pesoNeto' }}
                                             />
                                         </div>
                                     </div>
@@ -1005,7 +1005,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
                                                 isUploading={isFieldUploading('uniformidad_grandes')}
-                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-uniformidad_grandes` }}
+                                                context={{ analysisId: analysisId || '', field: 'uniformidad_grandes' }}
                                             />
                                         </div>
 
@@ -1040,7 +1040,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
                                                 isUploading={isFieldUploading('uniformidad_pequenos')}
-                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-uniformidad_pequenos` }}
+                                                context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos' }}
                                             />
                                         </div>
                                     </div>
@@ -1117,7 +1117,7 @@ export default function NewMultiAnalysisPageContent() {
                                 photoUrl={currentAnalysis.fotoCalidad}
                                 onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
                                 isUploading={isFieldUploading('fotoCalidad')}
-                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-fotoCalidad` }}
+                                context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
                             />
                         </CardContent>
                     </Card>

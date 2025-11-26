@@ -69,27 +69,38 @@ let db: any = null;
 
 if (isFirebaseConfigured) {
   try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    db = getFirestore(app);
+    // Check if already initialized
+    if (getApps().length === 0) {
+      app = initializeApp(firebaseConfig);
 
-    // 🌐 Habilitar persistencia local de Firestore para modo offline
-    if (typeof window !== 'undefined' && db) {
-      enableIndexedDbPersistence(db).catch((err: any) => {
-        if (err.code === 'failed-precondition') {
-          console.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
-        } else if (err.code === 'unimplemented') {
-          console.log('⚠️ Persistencia Firestore: No soportada en este navegador');
-        } else if (err.message && err.message.includes('already been started')) {
-          // Silently ignore this error as it means persistence is likely already working
-          console.log('ℹ️ Persistencia Firestore: Ya iniciada previamente');
-        }
-      });
+      // Initialize Firestore
+      db = getFirestore(app);
+
+      // 🌐 Habilitar persistencia local de Firestore para modo offline
+      // MUST be called immediately after getFirestore and before any other operations
+      if (typeof window !== 'undefined' && db) {
+        enableIndexedDbPersistence(db).catch((err: any) => {
+          if (err.code === 'failed-precondition') {
+            console.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
+          } else if (err.code === 'unimplemented') {
+            console.log('⚠️ Persistencia Firestore: No soportada en este navegador');
+          } else {
+            // Silently ignore all other persistence errors
+            console.log('ℹ️ Persistencia Firestore: Inicializada previamente');
+          }
+        });
+      }
+
+      console.log('✅ Firebase Firestore inicializado correctamente');
+      console.log('📊 Proyecto:', firebaseConfig.projectId);
+      console.log('🌐 Modo offline habilitado (persistencia local)');
+      console.log('📝 Nota: Las fotos se guardan en Google Drive, no en Firebase Storage');
+    } else {
+      // Use existing app
+      app = getApps()[0];
+      db = getFirestore(app);
+      console.log('ℹ️ Usando instancia de Firebase existente');
     }
-
-    console.log('✅ Firebase Firestore inicializado correctamente');
-    console.log('📊 Proyecto:', firebaseConfig.projectId);
-    console.log('🌐 Modo offline habilitado (persistencia local)');
-    console.log('📝 Nota: Las fotos se guardan en Google Drive, no en Firebase Storage');
   } catch (error) {
     console.error('❌ Firebase no pudo inicializarse:', error);
     console.warn('⚠️ La app funcionará sin base de datos.');

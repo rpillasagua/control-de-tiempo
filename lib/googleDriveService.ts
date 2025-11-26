@@ -728,7 +728,8 @@ class GoogleDriveService {
 
       // Generar nombre de archivo con timestamp para evitar duplicados
       const timestamp = Date.now();
-      const extension = file.name.split('.').pop() || 'jpg';
+      // Safe extraction of extension - handle case where file.name might be undefined (e.g., Blob from IndexedDB)
+      const extension = file.name?.split('.').pop() || 'jpg';
       const fileName = `${photoType}_${timestamp}.${extension}`;
       logger.log(`📄 Nombre de archivo generado: ${fileName}`);
 

@@ -108,20 +108,22 @@ export default function DefectSelector({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">
-          🐛 Defectos de Calidad
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <span className="text-2xl">🐛</span>
+          Defectos de Calidad
         </h3>
         {selectedItems.length > 0 && (
           <button
             type="button"
             onClick={() => setIsEditMode(!isEditMode)}
             className={`
+              px-4 py-2 rounded-xl text-sm font-bold cursor-pointer flex justify-center items-center gap-2 
+              transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md
               ${isEditMode
-                ? 'bg-green-50 text-green-600 border-2 border-green-100 hover:bg-green-100 hover:border-green-200'
-                : 'bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400 hover:from-green-600 hover:to-emerald-700'
+                : 'bg-gradient-to-r from-red-500 to-rose-600 text-white border-2 border-red-400 hover:from-red-600 hover:to-rose-700'
               }
-              p-2 rounded-lg text-xs font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] hover:shadow-md
             `}
           >
             {isEditMode ? (

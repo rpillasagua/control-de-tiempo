@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 import { UploadStatusIndicator } from './UploadStatusIndicator';
@@ -12,7 +13,7 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
     onRetryPhoto,
     onRetryAll
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true); // Expanded by default for visibility
     const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
     const [failedPhotos, setFailedPhotos] = useState<PendingPhoto[]>([]);
     const [isRetrying, setIsRetrying] = useState(false);
@@ -101,8 +102,8 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
         return null; // Hide panel if no issues
     }
 
-    return (
-        <div className="fixed bottom-4 right-4 z-50 w-96 bg-white rounded-lg shadow-2xl border border-gray-200">
+    const panelContent = (
+        <div className="fixed bottom-4 right-4 z-[9999] w-96 bg-white rounded-lg shadow-2xl border border-gray-200">
             {/* Header */}
             <div
                 className="flex items-center justify-between p-3 bg-amber-50 border-b border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors rounded-t-lg"
@@ -216,4 +217,7 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
             )}
         </div>
     );
+
+    // Use portal to render directly to body, bypassing any parent overflow constraints
+    return typeof window !== 'undefined' ? createPortal(panelContent, document.body) : null;
 };

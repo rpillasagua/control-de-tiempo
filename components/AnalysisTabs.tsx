@@ -31,8 +31,8 @@ export default function AnalysisTabs({
                         type="button"
                         onClick={() => onTabChange(index)}
                         className={`
-                            relative flex items-center justify-center min-w-28 h-28 rounded-2xl
-                            transition-all duration-300 font-black text-2xl
+                            relative flex items-center justify-center px-6 py-4 rounded-xl
+                            transition-all duration-300 font-bold text-base
                             ${isActive
                                 ? 'text-white shadow-2xl scale-105 ring-4 ring-offset-4 ring-offset-slate-900'
                                 : 'bg-slate-800/90 text-slate-400 hover:bg-slate-700 hover:text-white hover:scale-105 border-2 border-slate-700'
@@ -48,7 +48,7 @@ export default function AnalysisTabs({
                                 : undefined
                         }}
                     >
-                        <span className={isActive ? 'drop-shadow-lg' : ''}>{index + 1}</span>
+                        <span className={isActive ? 'drop-shadow-lg' : ''}>Análisis {index + 1}</span>
                         {isActive && (
                             <div className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-lg">
                                 <CheckCircle2 size={14} className="text-green-600" />
