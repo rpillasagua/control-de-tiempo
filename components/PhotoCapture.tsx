@@ -362,12 +362,14 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
             {offlinePhotoStatus === 'error' && offlineFile && !isUploading && (
               <button
                 onClick={handleManualRetry}
-                className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 hover:bg-black/50 transition-colors rounded-lg group/retry"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 hover:bg-black/60 transition-all duration-300 rounded-lg group/retry backdrop-blur-[2px]"
               >
-                <div className="bg-green-500 p-2 rounded-full shadow-lg group-hover/retry:scale-110 transition-transform">
+                <div className="bg-green-500 p-3 rounded-full shadow-xl group-hover/retry:scale-110 transition-transform duration-300 animate-pulse ring-4 ring-green-500/30">
                   <RefreshCw className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-white text-xs font-bold mt-2 bg-black/50 px-2 py-1 rounded">Reintentar</span>
+                <span className="text-white text-xs font-bold mt-3 bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg border border-white/10">
+                  Reintentar Subida
+                </span>
               </button>
             )}
 

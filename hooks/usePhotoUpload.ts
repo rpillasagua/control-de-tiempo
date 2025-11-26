@@ -416,27 +416,19 @@ export const usePhotoUpload = ({
     const retryPhotoUpload = useCallback(async (photo: PendingPhoto) => {
         console.log(`🔄 RETRY - ID: ${photo.id}, Field: ${photo.field}, Status: ${photo.status}`);
 
-        // ✅ VALIDATE: Only retry photos from THIS analysis AND THIS FIELD
-        const currentBatchCode = `${codigo}-${lote}-analysis${activeAnalysisIndex + 1}`;
-
-        // 1. Validate BatchCode (Analysis level)
-        if (photo.metadata?.batchCode && photo.metadata.batchCode !== currentBatchCode) {
-            console.log(`⏭️ Skipping ${photo.field} - belongs to different analysis (${photo.metadata.batchCode} != ${currentBatchCode})`);
-            return;
-        }
-
-        // 2. Validate Specific Field Context (Field level)
-        // This prevents "pesoNeto" photo from being uploaded to "pesoBruto" if IDs match by coincidence
-        // or if the user switched fields rapidly.
-        // We construct the expected context ID for the current active field if possible, 
-        // but since this function is generic, we rely on the fact that we are in the context 
-        // of the active analysis. The critical check is that we DO NOT upload if the 
-        // photo's metadata doesn't match the current active analysis parameters.
-
+        // 1. Validate Context (Code/Lote)
+        // We ensure the photo belongs to the current production batch (Code + Lote)
         if (photo.metadata?.codigo !== codigo || photo.metadata?.lote !== lote) {
             console.log(`⛔ ABORTING: Photo context mismatch. Photo: ${photo.metadata?.codigo}-${photo.metadata?.lote}, Current: ${codigo}-${lote}`);
+            toast.error('Esta foto pertenece a otro lote o código. No se puede reintentar aquí.');
             return;
         }
+
+        // 2. Determine Target Analysis Index
+        // Use the original analysis index from metadata if available, otherwise fallback to active (risky but fallback)
+        const targetIndex = photo.metadata?.analysisIndex ?? activeAnalysisIndex;
+
+        console.log(`🎯 Target Analysis Index: ${targetIndex} (Active: ${activeAnalysisIndex})`);
 
         try {
             // Skip if already uploading
@@ -445,19 +437,140 @@ export const usePhotoUpload = ({
                 return;
             }
 
+            // We need to call a modified version of the capture handlers that accepts an explicit index
+            // Since the original handlers use 'activeAnalysisIndex' from closure, we need to bypass them 
+            // or modify them. 
+            // Strategy: We will duplicate the core logic here for the retry to ensure we use 'targetIndex'
+            // instead of 'activeAnalysisIndex'.
+
+            const key = `${targetIndex}-${photo.field}`;
+            setUploadingPhotos(prev => new Set(prev).add(key));
+            setIsUploadingGlobal(true);
+
+            // Update status to uploading in DB
+            await photoStorageService.updatePhotoStatus(photo.id, 'uploading');
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId: photo.id, status: 'uploading' }
+            }));
+
+            // Upload to Drive
+            const { googleDriveService } = await import('@/lib/googleDriveService');
+            await googleDriveService.initialize();
+            const { googleAuthService } = await import('@/lib/googleAuthService');
+            const user = googleAuthService.getUser();
+
+            const targetAnalysis = analyses[targetIndex];
+            if (!targetAnalysis) {
+                throw new Error(`Analysis #${targetIndex + 1} no longer exists`);
+            }
+
+            let oldUrl: string | undefined;
+            let driveFileName = '';
+
+            // Determine filename and oldUrl based on field type
             if (photo.field.startsWith('pesobruto-')) {
                 const registroId = photo.field.replace('pesobruto-', '');
-                await handlePesoBrutoPhotoCapture(registroId, photo.file as File);
+                const registro = targetAnalysis.pesosBrutos?.find(r => r.id === registroId);
+                oldUrl = registro?.fotoUrl;
+                driveFileName = `peso_bruto_${registroId}_analysis${targetIndex + 1}`;
             } else if (photo.field === 'global-pesoBruto') {
-                await handleGlobalPesoBrutoPhoto(photo.file as File);
+                oldUrl = globalPesoBruto.fotoUrl;
+                driveFileName = 'peso_bruto_global';
             } else {
-                await handlePhotoCapture(photo.field, photo.file as File);
+                // Standard fields
+                if (photo.field === 'fotoCalidad') {
+                    oldUrl = targetAnalysis.fotoCalidad;
+                } else if (photo.field.startsWith('uniformidad_')) {
+                    const tipo = photo.field.split('_')[1] as 'grandes' | 'pequenos';
+                    oldUrl = targetAnalysis.uniformidad?.[tipo]?.fotoUrl;
+                } else {
+                    const currentFieldValue = targetAnalysis[photo.field as keyof Analysis] as any;
+                    oldUrl = currentFieldValue?.fotoUrl;
+                }
+                driveFileName = `${photo.field}_analysis${targetIndex + 1}`;
             }
+
+            console.log(`🚀 Uploading to Drive: ${driveFileName}`);
+
+            const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
+                photo.file as File,
+                codigo,
+                lote,
+                driveFileName,
+                oldUrl,
+                user?.email
+            ));
+
+            console.log('✅ Upload successful:', url);
+
+            // Update State & Firestore
+            if (photo.field.startsWith('pesobruto-')) {
+                const registroId = photo.field.replace('pesobruto-', '');
+                setAnalyses(prev => prev.map((a, i) => {
+                    if (i !== targetIndex) return a;
+                    return {
+                        ...a,
+                        pesosBrutos: a.pesosBrutos?.map(r => r.id === registroId ? { ...r, fotoUrl: url } : r)
+                    };
+                }));
+            } else if (photo.field === 'global-pesoBruto') {
+                setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
+                const { saveGlobalPhotoUrl } = await import('@/lib/analysisService');
+                await saveGlobalPhotoUrl(analysisId, url);
+            } else {
+                setAnalyses(prev => updateAnalysisField(prev, targetIndex, photo.field, url));
+
+                // Firestore Update
+                const { saveAnalysisPhotoUrl } = await import('@/lib/analysisService');
+                let fieldPath = photo.field;
+                if (photo.field.startsWith('uniformidad_')) {
+                    const tipo = photo.field.split('_')[1];
+                    fieldPath = `uniformidad.${tipo}.fotoUrl`;
+                } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo', 'glaseo'].includes(photo.field)) {
+                    fieldPath = `${photo.field}.fotoUrl`;
+                }
+                await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
+            }
+
+            // If it was a peso bruto array item, we need to save the whole document to be safe/consistent with original logic
+            if (photo.field.startsWith('pesobruto-')) {
+                await saveDocument();
+            }
+
+            // Cleanup
+            await photoStorageService.deletePhoto(photo.id);
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId: photo.id, status: 'success' }
+            }));
+
+            toast.success('Foto reintentada exitosamente');
+
         } catch (error) {
             console.error('Error retrying photo upload:', error);
-            toast.error('Error al reintentar la subida');
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            await photoStorageService.updatePhotoStatus(photo.id, 'error', undefined, errorMessage);
+
+            const key = `${targetIndex}-${photo.field}`;
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId: photo.id, status: 'error' }
+            }));
+
+            toast.error('Falló el reintento de subida');
+        } finally {
+            const key = `${targetIndex}-${photo.field}`;
+            setUploadingPhotos(prev => {
+                const next = new Set(prev);
+                next.delete(key);
+                return next;
+            });
+            setIsUploadingGlobal(false);
         }
-    }, [handlePhotoCapture, handlePesoBrutoPhotoCapture, handleGlobalPesoBrutoPhoto, codigo, lote, activeAnalysisIndex]);
+    }, [codigo, lote, activeAnalysisIndex, analyses, globalPesoBruto, analysisId, saveDocument, setAnalyses, setGlobalPesoBruto]);
 
     const retryAllFailedPhotos = useCallback(async () => {
         try {

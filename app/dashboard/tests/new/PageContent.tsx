@@ -21,6 +21,7 @@ import ControlPesosBrutos from '@/components/ControlPesosBrutos';
 import DefectSelector from '@/components/DefectSelector';
 import { WeightInputRow } from '@/components/WeightInputRow';
 import { PendingUploadsPanel } from '@/components/PendingUploadsPanel';
+import FailedUploadsBanner from '@/components/FailedUploadsBanner';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components
@@ -65,6 +66,7 @@ export default function NewMultiAnalysisPageContent() {
 
     // UI State
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showPendingUploads, setShowPendingUploads] = useState(false);
     const [deleteModalConfig, setDeleteModalConfig] = useState<{
         title: string;
         description: string;
@@ -520,6 +522,7 @@ export default function NewMultiAnalysisPageContent() {
 
     return (
         <div className="min-h-screen pb-20">
+            <FailedUploadsBanner onClick={() => setShowPendingUploads(true)} />
             {/* Floating Save Indicator - Solo errores */}
             {saveError && (
                 <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
@@ -1218,6 +1221,8 @@ export default function NewMultiAnalysisPageContent() {
 
             {/* Pending Uploads Panel */}
             <PendingUploadsPanel
+                isOpen={showPendingUploads}
+                onClose={() => setShowPendingUploads(false)}
                 onRetryPhoto={retryPhotoUpload}
                 onRetryAll={retryAllFailedPhotos}
             />

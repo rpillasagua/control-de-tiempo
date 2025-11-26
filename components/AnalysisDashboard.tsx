@@ -7,6 +7,9 @@ import { QualityAnalysis, PRODUCT_TYPE_LABELS, ANALYST_COLOR_HEX } from '@/lib/t
 import DailyReportCard from './DailyReportCard';
 import FailedUploadsBanner from './FailedUploadsBanner';
 import { logger } from '@/lib/logger';
+import { PendingUploadsPanel } from './PendingUploadsPanel';
+import { retryPhotoUploadStandalone } from '@/lib/retryUploadService';
+import { PendingPhoto, photoStorageService } from '@/lib/photoStorageService';
 
 interface AnalysisDashboardProps {
   initialAnalyses: QualityAnalysis[];
@@ -19,6 +22,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   const [searchTerm, setSearchTerm] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'completados' | 'en_progreso'>('completados');
+  const [showPendingUploads, setShowPendingUploads] = useState(false);
 
   // Pagination state
   const [lastDoc, setLastDoc] = useState<any>(initialLastDoc);
@@ -31,6 +35,17 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
     setLastDoc(initialLastDoc);
     setHasMore(!!initialLastDoc);
   }, [initialAnalyses, initialLastDoc]);
+
+  const handleRetryPhoto = async (photo: PendingPhoto) => {
+    await retryPhotoUploadStandalone(photo);
+  };
+
+  const handleRetryAll = async () => {
+    const failed = await photoStorageService.getFailedPhotos();
+    for (const photo of failed) {
+      await retryPhotoUploadStandalone(photo);
+    }
+  };
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore || searchTerm) return;
@@ -93,7 +108,14 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6' }}>
-      <FailedUploadsBanner />
+      <FailedUploadsBanner onClick={() => setShowPendingUploads(true)} />
+      <PendingUploadsPanel
+        isOpen={showPendingUploads}
+        onClose={() => setShowPendingUploads(false)}
+        onRetryPhoto={handleRetryPhoto}
+        onRetryAll={handleRetryAll}
+      />
+
       {/* Controls Section - Sticky con glassmorphism */}
       <div className="sticky top-0 z-30 glass backdrop-blur-xl px-3 py-3 sm:px-4 sm:py-4 shadow-lg" style={{ borderBottom: 'none', borderTop: 'none' }}>
         <div className="max-w-7xl mx-auto space-y-3">

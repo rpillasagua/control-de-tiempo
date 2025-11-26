@@ -7,16 +7,27 @@ import { UploadStatusIndicator } from './UploadStatusIndicator';
 interface PendingUploadsPanelProps {
     onRetryPhoto: (photo: PendingPhoto) => Promise<void>;
     onRetryAll: () => Promise<void>;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
 export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
     onRetryPhoto,
-    onRetryAll
+    onRetryAll,
+    isOpen,
+    onClose
 }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
     const [failedPhotos, setFailedPhotos] = useState<PendingPhoto[]>([]);
     const [isRetrying, setIsRetrying] = useState(false);
+
+    // Sync with external isOpen prop
+    useEffect(() => {
+        if (isOpen !== undefined) {
+            setIsExpanded(isOpen);
+        }
+    }, [isOpen]);
 
     const loadPhotos = async () => {
         try {
@@ -159,7 +170,11 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
             {/* Header */}
             <div
                 className="flex items-center justify-between p-3 bg-amber-50 border-b border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors rounded-t-lg"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => {
+                    const newState = !isExpanded;
+                    setIsExpanded(newState);
+                    if (!newState && onClose) onClose();
+                }}
             >
                 <div className="flex items-center gap-2">
                     <ImageIcon className="w-5 h-5 text-amber-600" />
