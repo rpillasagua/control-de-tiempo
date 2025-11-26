@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Analysis, PesoConFoto } from '@/lib/types';
 import { updateAnalysisField } from '@/lib/analysisUtils';
-import { uploadWithRetry } from '@/lib/utils';
+import { uploadWithRetry, generateId, compressImage } from '@/lib/utils';
+import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 
 interface UsePhotoUploadProps {
     analysisId: string; // Added analysisId
@@ -29,16 +30,59 @@ export const usePhotoUpload = ({
 }: UsePhotoUploadProps) => {
     const [isUploadingGlobal, setIsUploadingGlobal] = useState(false);
     const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
+    const [photoStatus, setPhotoStatus] = useState<Record<string, { photoId: string; status: PendingPhoto['status'] }>>({});
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [photos, setPhotos] = useState<Record<string, File>>({});
 
     const handlePhotoCapture = useCallback(async (field: string, file: File) => {
         const targetIndex = activeAnalysisIndex;
         const key = `${targetIndex}-${field}`;
+        const photoId = generateId();
+
         setPhotos(prev => ({ ...prev, [key]: file }));
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true);
 
+        // 1. Compress and save photo locally first
+        try {
+            await photoStorageService.initialize();
+
+            console.log(`🗜️ Comprimiendo imagen: ${file.name}`);
+            const compressedBlob = await compressImage(file);
+
+            await photoStorageService.savePhoto({
+                id: photoId,
+                analysisId,
+                field,
+                file: compressedBlob,
+                fileName: file.name,
+                status: 'uploading',
+                metadata: {
+                    codigo,
+                    lote,
+                    analysisIndex: targetIndex
+                }
+            });
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'uploading' }
+            }));
+
+            console.log('📁 Photo compressed and saved locally, starting upload:', photoId);
+        } catch (localError) {
+            console.error('Error saving photo locally:', localError);
+            toast.error('Error al guardar la foto localmente');
+            setIsUploadingGlobal(false);
+            setUploadingPhotos(prev => {
+                const next = new Set(prev);
+                next.delete(key);
+                return next;
+            });
+            return;
+        }
+
+        // 2. Upload to Google Drive
         try {
             const { googleDriveService } = await import('@/lib/googleDriveService');
             await googleDriveService.initialize();
@@ -68,13 +112,14 @@ export const usePhotoUpload = ({
                 user?.email
             ));
 
-            // 1. Update local state immediately for UI responsiveness
+            console.log('✅ Google Drive upload successful, URL:', url);
+
+            // 3. Update local state immediately for UI responsiveness
             setAnalyses(prev => updateAnalysisField(prev, targetIndex, field, url));
 
-            // 2. Save to Firestore transactionally for data integrity
+            // 4. Save to Firestore transactionally - THIS IS THE CONFIRMATION!
             const { saveAnalysisPhotoUrl } = await import('@/lib/analysisService');
 
-            // Determine field path for Firestore update
             let fieldPath = field;
             if (field.startsWith('uniformidad_')) {
                 const tipo = field.split('_')[1];
@@ -84,11 +129,31 @@ export const usePhotoUpload = ({
             }
 
             await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
-            console.log('✅ Foto guardada transaccionalmente');
+            console.log('✅ Firestore transaction confirmed - Photo URL saved');
+
+            // 5. ONLY NOW delete from IndexedDB - we have confirmation!
+            await photoStorageService.deletePhoto(photoId);
+            console.log('🗑️ Photo deleted from IndexedDB after confirmed upload');
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'success' }
+            }));
+
+            toast.success('Foto subida exitosamente');
 
         } catch (error) {
             console.error('Error uploading photo:', error);
-            toast.error('Error al subir la foto. Intenta de nuevo.');
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            // Mark as error in IndexedDB
+            await photoStorageService.updatePhotoStatus(photoId, 'error', undefined, errorMessage);
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'error' }
+            }));
+
+            toast.error('Error al subir la foto. Se guardó localmente y puedes reintentar.');
         } finally {
             setUploadingPhotos(prev => {
                 const next = new Set(prev);
@@ -102,9 +167,51 @@ export const usePhotoUpload = ({
     const handlePesoBrutoPhotoCapture = useCallback(async (registroId: string, file: File) => {
         const targetIndex = activeAnalysisIndex;
         const key = `${targetIndex}-pesobruto-${registroId}`;
+        const photoId = generateId();
+
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true);
 
+        // 1. Compress and save photo locally first
+        try {
+            await photoStorageService.initialize();
+
+            console.log(`🗜️ Comprimiendo peso bruto: ${file.name}`);
+            const compressedBlob = await compressImage(file);
+
+            await photoStorageService.savePhoto({
+                id: photoId,
+                analysisId,
+                field: `pesobruto-${registroId}`,
+                file: compressedBlob,
+                fileName: file.name,
+                status: 'uploading',
+                metadata: {
+                    codigo,
+                    lote,
+                    analysisIndex: targetIndex
+                }
+            });
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'uploading' }
+            }));
+
+            console.log('📁 Peso bruto compressed and saved locally:', photoId);
+        } catch (localError) {
+            console.error('Error saving peso bruto locally:', localError);
+            toast.error('Error al guardar la foto localmente');
+            setIsUploadingGlobal(false);
+            setUploadingPhotos(prev => {
+                const next = new Set(prev);
+                next.delete(key);
+                return next;
+            });
+            return;
+        }
+
+        // 2. Upload to Google Drive
         try {
             const { googleDriveService } = await import('@/lib/googleDriveService');
             await googleDriveService.initialize();
@@ -125,7 +232,9 @@ export const usePhotoUpload = ({
                 user?.email
             ));
 
-            // 1. Update local state
+            console.log('✅ Peso bruto uploaded to Drive:', url);
+
+            // 3. Update local state
             setAnalyses(prev => prev.map((analysis, index) => {
                 if (index !== targetIndex) return analysis;
                 return {
@@ -136,34 +245,32 @@ export const usePhotoUpload = ({
                 };
             }));
 
-            // 2. Save transactionally
-            // For array updates, we need to be careful. 
-            // Since we can't easily update a specific element in an array by ID in Firestore without reading first,
-            // and saveAnalysisPhotoUrl logic for arrays might be complex if we just pass a path.
-            // However, our saveAnalysisPhotoUrl uses read-modify-write, so we can implement logic there or here.
-            // But saveAnalysisPhotoUrl takes a fieldPath.
-            // For pesosBrutos array, we need to find the index of the item with registroId.
-            // Since we are inside a transaction in saveAnalysisPhotoUrl, we can't easily find the index dynamically unless we change the helper.
-
-            // ALTERNATIVE: For pesosBrutos, we might need a specialized function or just use saveDocument for now if it's too complex,
-            // BUT the goal is robustness.
-            // Let's use saveDocument for this specific case OR improve saveAnalysisPhotoUrl to handle array finding.
-            // Given the time constraints, let's stick to saveDocument for complex array updates for now, 
-            // OR better: since we have the index in local state, we can assume it matches if we haven't reordered.
-            // But we don't have the index here easily without searching.
-
-            // Let's use saveDocument for pesosBrutos for now as it's an array and less prone to the single-field race condition 
-            // (unless two people edit different rows of the same array at the same time).
-            // Actually, let's try to be safe and use saveDocument but with a comment.
-            // Wait, the user wants robustness.
-            // Let's implement a specific `savePesoBrutoPhotoUrl` in analysisService if needed, but for now let's use saveDocument 
-            // because `pesosBrutos` is an array and path-based updates are tricky without index.
-
+            // 4. Save transactionally (using saveDocument for array updates)
             await saveDocument();
+            console.log('✅ Firestore confirmed - Peso bruto saved');
+
+            // 5. Delete from IndexedDB after confirmation
+            await photoStorageService.deletePhoto(photoId);
+            console.log('🗑️ Peso bruto deleted from IndexedDB');
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'success' }
+            }));
+
+            toast.success('Foto de peso bruto subida exitosamente');
 
         } catch (error) {
             console.error('Error uploading peso bruto photo:', error);
-            toast.error('Error al subir la foto del peso bruto');
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            await photoStorageService.updatePhotoStatus(photoId, 'error', undefined, errorMessage);
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'error' }
+            }));
+
+            toast.error('Error al subir peso bruto. Se guardó localmente y puedes reintentar.');
         } finally {
             setUploadingPhotos(prev => {
                 const next = new Set(prev);
@@ -172,14 +279,55 @@ export const usePhotoUpload = ({
             });
             setIsUploadingGlobal(false);
         }
-    }, [activeAnalysisIndex, analyses, codigo, lote, saveDocument, setAnalyses]);
+    }, [activeAnalysisIndex, analyses, codigo, lote, analysisId, saveDocument, setAnalyses]);
 
     const handleGlobalPesoBrutoPhoto = useCallback(async (file: File) => {
         const key = 'global-pesoBruto';
+        const photoId = generateId();
+
         setPhotos(prev => ({ ...prev, [key]: file }));
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true);
 
+        // 1. Compress and save photo locally first
+        try {
+            await photoStorageService.initialize();
+
+            console.log(`🗜️ Comprimiendo peso bruto global: ${file.name}`);
+            const compressedBlob = await compressImage(file);
+
+            await photoStorageService.savePhoto({
+                id: photoId,
+                analysisId,
+                field: 'global-pesoBruto',
+                file: compressedBlob,
+                fileName: file.name,
+                status: 'uploading',
+                metadata: {
+                    codigo,
+                    lote
+                }
+            });
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'uploading' }
+            }));
+
+            console.log('📁 Global peso bruto compressed and saved locally:', photoId);
+        } catch (localError) {
+            console.error('Error saving global peso bruto locally:', localError);
+            toast.error('Error al guardar la foto localmente');
+            setIsUploadingGlobal(false);
+            setUploadingPhotos(prev => {
+                const next = new Set(prev);
+                next.delete(key);
+                return next;
+            });
+            return;
+        }
+
+        // 2. Upload to Google Drive
         try {
             const { googleDriveService } = await import('@/lib/googleDriveService');
             await googleDriveService.initialize();
@@ -197,17 +345,38 @@ export const usePhotoUpload = ({
                 user?.email
             ));
 
-            // 1. Update local state
+            console.log('✅ Global peso bruto uploaded to Drive:', url);
+
+            // 3. Update local state
             setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
 
-            // 2. Save transactionally
+            // 4. Save transactionally - THIS IS THE CONFIRMATION!
             const { saveGlobalPhotoUrl } = await import('@/lib/analysisService');
             await saveGlobalPhotoUrl(analysisId, url);
-            console.log('✅ Foto global guardada transaccionalmente');
+            console.log('✅ Firestore confirmed - Global peso bruto saved');
+
+            // 5. Delete from IndexedDB after confirmation
+            await photoStorageService.deletePhoto(photoId);
+            console.log('🗑️ Global peso bruto deleted from IndexedDB');
+
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'success' }
+            }));
+
+            toast.success('Foto global subida exitosamente');
 
         } catch (error) {
             console.error('Error uploading global peso bruto photo:', error);
-            toast.error('Error al subir la foto global');
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            await photoStorageService.updatePhotoStatus(photoId, 'error', undefined, errorMessage);
+            setPhotoStatus(prev => ({
+                ...prev,
+                [key]: { photoId, status: 'error' }
+            }));
+
+            toast.error('Error al subir foto global. Se guardó localmente y puedes reintentar.');
         } finally {
             setUploadingPhotos(prev => {
                 const next = new Set(prev);
@@ -228,6 +397,43 @@ export const usePhotoUpload = ({
         return uploadingPhotos.has(key);
     }, [activeAnalysisIndex, uploadingPhotos]);
 
+    const getPhotoStatus = useCallback((field: string) => {
+        const key = `${activeAnalysisIndex}-${field}`;
+        return photoStatus[key]?.status || null;
+    }, [activeAnalysisIndex, photoStatus]);
+
+    const retryPhotoUpload = useCallback(async (photo: PendingPhoto) => {
+        try {
+            if (photo.field.startsWith('pesobruto-')) {
+                const registroId = photo.field.replace('pesobruto-', '');
+                await handlePesoBrutoPhotoCapture(registroId, photo.file as File);
+            } else if (photo.field === 'global-pesoBruto') {
+                await handleGlobalPesoBrutoPhoto(photo.file as File);
+            } else {
+                await handlePhotoCapture(photo.field, photo.file as File);
+            }
+        } catch (error) {
+            console.error('Error retrying photo upload:', error);
+            toast.error('Error al reintentar la subida');
+        }
+    }, [handlePhotoCapture, handlePesoBrutoPhotoCapture, handleGlobalPesoBrutoPhoto]);
+
+    const retryAllFailedPhotos = useCallback(async () => {
+        try {
+            await photoStorageService.initialize();
+            const failedPhotos = await photoStorageService.getFailedPhotos();
+
+            toast.info(`Reintentando ${failedPhotos.length} fotos...`);
+
+            for (const photo of failedPhotos) {
+                await retryPhotoUpload(photo);
+            }
+        } catch (error) {
+            console.error('Error retrying all photos:', error);
+            toast.error('Error al reintentar las fotos');
+        }
+    }, [retryPhotoUpload]);
+
     return {
         isUploadingGlobal,
         uploadingPhotos,
@@ -235,6 +441,10 @@ export const usePhotoUpload = ({
         handlePesoBrutoPhotoCapture,
         handleGlobalPesoBrutoPhoto,
         isFieldUploading,
-        isPesoBrutoUploading
+        isPesoBrutoUploading,
+        photoStatus,
+        getPhotoStatus,
+        retryPhotoUpload,
+        retryAllFailedPhotos
     };
 };

@@ -20,6 +20,7 @@ import PhotoCapture from '@/components/PhotoCapture';
 import ControlPesosBrutos from '@/components/ControlPesosBrutos';
 import DefectSelector from '@/components/DefectSelector';
 import { WeightInputRow } from '@/components/WeightInputRow';
+import { PendingUploadsPanel } from '@/components/PendingUploadsPanel';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components
@@ -128,7 +129,11 @@ export default function NewMultiAnalysisPageContent() {
         handlePesoBrutoPhotoCapture,
         handleGlobalPesoBrutoPhoto,
         isFieldUploading,
-        isPesoBrutoUploading
+        isPesoBrutoUploading,
+        photoStatus,
+        getPhotoStatus,
+        retryPhotoUpload,
+        retryAllFailedPhotos
     } = usePhotoUpload({
         analysisId: analysisId!,
         analyses,
@@ -1154,6 +1159,12 @@ export default function NewMultiAnalysisPageContent() {
                 analysisLote={lote}
                 title={deleteModalConfig.title}
                 description={deleteModalConfig.description}
+            />
+
+            {/* Pending Uploads Panel */}
+            <PendingUploadsPanel
+                onRetryPhoto={retryPhotoUpload}
+                onRetryAll={retryAllFailedPhotos}
             />
         </div >
     );

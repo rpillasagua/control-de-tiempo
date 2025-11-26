@@ -96,6 +96,80 @@ export function fileToBase64(file: File): Promise<string> {
 }
 
 /**
+ * Comprime una imagen antes de guardarla localmente
+ * @param file - Archivo de imagen original
+ * @param maxWidth - Ancho máximo (default: 1920px)
+ * @param maxHeight - Alto máximo (default: 1920px)
+ * @param quality - Calidad de compresión 0-1 (default: 0.8)
+ * @returns Promise con el Blob comprimido
+ */
+export async function compressImage(
+  file: File,
+  maxWidth: number = 1920,
+  maxHeight: number = 1920,
+  quality: number = 0.8
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const img = new Image();
+
+      img.onload = () => {
+        // Calcular nuevas dimensiones manteniendo aspect ratio
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const aspectRatio = width / height;
+
+          if (width > height) {
+            width = maxWidth;
+            height = width / aspectRatio;
+          } else {
+            height = maxHeight;
+            width = height * aspectRatio;
+          }
+        }
+
+        // Crear canvas y comprimir
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('No se pudo obtener contexto del canvas'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convertir a Blob con compresión
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              console.log(`📸 Imagen comprimida: ${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB (${((1 - blob.size / file.size) * 100).toFixed(1)}% reducción)`);
+              resolve(blob);
+            } else {
+              reject(new Error('Error al comprimir imagen'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+
+      img.onerror = () => reject(new Error('Error al cargar imagen'));
+      img.src = e.target?.result as string;
+    };
+
+    reader.onerror = () => reject(new Error('Error al leer archivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Helper para reintentar subidas
  */
 export const uploadWithRetry = async (uploadFn: () => Promise<string>, retries = 3) => {
