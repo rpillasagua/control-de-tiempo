@@ -330,6 +330,53 @@ class PhotoStorageService {
             };
         });
     }
+    /**
+     * Reset photos that were stuck in 'uploading' state (e.g. due to page reload)
+     */
+    async resetStuckUploads(): Promise<number> {
+        const db = await this.ensureDB();
+        let count = 0;
+
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([this.storeName], 'readwrite');
+            const objectStore = transaction.objectStore(this.storeName);
+            const index = objectStore.index('status');
+            const request = index.getAll('uploading');
+
+            request.onsuccess = () => {
+                const photos = request.result as PendingPhoto[];
+                if (photos.length === 0) {
+                    resolve(0);
+                    return;
+                }
+
+                // Create a new transaction for updates to ensure atomicity per item or just use the same one?
+                // We can reuse the same transaction if we iterate and put.
+                // However, getAll returns the values, we need to put them back.
+
+                photos.forEach(photo => {
+                    const updatedPhoto: PendingPhoto = {
+                        ...photo,
+                        status: 'error',
+                        lastError: 'Subida interrumpida (recarga de página)',
+                        retryCount: photo.retryCount + 1
+                    };
+                    objectStore.put(updatedPhoto);
+                    count++;
+                });
+            };
+
+            transaction.oncomplete = () => {
+                if (count > 0) console.log(`🔄 Reset ${count} stuck uploads to error status`);
+                resolve(count);
+            };
+
+            transaction.onerror = () => {
+                console.error('❌ Error resetting stuck uploads:', transaction.error);
+                reject(transaction.error);
+            };
+        });
+    }
 }
 
 // Export singleton instance

@@ -31,8 +31,18 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
     };
 
     useEffect(() => {
-        // Load photos on mount
-        loadPhotos();
+        const init = async () => {
+            try {
+                // Reset any uploads that were interrupted (e.g. by page reload)
+                await photoStorageService.resetStuckUploads();
+            } catch (error) {
+                console.error('Error resetting stuck uploads:', error);
+            }
+            // Load photos after reset
+            loadPhotos();
+        };
+
+        init();
 
         // Poll for updates every 5 seconds
         const interval = setInterval(loadPhotos, 5000);
