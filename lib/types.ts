@@ -251,6 +251,7 @@ export interface Analysis {
   pesoSinGlaseo?: PesoConFoto;
   pesoSubmuestra?: PesoConFoto;
   pesoNeto?: PesoConFoto;
+  pesoConGlaseo?: PesoConFoto;
 
   // Control de pesos brutos (múltiples registros)
   pesosBrutos?: PesoBrutoRegistro[];

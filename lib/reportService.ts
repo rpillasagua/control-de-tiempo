@@ -22,7 +22,7 @@ interface FlattenedAnalysis {
     numero: number;
     pesoBruto?: number;
     pesoCongelado?: number;
-    pesoConGlaseo?: number;
+    pesoSubmuestra?: number;
     pesoSinGlaseo?: number;
     pesoNeto?: number;
     conteo?: number;
@@ -78,7 +78,14 @@ const STYLES = {
         left: { style: 'thin' },
         bottom: { style: 'thin' },
         right: { style: 'thin' }
-    } as Partial<ExcelJS.Borders>
+    } as Partial<ExcelJS.Borders>,
+
+    defectHighlight: {
+        font: {
+            color: { argb: 'FFFF0000' }, // Red text
+            bold: true
+        }
+    } as Partial<ExcelJS.Style>
 };
 
 // ============================================
@@ -107,7 +114,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     numero: analysis.numero,
                     pesoBruto: analysis.pesoBruto?.valor,
                     pesoCongelado: analysis.pesoCongelado?.valor,
-                    pesoConGlaseo: analysis.pesoConGlaseo?.valor,
+                    pesoSubmuestra: analysis.pesoSubmuestra?.valor,
                     pesoSinGlaseo: analysis.pesoSinGlaseo?.valor,
                     pesoNeto: analysis.pesoNeto?.valor,
                     conteo: analysis.conteo,
@@ -321,7 +328,7 @@ const createStandardProductSheet = (
         '#', // Número de análisis
         'Peso Bruto',
         'Peso Congelado',
-        ...(productType === 'VALOR_AGREGADO' ? ['Peso con Glaseo', 'Peso sin Glaseo'] : []),
+        ...(productType === 'VALOR_AGREGADO' ? ['Peso Submuestra', 'Peso sin Glaseo'] : []),
         'Peso Neto',
         'Conteo',
         'Uniformidad Grandes',
@@ -367,7 +374,7 @@ const createStandardProductSheet = (
                     d.numero, // Número de análisis
                     d.pesoBruto || '-',
                     d.pesoCongelado || '-',
-                    ...(productType === 'VALOR_AGREGADO' ? [d.pesoConGlaseo || '-', d.pesoSinGlaseo || '-'] : []),
+                    ...(productType === 'VALOR_AGREGADO' ? [d.pesoSubmuestra || '-', d.pesoSinGlaseo || '-'] : []),
                     d.pesoNeto || '-',
                     d.conteo || '-',
                     d.uniformidadGrandes || '-',
@@ -377,6 +384,19 @@ const createStandardProductSheet = (
                     d.observations
                 ]);
                 row.alignment = { vertical: 'middle' };
+
+                // 🔴 Highlight defects > 0
+                // Calculate start column for defects
+                // Base columns: 16 (Hora...Total Defectos)
+                // If VALOR_AGREGADO: +2 columns (Peso Submuestra, Peso Sin Glaseo) -> 18
+                const baseColumnsCount = productType === 'VALOR_AGREGADO' ? 18 : 16;
+
+                defectosValues.forEach((value, index) => {
+                    if (value > 0) {
+                        const cell = row.getCell(baseColumnsCount + 1 + index);
+                        cell.font = STYLES.defectHighlight?.font || {};
+                    }
+                });
             });
 
             worksheet.addRow([]);
