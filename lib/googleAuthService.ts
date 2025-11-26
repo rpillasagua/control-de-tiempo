@@ -249,7 +249,7 @@ class GoogleAuthService {
       // Cargar información del usuario
       await this.loadUserInfo();
 
-      const refreshBeforeExpiry = 300; // 5 minutos antes de expirar
+      const refreshBeforeExpiry = 600; // 10 minutos antes de expirar
       const refreshDelay = (expiresIn - refreshBeforeExpiry) * 1000;
 
       logger.log(`🔄 Token refresh programado en ${refreshDelay / 1000 / 60} minutos`);
@@ -412,8 +412,8 @@ class GoogleAuthService {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('google-token-expiring', {
           detail: {
-            expiresIn: 300, // 5 minutos
-            message: 'Tu sesión está por expirar'
+            expiresIn: 600, // 10 minutos de advertencia
+            message: 'Tu sesión está por expirar en 10 minutos'
           }
         }));
       }

@@ -12,24 +12,38 @@ export function useTokenExpiryNotification() {
     useEffect(() => {
         const handleTokenExpiring = (event: Event) => {
             const customEvent = event as CustomEvent<{ expiresIn: number; message: string }>;
-            const { message } = customEvent.detail;
+            const { expiresIn } = customEvent.detail;
 
-            // Mostrar notificación persistente con acción para renovar
-            toast.warning(message, {
-                description: 'Haz clic en "Renovar" para continuar sin interrupciones',
+            // Calcular minutos restantes
+            const minutesLeft = Math.floor(expiresIn / 60);
+
+            // Mostrar notificación PROMINENTE que no se auto-cierra
+            toast.warning('⏰ Tu sesión está por expirar', {
+                description: `Quedan ${minutesLeft} minutos. Haz clic en "Renovar Sesión" para continuar sin interrupciones.`,
                 action: {
-                    label: 'Renovar Ahora',
+                    label: '🔄 Renovar Sesión',
                     onClick: async () => {
                         try {
+                            // Mostrar loading toast
+                            const loadingToast = toast.loading('Renovando sesión...');
+
                             await googleAuthService.login();
-                            toast.success('Sesión renovada exitosamente');
+
+                            // Cerrar loading y mostrar éxito
+                            toast.dismiss(loadingToast);
+                            toast.success('✅ Sesión renovada exitosamente', {
+                                description: 'Puedes continuar trabajando sin problemas'
+                            });
                         } catch (error) {
                             console.error('Error renovando sesión:', error);
-                            toast.error('Error al renovar sesión. Por favor, recarga la página.');
+                            toast.error('❌ Error al renovar sesión', {
+                                description: 'Intenta recargar la página (F5) para continuar',
+                                duration: 10000
+                            });
                         }
                     }
                 },
-                duration: 300000, // 5 minutos - hasta que expire
+                duration: Infinity, // NO se auto-cierra - usuario debe actuar
             });
         };
 
