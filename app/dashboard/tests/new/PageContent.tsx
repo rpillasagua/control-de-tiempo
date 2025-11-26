@@ -225,19 +225,35 @@ export default function NewMultiAnalysisPageContent() {
                     }
                 };
 
+                // Foto de calidad general
                 addIfUrl(analysisToDelete.fotoCalidad);
+
+                // Fotos de pesos (weight fields)
+                addIfUrl(analysisToDelete.pesoBruto?.fotoUrl);
+                addIfUrl(analysisToDelete.pesoCongelado?.fotoUrl);
+                addIfUrl(analysisToDelete.pesoNeto?.fotoUrl);
+                addIfUrl(analysisToDelete.pesoSubmuestra?.fotoUrl);
+                addIfUrl(analysisToDelete.pesoSinGlaseo?.fotoUrl);
+
+                // Fotos de pesosBrutos (control de pesos)
                 analysisToDelete.pesosBrutos?.forEach(p => addIfUrl(p.fotoUrl));
+
+                // Fotos de uniformidad
                 addIfUrl(analysisToDelete.uniformidad?.grandes?.fotoUrl);
                 addIfUrl(analysisToDelete.uniformidad?.pequenos?.fotoUrl);
+
+                console.log(`🗑️ Deleting ${photosToDelete.length} photos from analysis #${index + 1}`);
 
                 // 2. Delete photos from Drive
                 if (photosToDelete.length > 0) {
                     try {
                         const { googleDriveService } = await import('@/lib/googleDriveService');
+                        await googleDriveService.initialize();
                         await Promise.all(photosToDelete.map(id => googleDriveService.deleteFile(id)));
+                        console.log(`✅ ${photosToDelete.length} photos deleted successfully`);
                         toast.success(`${photosToDelete.length} fotos eliminadas`);
                     } catch (error) {
-                        console.error('Error deleting photos:', error);
+                        console.error('❌ Error deleting photos:', error);
                         toast.error('Error al eliminar algunas fotos');
                     }
                 }

@@ -464,31 +464,40 @@ export const deleteAnalysis = async (analysisId: string): Promise<void> => {
   try {
     // 1. Obtener datos del análisis para saber qué carpeta borrar
     const analysis = await getAnalysisById(analysisId);
+    console.log('📄 Analysis data retrieved:', analysis ? 'Found' : 'Not found');
 
     if (analysis && analysis.codigo && analysis.lote) {
-      try {
-        // Importar dinámicamente para evitar ciclos si fuera necesario
-        const { googleDriveService } = await import('./googleDriveService');
-        await googleDriveService.initialize();
-        await googleDriveService.deleteAnalysisFolder(analysis.codigo, analysis.lote);
-      } catch (driveError) {
-        console.warn('⚠️ Error al intentar borrar carpeta de Drive (continuando con eliminación de BD):', driveError);
-      }
+      // Intentar borrar carpeta de Drive (no bloqueante - se ejecuta en background)
+      console.log(`🔄 Attempting to delete Drive folder for: ${analysis.codigo}/${analysis.lote}`);
+
+      // Ejecutar en background sin bloquear la eliminación de Firestore
+      (async () => {
+        try {
+          const { googleDriveService } = await import('./googleDriveService');
+          await googleDriveService.initialize();
+          await googleDriveService.deleteAnalysisFolder(analysis.codigo, analysis.lote);
+          console.log('✅ Drive folder deleted successfully');
+        } catch (driveError) {
+          console.warn('⚠️ Drive deletion failed (non-critical):', driveError);
+        }
+      })();
     } else {
       console.warn('⚠️ No se pudo obtener datos del análisis para borrar fotos (o faltan codigo/lote)');
     }
 
-    // 2. Borrar documento de Firestore
+    // 2. Borrar documento de Firestore (SIEMPRE ejecutar inmediatamente)
     const analysisRef = getAnalysisRef(analysisId);
-    console.log(`Service: Deleting document at path: ${analysisRef.path}`);
+    console.log(`🔥 Deleting Firestore document at path: ${analysisRef.path}`);
     await deleteDoc(analysisRef);
 
-    logger.log('✅ Análisis eliminado:', analysisId);
-    console.log(`✅ Service: deleteAnalysis completed for ID: ${analysisId}`);
+    logger.log('✅ Análisis eliminado de Firestore:', analysisId);
+    console.log(`✅ Service: deleteAnalysis completed successfully for ID: ${analysisId}`);
   } catch (error) {
     logger.error('❌ Error eliminando análisis:', error);
-    console.error(`❌ Service: deleteAnalysis failed for ID: ${analysisId}`, error);
-    throw error;
+    console.error(`❌ Service: deleteAnalysis FAILED for ID: ${analysisId}`, error);
+
+    // Re-throw para que el UI pueda manejarlo
+    throw new Error(`Error al eliminar análisis: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 };
 
