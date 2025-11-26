@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, FileText, CheckCircle, Plus, Ruler, QrCode, Loader2, Calendar } from 'lucide-react';
 import { QualityAnalysis, PRODUCT_TYPE_LABELS, ANALYST_COLOR_HEX } from '@/lib/types';
 import DailyReportCard from './DailyReportCard';
+import FailedUploadsBanner from './FailedUploadsBanner';
 import { logger } from '@/lib/logger';
 
 interface AnalysisDashboardProps {
@@ -92,6 +93,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6' }}>
+      <FailedUploadsBanner />
       {/* Controls Section - Sticky con glassmorphism */}
       <div className="sticky top-0 z-30 glass backdrop-blur-xl px-3 py-3 sm:px-4 sm:py-4 shadow-lg" style={{ borderBottom: 'none', borderTop: 'none' }}>
         <div className="max-w-7xl mx-auto space-y-3">

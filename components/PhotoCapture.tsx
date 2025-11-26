@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
-import { X, ZoomIn, ImageOff, Camera, CheckCircle2, Loader2 } from 'lucide-react';
+import { X, ZoomIn, ImageOff, Camera, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { compressImage } from '@/lib/imageCompression';
 
 interface PhotoCaptureProps {
@@ -29,6 +27,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const [isCompressing, setIsCompressing] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [offlinePhotoStatus, setOfflinePhotoStatus] = useState<'pending' | 'error' | null>(null);
+  const [offlineFile, setOfflineFile] = useState<Blob | null>(null); // Store the file for retry
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
@@ -61,6 +60,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
             const url = URL.createObjectURL(pendingPhoto.file);
             setLocalPreviewUrl(url);
             setOfflinePhotoStatus(pendingPhoto.status === 'error' ? 'error' : 'pending');
+            setOfflineFile(pendingPhoto.file);
           }
         } catch (error) {
           console.error('Error checking offline photo:', error);
@@ -87,6 +87,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         setLocalPreviewUrl(null);
       }
       setOfflinePhotoStatus(null);
+      setOfflineFile(null);
     }
 
     // Actualizar cache buster solo en el cliente para evitar hydration error
@@ -155,6 +156,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
       setLocalPreviewUrl(previewUrl);
       setImageError(false);
       setUploadSuccess(false);
+      setOfflinePhotoStatus('pending'); // Assume pending initially
 
       // Compress image before uploading
       setIsCompressing(true);
@@ -185,6 +187,16 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
     setShowModal(false);
   };
 
+  const handleManualRetry = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (offlineFile) {
+      console.log(`🔄 Manual retry for ${label}`);
+      // Convert Blob to File to satisfy interface
+      const file = new File([offlineFile], "retry_photo.jpg", { type: offlineFile.type });
+      onPhotoCapture(file);
+    }
+  };
+
   return (
     <>
       <input
@@ -203,7 +215,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               src={localPreviewUrl || photoUrl}
               alt={label}
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover rounded-lg border border-white/10 cursor-pointer hover:border-blue-500 transition-all shadow-lg"
+              className={`w-full h-full object-cover rounded-lg border cursor-pointer transition-all shadow-lg ${offlinePhotoStatus === 'error' ? 'border-red-500 border-2' : 'border-white/10 hover:border-blue-500'}`}
               onClick={handleImageClick}
               onError={async (e) => {
                 // Solo manejar errores para URLs del servidor, no para previews locales
@@ -344,6 +356,19 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-200">
                 <CheckCircle2 className="w-4 h-4 text-white" />
               </div>
+            )}
+
+            {/* 🟢 BOTÓN VERDE DE RETRY (Solo si hay error y tenemos el archivo) */}
+            {offlinePhotoStatus === 'error' && offlineFile && !isUploading && (
+              <button
+                onClick={handleManualRetry}
+                className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 hover:bg-black/50 transition-colors rounded-lg group/retry"
+              >
+                <div className="bg-green-500 p-2 rounded-full shadow-lg group-hover/retry:scale-110 transition-transform">
+                  <RefreshCw className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-white text-xs font-bold mt-2 bg-black/50 px-2 py-1 rounded">Reintentar</span>
+              </button>
             )}
 
             {/* Indicador de carga/compresión */}

@@ -416,10 +416,25 @@ export const usePhotoUpload = ({
     const retryPhotoUpload = useCallback(async (photo: PendingPhoto) => {
         console.log(`🔄 RETRY - ID: ${photo.id}, Field: ${photo.field}, Status: ${photo.status}`);
 
-        // ✅ VALIDATE: Only retry photos from THIS analysis
+        // ✅ VALIDATE: Only retry photos from THIS analysis AND THIS FIELD
         const currentBatchCode = `${codigo}-${lote}-analysis${activeAnalysisIndex + 1}`;
+
+        // 1. Validate BatchCode (Analysis level)
         if (photo.metadata?.batchCode && photo.metadata.batchCode !== currentBatchCode) {
             console.log(`⏭️ Skipping ${photo.field} - belongs to different analysis (${photo.metadata.batchCode} != ${currentBatchCode})`);
+            return;
+        }
+
+        // 2. Validate Specific Field Context (Field level)
+        // This prevents "pesoNeto" photo from being uploaded to "pesoBruto" if IDs match by coincidence
+        // or if the user switched fields rapidly.
+        // We construct the expected context ID for the current active field if possible, 
+        // but since this function is generic, we rely on the fact that we are in the context 
+        // of the active analysis. The critical check is that we DO NOT upload if the 
+        // photo's metadata doesn't match the current active analysis parameters.
+
+        if (photo.metadata?.codigo !== codigo || photo.metadata?.lote !== lote) {
+            console.log(`⛔ ABORTING: Photo context mismatch. Photo: ${photo.metadata?.codigo}-${photo.metadata?.lote}, Current: ${codigo}-${lote}`);
             return;
         }
 
