@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 import { UploadStatusIndicator } from './UploadStatusIndicator';
 
@@ -13,7 +13,7 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
     onRetryPhoto,
     onRetryAll
 }) => {
-    const [isExpanded, setIsExpanded] = useState(true); // Expanded by default for visibility
+    const [isExpanded, setIsExpanded] = useState(true);
     const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
     const [failedPhotos, setFailedPhotos] = useState<PendingPhoto[]>([]);
     const [isRetrying, setIsRetrying] = useState(false);
@@ -34,20 +34,16 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
     useEffect(() => {
         const init = async () => {
             try {
-                // Reset any uploads that were interrupted (e.g. by page reload)
                 await photoStorageService.resetStuckUploads();
             } catch (error) {
                 console.error('Error resetting stuck uploads:', error);
             }
-            // Load photos after reset
             loadPhotos();
         };
 
         init();
 
-        // Poll for updates every 5 seconds
         const interval = setInterval(loadPhotos, 5000);
-
         return () => clearInterval(interval);
     }, []);
 
@@ -67,6 +63,52 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
             await loadPhotos();
         } catch (error) {
             console.error('Error retrying photo:', error);
+        }
+    };
+
+    // ✅ DELETE HANDLERS
+    const handleDeletePhoto = async (photoId: string) => {
+        if (!confirm('¿Borrar esta foto pendiente?')) return;
+
+        try {
+            await photoStorageService.deletePhoto(photoId);
+            await loadPhotos();
+        } catch (error) {
+            console.error('Error deleting photo:', error);
+        }
+    };
+
+    const handleDeleteByAnalysis = async (batchCode: string) => {
+        const photosInBatch = [...pendingPhotos, ...failedPhotos].filter(
+            p => p.metadata?.batchCode === batchCode
+        );
+
+        if (!confirm(`¿Borrar ${photosInBatch.length} fotos del análisis "${batchCode}"?`)) return;
+
+        try {
+            for (const photo of photosInBatch) {
+                await photoStorageService.deletePhoto(photo.id);
+            }
+            await loadPhotos();
+        } catch (error) {
+            console.error('Error deleting photos by analysis:', error);
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        const total = pendingPhotos.length + failedPhotos.length;
+
+        if (!confirm(`⚠️ ¿BORRAR TODAS las ${total} fotos pendientes?`)) return;
+        if (!confirm(`Esta acción es IRREVERSIBLE. ¿Continuar?`)) return;
+
+        try {
+            const allPhotos = [...pendingPhotos, ...failedPhotos];
+            for (const photo of allPhotos) {
+                await photoStorageService.deletePhoto(photo.id);
+            }
+            await loadPhotos();
+        } catch (error) {
+            console.error('Error deleting all photos:', error);
         }
     };
 
@@ -99,8 +141,18 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
     const totalIssues = pendingPhotos.length + failedPhotos.length;
 
     if (totalIssues === 0) {
-        return null; // Hide panel if no issues
+        return null;
     }
+
+    // Group photos by batchCode
+    const photosByBatch = new Map<string, PendingPhoto[]>();
+    [...pendingPhotos, ...failedPhotos].forEach(photo => {
+        const batch = photo.metadata?.batchCode || 'Sin Análisis';
+        if (!photosByBatch.has(batch)) {
+            photosByBatch.set(batch, []);
+        }
+        photosByBatch.get(batch)!.push(photo);
+    });
 
     const panelContent = (
         <div className="fixed bottom-4 right-4 z-[9999] w-96 bg-white rounded-lg shadow-2xl border border-gray-200">
@@ -141,26 +193,48 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
             {/* Content */}
             {isExpanded && (
                 <div className="max-h-96 overflow-y-auto">
-                    {/* Failed Photos */}
-                    {failedPhotos.length > 0 && (
-                        <div className="border-b border-gray-100">
-                            <div className="p-2 bg-red-50">
-                                <h4 className="text-xs font-semibold text-red-800">
-                                    Errores ({failedPhotos.length})
-                                </h4>
-                            </div>
-                            <div className="divide-y divide-gray-100">
-                                {failedPhotos.map((photo) => (
-                                    <div key={photo.id} className="p-3 hover:bg-gray-50">
+                    {/* ✅ DELETE CONTROLS - Below "Reintentar Todo" button */}
+                    <div className="p-3 bg-gray-50 border-b border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Gestión de Fotos:</p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleDeleteAll}
+                                className="flex-1 text-xs px-2 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition-colors flex items-center justify-center gap-1"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                                Borrar Todo
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ✅ Grouped by BatchCode */}
+                    {Array.from(photosByBatch.entries()).map(([batchCode, photos]) => {
+                        const failed = photos.filter(p => p.status === 'error');
+                        const pending = photos.filter(p => p.status !== 'error');
+
+                        return (
+                            <div key={batchCode} className="border-b border-gray-100">
+                                {/* Batch Header */}
+                                <div className="p-2 bg-indigo-50 flex items-center justify-between">
+                                    <h4 className="text-xs font-semibold text-indigo-800">
+                                        {batchCode} ({photos.length})
+                                    </h4>
+                                    <button
+                                        onClick={() => handleDeleteByAnalysis(batchCode)}
+                                        className="text-xs px-1.5 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors flex items-center gap-1"
+                                        title={`Borrar todas las fotos de ${batchCode}`}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+
+                                {/* Failed in this batch */}
+                                {failed.map((photo) => (
+                                    <div key={photo.id} className="p-3 hover:bg-red-50">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                <p className="text-sm font-medium text-red-900 truncate">
                                                     {getFieldLabel(photo.field)}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    {photo.metadata?.lote && `Lote: ${photo.metadata.lote}`}
-                                                    {photo.metadata?.analysisIndex !== undefined &&
-                                                        ` • Análisis ${photo.metadata.analysisIndex + 1}`}
                                                 </p>
                                                 {photo.lastError && (
                                                     <p className="text-xs text-red-600 mt-1 truncate" title={photo.lastError}>
@@ -171,53 +245,54 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
                                                     Intentos: {photo.retryCount}
                                                 </p>
                                             </div>
-                                            <button
-                                                onClick={() => handleRetryPhoto(photo)}
-                                                className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors flex-shrink-0"
-                                            >
-                                                Reintentar
-                                            </button>
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => handleRetryPhoto(photo)}
+                                                    className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+                                                >
+                                                    Reintentar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeletePhoto(photo.id)}
+                                                    className="text-xs px-1.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                                                    title="Borrar esta foto"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Pending Photos */}
-                    {pendingPhotos.length > 0 && (
-                        <div>
-                            <div className="p-2 bg-blue-50">
-                                <h4 className="text-xs font-semibold text-blue-800">
-                                    Pendientes ({pendingPhotos.length})
-                                </h4>
-                            </div>
-                            <div className="divide-y divide-gray-100">
-                                {pendingPhotos.map((photo) => (
+                                {/* Pending in this batch */}
+                                {pending.map((photo) => (
                                     <div key={photo.id} className="p-3 hover:bg-gray-50">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-gray-900 truncate">
                                                     {getFieldLabel(photo.field)}
                                                 </p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    {photo.metadata?.lote && `Lote: ${photo.metadata.lote}`}
-                                                    {photo.metadata?.analysisIndex !== undefined &&
-                                                        ` • Análisis ${photo.metadata.analysisIndex + 1}`}
-                                                </p>
                                             </div>
-                                            <UploadStatusIndicator status="pending" size="sm" />
+                                            <div className="flex items-center gap-2">
+                                                <UploadStatusIndicator status="pending" size="sm" />
+                                                <button
+                                                    onClick={() => handleDeletePhoto(photo.id)}
+                                                    className="text-xs px-1.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                                                    title="Borrar esta foto"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        );
+                    })}
                 </div>
             )}
         </div>
     );
 
-    // Use portal to render directly to body, bypassing any parent overflow constraints
     return typeof window !== 'undefined' ? createPortal(panelContent, document.body) : null;
 };

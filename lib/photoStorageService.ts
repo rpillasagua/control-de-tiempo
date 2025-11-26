@@ -17,6 +17,7 @@ interface PendingPhoto {
     metadata?: {
         codigo?: string;
         lote?: string;
+        batchCode?: string;      // Unique identifier: "codigo-lote-analysis#"
         analysisIndex?: number;
     };
 }

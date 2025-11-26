@@ -50,6 +50,8 @@ export const usePhotoUpload = ({
             console.log(`🗜️ Comprimiendo imagen: ${file.name}`);
             const compressedBlob = await compressImage(file);
 
+            const batchCode = `${codigo}-${lote}-analysis${targetIndex + 1}`;
+
             await photoStorageService.savePhoto({
                 id: photoId,
                 analysisId,
@@ -60,6 +62,7 @@ export const usePhotoUpload = ({
                 metadata: {
                     codigo,
                     lote,
+                    batchCode,
                     analysisIndex: targetIndex
                 }
             });
@@ -132,8 +135,9 @@ export const usePhotoUpload = ({
             console.log('✅ Firestore transaction confirmed - Photo URL saved');
 
             // 5. ONLY NOW delete from IndexedDB - we have confirmation!
+            console.log(`🗑️ ATTEMPTING DELETE - PhotoID: ${photoId}, Field: ${field}`);
             await photoStorageService.deletePhoto(photoId);
-            console.log('🗑️ Photo deleted from IndexedDB after confirmed upload');
+            console.log(`✅ SUCCESS - Photo ${photoId} DELETED from IndexedDB`);
 
             setPhotoStatus(prev => ({
                 ...prev,
@@ -179,6 +183,8 @@ export const usePhotoUpload = ({
             console.log(`🗜️ Comprimiendo peso bruto: ${file.name}`);
             const compressedBlob = await compressImage(file);
 
+            const batchCode = `${codigo}-${lote}-analysis${targetIndex + 1}`;
+
             await photoStorageService.savePhoto({
                 id: photoId,
                 analysisId,
@@ -189,6 +195,7 @@ export const usePhotoUpload = ({
                 metadata: {
                     codigo,
                     lote,
+                    batchCode,
                     analysisIndex: targetIndex
                 }
             });
@@ -296,6 +303,9 @@ export const usePhotoUpload = ({
             console.log(`🗜️ Comprimiendo peso bruto global: ${file.name}`);
             const compressedBlob = await compressImage(file);
 
+            // Note: Global photos don't have analysisIndex, but we still need batchCode for grouping
+            const batchCode = `${codigo}-${lote}-global`;
+
             await photoStorageService.savePhoto({
                 id: photoId,
                 analysisId,
@@ -305,7 +315,8 @@ export const usePhotoUpload = ({
                 status: 'uploading',
                 metadata: {
                     codigo,
-                    lote
+                    lote,
+                    batchCode
                 }
             });
 
@@ -403,6 +414,15 @@ export const usePhotoUpload = ({
     }, [activeAnalysisIndex, photoStatus]);
 
     const retryPhotoUpload = useCallback(async (photo: PendingPhoto) => {
+        console.log(`🔄 RETRY - ID: ${photo.id}, Field: ${photo.field}, Status: ${photo.status}`);
+
+        // ✅ VALIDATE: Only retry photos from THIS analysis
+        const currentBatchCode = `${codigo}-${lote}-analysis${activeAnalysisIndex + 1}`;
+        if (photo.metadata?.batchCode && photo.metadata.batchCode !== currentBatchCode) {
+            console.log(`⏭️ Skipping ${photo.field} - belongs to different analysis (${photo.metadata.batchCode} != ${currentBatchCode})`);
+            return;
+        }
+
         try {
             // Skip if already uploading
             if (photo.status === 'uploading') {
@@ -422,15 +442,30 @@ export const usePhotoUpload = ({
             console.error('Error retrying photo upload:', error);
             toast.error('Error al reintentar la subida');
         }
-    }, [handlePhotoCapture, handlePesoBrutoPhotoCapture, handleGlobalPesoBrutoPhoto]);
+    }, [handlePhotoCapture, handlePesoBrutoPhotoCapture, handleGlobalPesoBrutoPhoto, codigo, lote, activeAnalysisIndex]);
 
     const retryAllFailedPhotos = useCallback(async () => {
         try {
             await photoStorageService.initialize();
             const failedPhotos = await photoStorageService.getFailedPhotos();
 
-            // Filter out photos that are already uploading
-            const photosToRetry = failedPhotos.filter(p => p.status !== 'uploading');
+            console.log(`📋 FAILED PHOTOS (${failedPhotos.length} total):`);
+            failedPhotos.forEach(p => console.log(`  - ID: ${p.id}, Field: ${p.field}, Status: ${p.status}, BatchCode: ${p.metadata?.batchCode || 'N/A'}`));
+
+            // ✅ FILTER: Only retry photos from THIS analysis
+            const currentBatchCode = `${codigo}-${lote}-analysis${activeAnalysisIndex + 1}`;
+            const photosToRetry = failedPhotos.filter(p => {
+                // Skip if already uploading
+                if (p.status === 'uploading') return false;
+
+                // Skip if from different analysis
+                if (p.metadata?.batchCode && p.metadata.batchCode !== currentBatchCode) {
+                    console.log(`  ⏭️ Skipping ${p.field} from ${p.metadata.batchCode}`);
+                    return false;
+                }
+
+                return true;
+            });
 
             if (photosToRetry.length === 0) {
                 toast.info('No hay fotos fallidas para reintentar');
@@ -447,7 +482,7 @@ export const usePhotoUpload = ({
             console.error('Error retrying all photos:', error);
             toast.error('Error al reintentar las fotos');
         }
-    }, [retryPhotoUpload]);
+    }, [retryPhotoUpload, codigo, lote, activeAnalysisIndex]);
 
     return {
         isUploadingGlobal,
