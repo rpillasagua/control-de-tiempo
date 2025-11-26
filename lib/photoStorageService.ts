@@ -331,6 +331,36 @@ class PhotoStorageService {
         });
     }
     /**
+     * Get a specific photo by analysisId and field
+     * Useful for rehydrating UI from local storage
+     */
+    async getPhotoByContext(analysisId: string, field: string): Promise<PendingPhoto | null> {
+        const db = await this.ensureDB();
+
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([this.storeName], 'readonly');
+            const objectStore = transaction.objectStore(this.storeName);
+            const index = objectStore.index('analysisId');
+            const request = index.getAll(analysisId);
+
+            request.onsuccess = () => {
+                const photos = request.result as PendingPhoto[];
+                // Find the specific photo for this field that is not successful (pending, uploading, error)
+                // We prioritize the most recent one if duplicates exist (though they shouldn't)
+                const match = photos
+                    .filter(p => p.field === field && p.status !== 'success')
+                    .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+                resolve(match || null);
+            };
+
+            request.onerror = () => {
+                reject(request.error);
+            };
+        });
+    }
+
+    /**
      * Reset photos that were stuck in 'uploading' state (e.g. due to page reload)
      */
     async resetStuckUploads(): Promise<number> {

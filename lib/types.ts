@@ -248,10 +248,9 @@ export interface Analysis {
   // Pesos con fotos opcionales
   pesoBruto?: PesoConFoto;
   pesoCongelado?: PesoConFoto;
-  pesoConGlaseo?: PesoConFoto;
   pesoSinGlaseo?: PesoConFoto;
+  pesoSubmuestra?: PesoConFoto;
   pesoNeto?: PesoConFoto;
-  glaseo?: PesoConFoto;
 
   // Control de pesos brutos (múltiples registros)
   pesosBrutos?: PesoBrutoRegistro[];
@@ -271,10 +270,6 @@ export interface Analysis {
   // Observaciones específicas de este análisis
   observations?: string;
 }
-
-// ============================================
-// DOCUMENTO DE ANÁLISIS DE CALIDAD
-// ============================================
 
 /**
  * Documento principal que contiene múltiples análisis
@@ -323,23 +318,6 @@ export interface QualityAnalysis {
  */
 export interface LegacyQualityAnalysis {
   id: string;
-  productType: ProductType;
-  lote: string;
-  codigo: string;
-  talla?: string;
-
-  // Pesos con fotos opcionales
-  pesoBruto?: PesoConFoto;
-  pesoCongelado?: PesoConFoto;
-  pesoNeto?: PesoConFoto;
-
-  // Control de pesos brutos (múltiples registros)
-  pesosBrutos?: PesoBrutoRegistro[];
-
-  // Conteo
-  conteo?: number;
-
-  // Uniformidad con fotos
   uniformidad?: Uniformidad;
 
   // Defectos según tipo de producto

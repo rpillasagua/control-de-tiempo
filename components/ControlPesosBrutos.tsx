@@ -14,6 +14,7 @@ interface ControlPesosBrutosProps {
   isPhotoUploading?: (registroId: string) => boolean;
   viewMode?: 'SUELTA' | 'COMPACTA';
   unit?: 'KG' | 'LB';
+  analysisId: string;
 }
 
 export default function ControlPesosBrutos({
@@ -23,7 +24,8 @@ export default function ControlPesosBrutos({
   onDeleteRequest,
   isPhotoUploading = () => false,
   viewMode = 'COMPACTA',
-  unit = 'KG'
+  unit = 'KG',
+  analysisId
 }: ControlPesosBrutosProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -142,6 +144,7 @@ export default function ControlPesosBrutos({
               onUpdate={actualizarPeso}
               onDelete={manejarEliminacion}
               onPhotoCapture={onPhotoCapture}
+              analysisId={analysisId}
             />
           ))}
         </div>

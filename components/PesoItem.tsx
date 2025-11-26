@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useRef } from 'react';
+import { memo, useRef, useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { PesoBrutoRegistro } from '@/lib/types';
 import { WeightInputRow } from './WeightInputRow';
@@ -15,6 +15,7 @@ interface PesoItemProps {
     onDelete: (id: string) => void;
     onPhotoCapture: (id: string, file: File) => void;
     isDeleting?: boolean;
+    analysisId: string;
 }
 
 // Usamos memo para que solo se renderice si sus props cambian
@@ -27,9 +28,56 @@ export const PesoItem = memo(({
     onUpdate,
     onDelete,
     onPhotoCapture,
-    isDeleting
+    isDeleting,
+    analysisId
 }: PesoItemProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+
+    // Effect to recover offline photo
+    useEffect(() => {
+        let isMounted = true;
+
+        const checkOfflinePhoto = async () => {
+            // If we already have a server URL, we don't need to look for local one
+            if (registro.fotoUrl) {
+                setLocalPreviewUrl(null);
+                return;
+            }
+
+            // If we already have a local preview, skip
+            if (localPreviewUrl) return;
+
+            if (!analysisId) return;
+
+            try {
+                const { photoStorageService } = await import('@/lib/photoStorageService');
+                const offlinePhoto = await photoStorageService.getPhotoByContext(analysisId, `pesobruto-${registro.id}`);
+
+                if (isMounted && offlinePhoto && offlinePhoto.file) {
+                    const url = URL.createObjectURL(offlinePhoto.file);
+                    setLocalPreviewUrl(url);
+                }
+            } catch (error) {
+                console.error('Error checking offline photo for peso item:', error);
+            }
+        };
+
+        checkOfflinePhoto();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [analysisId, registro.id, registro.fotoUrl, localPreviewUrl]);
+
+    // Cleanup blob URL on unmount or when replaced
+    useEffect(() => {
+        return () => {
+            if (localPreviewUrl) {
+                URL.revokeObjectURL(localPreviewUrl);
+            }
+        };
+    }, [localPreviewUrl]);
 
     const handlePhotoClick = () => {
         fileInputRef.current?.click();
@@ -38,6 +86,9 @@ export const PesoItem = memo(({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Create immediate preview
+            const url = URL.createObjectURL(file);
+            setLocalPreviewUrl(url);
             onPhotoCapture(registro.id, file);
         }
         // Reset input value to allow selecting the same file again
@@ -62,7 +113,7 @@ export const PesoItem = memo(({
                     const numVal = parseFloat(val);
                     onUpdate(registro.id, isNaN(numVal) ? 0 : numVal);
                 }}
-                photoUrl={registro.fotoUrl}
+                photoUrl={registro.fotoUrl || localPreviewUrl || undefined}
                 onPhotoClick={handlePhotoClick}
                 isUploading={isUploading}
                 viewMode={isCompact ? 'COMPACTA' : 'SUELTA'}

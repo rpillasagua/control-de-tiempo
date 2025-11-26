@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 import { UploadStatusIndicator } from './UploadStatusIndicator';
 
@@ -50,12 +50,6 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
         return () => clearInterval(interval);
     }, []);
 
-    const totalIssues = pendingPhotos.length + failedPhotos.length;
-
-    if (totalIssues === 0) {
-        return null; // Hide panel if no issues
-    }
-
     const handleRetryAll = async () => {
         setIsRetrying(true);
         try {
@@ -89,6 +83,23 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
         };
         return labels[field] || field;
     };
+
+    // Auto-retry when connection is restored
+    useEffect(() => {
+        const handleOnline = () => {
+            console.log('🌐 Conexión restaurada. Reintentando subidas...');
+            handleRetryAll();
+        };
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [onRetryAll]);
+
+    const totalIssues = pendingPhotos.length + failedPhotos.length;
+
+    if (totalIssues === 0) {
+        return null; // Hide panel if no issues
+    }
 
     return (
         <div className="fixed bottom-4 right-4 z-50 w-96 bg-white rounded-lg shadow-2xl border border-gray-200">

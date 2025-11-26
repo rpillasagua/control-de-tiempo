@@ -10,10 +10,14 @@ interface PhotoCaptureProps {
   onPhotoCapture: (file: File) => void;
   onPhotoRemove?: () => void;
   isUploading?: boolean;
+  context?: {
+    analysisId: string;
+    field: string;
+  };
   compact?: boolean;
 }
 
-export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false }: PhotoCaptureProps) {
+export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false, context }: PhotoCaptureProps) {
   const [showModal, setShowModal] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [errorType, setErrorType] = useState<'blob' | 'drive_auth' | 'drive_permissions' | 'unknown'>('unknown');
@@ -24,6 +28,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [offlinePhotoStatus, setOfflinePhotoStatus] = useState<'pending' | 'error' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
@@ -42,6 +47,30 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
     return `https://drive.google.com/uc?id=${fileId}&export=download`;
   };
 
+  // Effect for offline recovery
+  useEffect(() => {
+    const checkOfflinePhoto = async () => {
+      // Only check if we don't have a server URL and we have context
+      if (!photoUrl && !localPreviewUrl && context) {
+        try {
+          const { photoStorageService } = await import('@/lib/photoStorageService');
+          const pendingPhoto = await photoStorageService.getPhotoByContext(context.analysisId, context.field);
+
+          if (pendingPhoto && pendingPhoto.file) {
+            console.log(`📦 Found offline photo for ${label}:`, pendingPhoto.status);
+            const url = URL.createObjectURL(pendingPhoto.file);
+            setLocalPreviewUrl(url);
+            setOfflinePhotoStatus(pendingPhoto.status === 'error' ? 'error' : 'pending');
+          }
+        } catch (error) {
+          console.error('Error checking offline photo:', error);
+        }
+      }
+    };
+
+    checkOfflinePhoto();
+  }, [photoUrl, context, label]);
+
   useEffect(() => {
     console.log(`🔍 PhotoCapture "${label}" - photoUrl changed:`, photoUrl ? `✅ ${photoUrl.substring(0, 80)}...` : '❌ Sin URL');
 
@@ -52,9 +81,12 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
     setRetryCount(0); // Reset retry count
 
     // Si llega una URL del servidor, limpiar la preview local
-    if (photoUrl && localPreviewUrl) {
-      URL.revokeObjectURL(localPreviewUrl);
-      setLocalPreviewUrl(null);
+    if (photoUrl) {
+      if (localPreviewUrl) {
+        URL.revokeObjectURL(localPreviewUrl);
+        setLocalPreviewUrl(null);
+      }
+      setOfflinePhotoStatus(null);
     }
 
     // Actualizar cache buster solo en el cliente para evitar hydration error

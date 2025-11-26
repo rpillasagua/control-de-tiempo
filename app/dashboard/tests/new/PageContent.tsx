@@ -785,6 +785,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={globalPesoBruto.fotoUrl}
                                                 onPhotoCapture={handleGlobalPesoBrutoPhoto}
                                                 isUploading={uploadingPhotos.has('global-pesoBruto')}
+                                                context={{ analysisId: analysisId || '', field: 'global-pesoBruto' }}
                                             />
                                         </div>
                                     </div>
@@ -803,6 +804,7 @@ export default function NewMultiAnalysisPageContent() {
                                 onPhotoCapture={handlePesoBrutoPhotoCapture}
                                 isPhotoUploading={isPesoBrutoUploading}
                                 viewMode={viewMode}
+                                analysisId={analysisId || ''}
                             />
                         )
                     }
@@ -840,6 +842,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
                                                     onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
                                                     isUploading={isFieldUploading('pesoBruto')}
+                                                    context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoBruto` }}
                                                 />
                                             </div>
                                         )}
@@ -867,8 +870,68 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
                                                 isUploading={isFieldUploading('pesoCongelado')}
+                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoCongelado` }}
                                             />
                                         </div>
+
+                                        {/* Campos específicos para VALOR_AGREGADO */}
+                                        {productType === 'VALOR_AGREGADO' && (
+                                            <>
+                                                {/* Peso Submuestra */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label>Peso Submuestra ({weightUnit})</Label>
+                                                        {currentAnalysis.pesoSubmuestra?.valor && (
+                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="0.00"
+                                                        value={currentAnalysis.pesoSubmuestra?.valor || ''}
+                                                        onChange={(e) => handleWeightChange('pesoSubmuestra', parseFloat(e.target.value))}
+                                                    />
+                                                    <PhotoCapture
+                                                        key={`pesoSubmuestra-${activeAnalysisIndex}`}
+                                                        label="Foto Peso Submuestra"
+                                                        photoUrl={currentAnalysis.pesoSubmuestra?.fotoUrl}
+                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoSubmuestra', file)}
+                                                        isUploading={isFieldUploading('pesoSubmuestra')}
+                                                        context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoSubmuestra` }}
+                                                    />
+                                                </div>
+
+                                                {/* Peso Sin Glaseo */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label>Peso Sin Glaseo ({weightUnit})</Label>
+                                                        {currentAnalysis.pesoSinGlaseo?.valor && (
+                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="0.00"
+                                                        value={currentAnalysis.pesoSinGlaseo?.valor || ''}
+                                                        onChange={(e) => handleWeightChange('pesoSinGlaseo', parseFloat(e.target.value))}
+                                                    />
+                                                    <PhotoCapture
+                                                        key={`pesoSinGlaseo-${activeAnalysisIndex}`}
+                                                        label="Foto Peso Sin Glaseo"
+                                                        photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
+                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
+                                                        isUploading={isFieldUploading('pesoSinGlaseo')}
+                                                        context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoSinGlaseo` }}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
 
                                         {/* Peso Neto */}
                                         <div className="space-y-3">
@@ -893,36 +956,9 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
                                                 isUploading={isFieldUploading('pesoNeto')}
+                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-pesoNeto` }}
                                             />
                                         </div>
-
-                                        {/* Glaseo (Solo para COLA y VALOR_AGREGADO) */}
-                                        {(productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label>Glaseo (%)</Label>
-                                                    {currentAnalysis.glaseo?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    value={currentAnalysis.glaseo?.valor || ''}
-                                                    onChange={(e) => handleWeightChange('glaseo', parseFloat(e.target.value))}
-                                                />
-                                                <PhotoCapture
-                                                    key={`glaseo-${activeAnalysisIndex}`}
-                                                    label="Foto Glaseo"
-                                                    photoUrl={currentAnalysis.glaseo?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('glaseo', file)}
-                                                    isUploading={isFieldUploading('glaseo')}
-                                                />
-                                            </div>
-                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -969,6 +1005,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
                                                 isUploading={isFieldUploading('uniformidad_grandes')}
+                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-uniformidad_grandes` }}
                                             />
                                         </div>
 
@@ -1003,6 +1040,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
                                                 onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
                                                 isUploading={isFieldUploading('uniformidad_pequenos')}
+                                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-uniformidad_pequenos` }}
                                             />
                                         </div>
                                     </div>
@@ -1079,6 +1117,7 @@ export default function NewMultiAnalysisPageContent() {
                                 photoUrl={currentAnalysis.fotoCalidad}
                                 onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
                                 isUploading={isFieldUploading('fotoCalidad')}
+                                context={{ analysisId: analysisId || '', field: `${activeAnalysisIndex}-fotoCalidad` }}
                             />
                         </CardContent>
                     </Card>
@@ -1169,4 +1208,5 @@ export default function NewMultiAnalysisPageContent() {
         </div >
     );
 }
+
 

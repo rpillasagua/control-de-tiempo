@@ -6,12 +6,12 @@ import { setLogLevel } from 'firebase/app';
 if (typeof window !== 'undefined') {
   // Reducir verbosidad de Firebase (solo errores críticos)
   setLogLevel('error');
-  
+
   // Suprimir warnings adicionales de Firestore offline
   const originalConsoleWarn = console.warn;
   const originalConsoleError = console.error;
-  
-  console.warn = function(...args) {
+
+  console.warn = function (...args) {
     const message = args.join(' ');
     if (
       message.includes('Could not reach Cloud Firestore backend') ||
@@ -24,8 +24,8 @@ if (typeof window !== 'undefined') {
     }
     originalConsoleWarn.apply(console, args);
   };
-  
-  console.error = function(...args) {
+
+  console.error = function (...args) {
     const message = args.join(' ');
     if (
       message.includes('@firebase/firestore') && (
@@ -59,8 +59,8 @@ if (typeof window !== 'undefined' && window.location.hostname.includes('localhos
 }
 
 // Verificar si Firebase está configurado correctamente
-const isFirebaseConfigured = 
-  firebaseConfig.apiKey !== 'demo-api-key' && 
+const isFirebaseConfigured =
+  firebaseConfig.apiKey !== 'demo-api-key' &&
   firebaseConfig.projectId !== 'demo-project';
 
 // Inicializar Firebase solo si no existe una instancia y está configurado
@@ -71,7 +71,7 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
-    
+
     // 🌐 Habilitar persistencia local de Firestore para modo offline
     if (typeof window !== 'undefined' && db) {
       enableIndexedDbPersistence(db).catch((err: any) => {
@@ -79,10 +79,13 @@ if (isFirebaseConfigured) {
           console.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
         } else if (err.code === 'unimplemented') {
           console.log('⚠️ Persistencia Firestore: No soportada en este navegador');
+        } else if (err.message && err.message.includes('already been started')) {
+          // Silently ignore this error as it means persistence is likely already working
+          console.log('ℹ️ Persistencia Firestore: Ya iniciada previamente');
         }
       });
     }
-    
+
     console.log('✅ Firebase Firestore inicializado correctamente');
     console.log('📊 Proyecto:', firebaseConfig.projectId);
     console.log('🌐 Modo offline habilitado (persistencia local)');
