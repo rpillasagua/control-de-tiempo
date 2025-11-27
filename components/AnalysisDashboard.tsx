@@ -248,7 +248,14 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
         )}
 
         {/* Grid de Análisis - Compacto y optimizado para móvil */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4" style={{ rowGap: '20px', columnGap: '20px' }}>
+        <div
+          className="grid gap-6"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+            gap: '24px'
+          }}
+        >
           {filteredAnalyses.map((analysis, index) => (
             <div
               key={`${analysis.id}-${index}`}
