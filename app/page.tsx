@@ -214,7 +214,20 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
 export default function Home() {
   const { isAuthenticated, user, loading, login, logout } = useGoogleAuth();
 
-  const [initialAnalyses, setInitialAnalyses] = useState<QualityAnalysis[]>([]);
+  // Inicializar estado con caché local si existe
+  const [initialAnalyses, setInitialAnalyses] = useState<QualityAnalysis[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('cached_analyses');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Error parsing cached analyses', e);
+        }
+      }
+    }
+    return [];
+  });
   const [initialLastDoc, setInitialLastDoc] = useState<any>(null);
   const [loadingAnalyses, setLoadingAnalyses] = useState(false);
 
@@ -226,17 +239,44 @@ export default function Home() {
       let unsubscribe: (() => void) | undefined;
 
       const setupSubscription = async () => {
-        setLoadingAnalyses(true);
+        // Solo mostrar loading si no hay datos en caché
+        if (initialAnalyses.length === 0) {
+          setLoadingAnalyses(true);
+        }
+
         try {
           const { subscribeToRecentAnalyses } = await import('@/lib/analysisService');
 
+          // Suscribirse a los últimos 30 análisis
           unsubscribe = subscribeToRecentAnalyses((analyses, lastDoc) => {
             if (isMounted) {
               setInitialAnalyses(analyses);
               setInitialLastDoc(lastDoc);
               setLoadingAnalyses(false);
+
+              // Guardar en caché local (máximo 100 items para no saturar)
+              try {
+                // Combinar con lo que ya había en caché para tener historial offline
+                // Pero priorizar los datos frescos de Firestore
+                const cached = localStorage.getItem('cached_analyses');
+                let newCache = [...analyses];
+
+                if (cached) {
+                  const prevCache = JSON.parse(cached) as QualityAnalysis[];
+                  // Agregar items antiguos que no estén en la nueva lista
+                  const existingIds = new Set(analyses.map(a => a.id));
+                  const oldItems = prevCache.filter(a => !existingIds.has(a.id));
+                  newCache = [...newCache, ...oldItems];
+                }
+
+                // Limitar a 100 items
+                const limitedCache = newCache.slice(0, 100);
+                localStorage.setItem('cached_analyses', JSON.stringify(limitedCache));
+              } catch (e) {
+                console.error('Error saving to cache', e);
+              }
             }
-          });
+          }, 30); // Límite explícito de 30
         } catch (error) {
           logger.error('Error setting up analysis subscription:', error);
           if (isMounted) setLoadingAnalyses(false);

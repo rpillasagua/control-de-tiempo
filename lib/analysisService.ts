@@ -775,7 +775,7 @@ export const renewAnalysisPhotoPermissions = async (analysisId: string): Promise
  */
 export const subscribeToRecentAnalyses = (
   callback: (analyses: QualityAnalysis[], lastDoc: any) => void,
-  limitCount: number = 50
+  limitCount: number = 30
 ): Unsubscribe => {
   if (!db) throw new Error('Firestore no está configurado');
 

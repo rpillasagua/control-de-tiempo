@@ -71,26 +71,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
     }
   }, [isLoadingMore, hasMore, lastDoc, searchTerm]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !searchTerm) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
-  }, [loadMore, hasMore, isLoadingMore, searchTerm]);
+  // IntersectionObserver removed in favor of manual "Load More" button
 
   const filteredAnalyses = analyses.filter(analysis => {
     const matchesSearch =
@@ -357,10 +338,28 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
           ))}
         </div>
 
-        {/* Loading Spinner */}
+        {/* Load More Button */}
         {hasMore && !searchTerm && (
-          <div ref={observerTarget} className="flex justify-center py-6 sm:py-8">
-            <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 animate-spin" />
+          <div className="flex justify-center py-6 sm:py-8">
+            <button
+              onClick={loadMore}
+              disabled={isLoadingMore}
+              className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-full shadow-sm border border-blue-100 hover:bg-blue-50 hover:border-blue-200 hover:shadow-md active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Cargando...</span>
+                </>
+              ) : (
+                <>
+                  <span>Cargar más análisis</span>
+                  <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              )}
+            </button>
           </div>
         )}
 
