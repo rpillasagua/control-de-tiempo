@@ -33,7 +33,8 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   useEffect(() => {
     setAnalyses(initialAnalyses);
     setLastDoc(initialLastDoc);
-    setHasMore(!!initialLastDoc);
+    // Solo mostrar "Cargar más" si hay al menos 30 análisis iniciales
+    setHasMore(!!initialLastDoc && initialAnalyses.length >= 30);
   }, [initialAnalyses, initialLastDoc]);
 
   const handleRetryPhoto = async (photo: PendingPhoto) => {
@@ -338,23 +339,23 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
           ))}
         </div>
 
-        {/* Load More Button */}
-        {hasMore && !searchTerm && (
-          <div className="flex justify-center py-6 sm:py-8">
+        {/* Load More Button - Minimalist & Compact */}
+        {hasMore && !searchTerm && filteredAnalyses.length > 0 && (
+          <div className="flex justify-center py-2">
             <button
               onClick={loadMore}
               disabled={isLoadingMore}
-              className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-full shadow-sm border border-blue-100 hover:bg-blue-50 hover:border-blue-200 hover:shadow-md active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+              className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               {isLoadingMore ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="w-3 h-3 animate-spin" />
                   <span>Cargando...</span>
                 </>
               ) : (
                 <>
-                  <span>Cargar más análisis</span>
-                  <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span>Cargar anteriores</span>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </>
