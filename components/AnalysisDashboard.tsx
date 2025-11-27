@@ -248,7 +248,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
         )}
 
         {/* Grid de Análisis - Compacto y optimizado para móvil */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 min-[550px]:grid-cols-2 gap-5" style={{ gap: '20px' }}>
           {filteredAnalyses.map((analysis, index) => (
             <div
               key={`${analysis.id}-${index}`}

@@ -928,7 +928,7 @@ export default function NewMultiAnalysisPageContent() {
                                         <CardTitle>📏 Uniformidad</CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'flex justify-center gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
+                                        <div className={viewMode === 'COMPACTA' ? 'flex justify-center gap-6' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
                                             {/* Grandes */}
                                             <div className="space-y-3" style={{ width: viewMode === 'COMPACTA' ? '32%' : 'auto' }}>
                                                 <div className="flex items-center justify-between">
