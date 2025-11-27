@@ -71,10 +71,10 @@ const useGoogleAuth = () => {
 
 // --- Components ---
 
-const LoginPage = ({ onLoginTrigger }: { onLoginTrigger: () => void }) => {
+const LoginPage = () => {
   return (
     <main className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-slate-300">
-      <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-2xl p-10 animate-in fade-in zoom-in-95 duration-300">
+      <div className="w-full max-w-[400px] bg-white rounded-[14px] shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-slate-100 p-10 animate-in fade-in zoom-in-95 duration-300">
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
             <User className="h-8 w-8 text-white" />
@@ -85,8 +85,8 @@ const LoginPage = ({ onLoginTrigger }: { onLoginTrigger: () => void }) => {
           <h2 className="text-xl font-semibold text-slate-800">Análisis en Descongelado</h2>
           <p className="text-sm text-slate-500 mt-2">Accede con tu cuenta corporativa para gestionar los análisis</p>
         </div>
-        <div className="mb-8"><GoogleLoginButton onLoginSuccess={onLoginTrigger} /></div>
-        <p className="text-xs text-center text-slate-400">&copy; {new Date().getFullYear()} Aquagold S.A. Todos los derechos reservados.</p>
+        <div className="mb-8"><GoogleLoginButton /></div>
+        <p className="text-xs text-center text-slate-400">&copy; {new Date().getFullYear()} Todos los derechos reservados.</p>
       </div>
     </main>
   );
@@ -259,7 +259,7 @@ export default function Home() {
   }
 
   if (!isAuthenticated || !user) {
-    return <LoginPage onLoginTrigger={login} />;
+    return <LoginPage />;
   }
 
   return (
