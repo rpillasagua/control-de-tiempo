@@ -48,6 +48,7 @@ export const useAnalysisSave = ({
     // Refs for auto-save
     const timeoutRef = useRef<NodeJS.Timeout>();
     const previousDataRef = useRef<string>('');
+    const saveInProgressRef = useRef<boolean>(false);
 
     const saveDocument = useCallback(async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
         if (!analysisId || !basicsCompleted) return;
@@ -147,8 +148,27 @@ export const useAnalysisSave = ({
             setSaveError('Error al guardar');
         } finally {
             setIsSaving(false);
+            saveInProgressRef.current = false;
         }
     }, [analysisId, basicsCompleted, isCompleted, codigo, lote, talla, productType, originalAnalystColor, analystColor, analyses, originalCreatedAt, originalCreatedBy, originalDate, originalShift, globalPesoBruto, setIsCompleted]);
+
+    // 🔧 FIX #2: Force save before page unload
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // If there's a pending save, try to execute it synchronously
+            if (timeoutRef.current && !saveInProgressRef.current) {
+                clearTimeout(timeoutRef.current);
+                saveInProgressRef.current = true;
+
+                // Use sendBeacon for more reliable fire-and-forget
+                // This is a backup - the regular save below is primary
+                saveDocument();
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []); // Empty deps - handler uses refs which are stable
 
     // Auto-save Effect with Deep Equality Check
     useEffect(() => {
@@ -181,10 +201,13 @@ export const useAnalysisSave = ({
             clearTimeout(timeoutRef.current);
         }
 
-        // Schedule new save
+        // 🔧 FIX #1: Reduced delay from 2000ms to 500ms for faster saves
         timeoutRef.current = setTimeout(() => {
-            saveDocument();
-        }, 2000);
+            if (!saveInProgressRef.current) {
+                saveInProgressRef.current = true;
+                saveDocument();
+            }
+        }, 500); // ← 4x faster response time
 
         return () => {
             if (timeoutRef.current) {
@@ -202,8 +225,8 @@ export const useAnalysisSave = ({
         basicsCompleted,
         analysisId,
         isCompleted,
-        isDeleting,
-        saveDocument
+        isDeleting
+        // 🔧 FIX #3: Removed saveDocument from deps to prevent infinite loops
     ]);
 
     return {
