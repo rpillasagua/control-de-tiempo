@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ZoomIn, ImageOff, Camera, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { compressImage } from '@/lib/imageCompression';
 
@@ -521,11 +522,12 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         </div>
       )}
 
-      {/* Modal para ver imagen en grande */}
-      {showModal && photoUrl && (
+      {/* Modal para ver imagen en grande - Usando Portal para evitar clipping */}
+      {showModal && photoUrl && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-fade-in"
           onClick={handleCloseModal}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
           <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
             <button
@@ -538,7 +540,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               <img
                 src={photoUrl}
                 alt={label}
-                className="w-full h-auto max-h-[60vh] sm:max-h-[70vh] object-contain bg-black/50"
+                className="w-full h-auto max-h-[80vh] object-contain bg-black/50"
                 onClick={(e) => e.stopPropagation()}
                 onError={(e) => {
                   console.warn(`⚠️ Error cargando imagen en modal ${label}:`, photoUrl);
@@ -553,7 +555,8 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

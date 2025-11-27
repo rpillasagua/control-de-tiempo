@@ -928,9 +928,9 @@ export default function NewMultiAnalysisPageContent() {
                                         <CardTitle>📏 Uniformidad</CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
+                                        <div className={viewMode === 'COMPACTA' ? 'flex justify-center gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
                                             {/* Grandes */}
-                                            <div className="space-y-3">
+                                            <div className="space-y-3" style={{ width: viewMode === 'COMPACTA' ? '32%' : 'auto' }}>
                                                 <div className="flex items-center justify-between">
                                                     <Label>Grandes (kg)</Label>
                                                     {currentAnalysis.uniformidad?.grandes?.valor && (
@@ -965,7 +965,7 @@ export default function NewMultiAnalysisPageContent() {
                                             </div>
 
                                             {/* Pequeños */}
-                                            <div className="space-y-3">
+                                            <div className="space-y-3" style={{ width: viewMode === 'COMPACTA' ? '32%' : 'auto' }}>
                                                 <div className="flex items-center justify-between">
                                                     <Label>Pequeños (kg)</Label>
                                                     {currentAnalysis.uniformidad?.pequenos?.valor && (
@@ -1066,14 +1066,18 @@ export default function NewMultiAnalysisPageContent() {
                                 <CardTitle>📸 Foto de Calidad General</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <PhotoCapture
-                                    key={`fotoCalidad-${activeAnalysisIndex}`}
-                                    label="Foto General"
-                                    photoUrl={currentAnalysis.fotoCalidad}
-                                    onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
-                                    isUploading={isFieldUploading('fotoCalidad')}
-                                    context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
-                                />
+                                <div className={viewMode === 'COMPACTA' ? 'flex justify-center' : ''}>
+                                    <div style={{ width: viewMode === 'COMPACTA' ? '32%' : '100%' }}>
+                                        <PhotoCapture
+                                            key={`fotoCalidad-${activeAnalysisIndex}`}
+                                            label="Foto General"
+                                            photoUrl={currentAnalysis.fotoCalidad}
+                                            onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
+                                            isUploading={isFieldUploading('fotoCalidad')}
+                                            context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
+                                        />
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
 
