@@ -385,14 +385,15 @@ const createStandardProductSheet = (
                 ]);
                 row.alignment = { vertical: 'middle' };
 
-                // 🔴 Highlight defects > 0
+                // 🔴 Highlight defects > 0 (NO marcar ceros)
                 // Calculate start column for defects
                 // Base columns: 16 (Hora...Total Defectos)
                 // If VALOR_AGREGADO: +2 columns (Peso Submuestra, Peso Sin Glaseo) -> 18
                 const baseColumnsCount = productType === 'VALOR_AGREGADO' ? 18 : 16;
 
                 defectosValues.forEach((value, index) => {
-                    if (value > 0) {
+                    // ✅ SOLO resaltar si el valor es mayor a 0
+                    if (value && value > 0) {
                         const cell = row.getCell(baseColumnsCount + 1 + index);
                         cell.font = STYLES.defectHighlight?.font || {};
                     }
