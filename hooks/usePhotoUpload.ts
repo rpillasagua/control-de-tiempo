@@ -131,10 +131,28 @@ export const usePhotoUpload = ({
                 fieldPath = `${field}.fotoUrl`;
             }
 
-            await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
-            console.log('✅ Firestore transaction confirmed - Photo URL saved');
+            // 🔄 RETRY FIRESTORE si falla (Drive ya tuvo éxito)
+            let firestoreSaved = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
+                    console.log(`✅ Firestore confirmed (attempt ${attempt}/3)`);
+                    firestoreSaved = true;
+                    break;
+                } catch (firestoreError) {
+                    console.error(`❌ Firestore attempt ${attempt}/3 failed:`, firestoreError);
+                    if (attempt === 3) {
+                        throw new Error(`Firestore save failed after 3 attempts: ${firestoreError}`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Backoff
+                }
+            }
 
-            // 5. ONLY NOW delete from IndexedDB - we have confirmation!
+            if (!firestoreSaved) {
+                throw new Error('Failed to save URL to Firestore after retries');
+            }
+
+            // 5. ONLY NOW delete from IndexedDB - we have DOUBLE confirmation!
             console.log(`🗑️ ATTEMPTING DELETE - PhotoID: ${photoId}, Field: ${field}`);
             await photoStorageService.deletePhoto(photoId);
             console.log(`✅ SUCCESS - Photo ${photoId} DELETED from IndexedDB`);
@@ -144,11 +162,20 @@ export const usePhotoUpload = ({
                 [key]: { photoId, status: 'success' }
             }));
 
+            // ✅ AHORA SÍ mostrar toast de éxito (Drive + Firestore confirmados)
             toast.success('Foto subida exitosamente');
 
         } catch (error) {
             console.error('Error uploading photo:', error);
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            // Determinar si falló Drive o Firestore
+            let userMessage = 'Error al subir la foto.';
+            if (errorMessage.includes('Firestore')) {
+                userMessage = 'Foto subida a Drive pero falló guardar en base de datos. Se reintentará automáticamente.';
+            } else {
+                userMessage = 'Error al subir la foto. Se guardó localmente y puedes reintentar.';
+            }
 
             // Mark as error in IndexedDB
             await photoStorageService.updatePhotoStatus(photoId, 'error', undefined, errorMessage);
@@ -157,7 +184,7 @@ export const usePhotoUpload = ({
                 [key]: { photoId, status: 'error' }
             }));
 
-            toast.error('Error al subir la foto. Se guardó localmente y puedes reintentar.');
+            toast.error(userMessage);
         } finally {
             setUploadingPhotos(prev => {
                 const next = new Set(prev);
@@ -252,9 +279,26 @@ export const usePhotoUpload = ({
                 };
             }));
 
-            // 4. Save transactionally (using saveDocument for array updates)
-            await saveDocument();
-            console.log('✅ Firestore confirmed - Peso bruto saved');
+            // 4. Save transactionally with retry (using saveDocument for array updates)
+            let firestoreSaved = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await saveDocument();
+                    console.log(`✅ Firestore confirmed - Peso bruto saved (attempt ${attempt}/3)`);
+                    firestoreSaved = true;
+                    break;
+                } catch (firestoreError) {
+                    console.error(`❌ Firestore attempt ${attempt}/3 failed:`, firestoreError);
+                    if (attempt === 3) {
+                        throw new Error(`Firestore save failed after 3 attempts: ${firestoreError}`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
+            }
+
+            if (!firestoreSaved) {
+                throw new Error('Failed to save peso bruto to Firestore after retries');
+            }
 
             // 5. Delete from IndexedDB after confirmation
             await photoStorageService.deletePhoto(photoId);
@@ -265,11 +309,19 @@ export const usePhotoUpload = ({
                 [key]: { photoId, status: 'success' }
             }));
 
+            // ✅ Toast solo después de confirmación completa
             toast.success('Foto de peso bruto subida exitosamente');
 
         } catch (error) {
             console.error('Error uploading peso bruto photo:', error);
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            let userMessage = 'Error al subir peso bruto.';
+            if (errorMessage.includes('Firestore')) {
+                userMessage = 'Foto subida a Drive pero falló guardar en base de datos. Se reintentará automáticamente.';
+            } else {
+                userMessage = 'Error al subir peso bruto. Se guardó localmente y puedes reintentar.';
+            }
 
             await photoStorageService.updatePhotoStatus(photoId, 'error', undefined, errorMessage);
             setPhotoStatus(prev => ({
@@ -277,7 +329,7 @@ export const usePhotoUpload = ({
                 [key]: { photoId, status: 'error' }
             }));
 
-            toast.error('Error al subir peso bruto. Se guardó localmente y puedes reintentar.');
+            toast.error(userMessage);
         } finally {
             setUploadingPhotos(prev => {
                 const next = new Set(prev);
@@ -361,10 +413,28 @@ export const usePhotoUpload = ({
             // 3. Update local state
             setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
 
-            // 4. Save transactionally - THIS IS THE CONFIRMATION!
+            // 4. Save transactionally with retry - THIS IS THE CONFIRMATION!
             const { saveGlobalPhotoUrl } = await import('@/lib/analysisService');
-            await saveGlobalPhotoUrl(analysisId, url);
-            console.log('✅ Firestore confirmed - Global peso bruto saved');
+
+            let firestoreSaved = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await saveGlobalPhotoUrl(analysisId, url);
+                    console.log(`✅ Firestore confirmed - Global peso bruto saved (attempt ${attempt}/3)`);
+                    firestoreSaved = true;
+                    break;
+                } catch (firestoreError) {
+                    console.error(`❌ Firestore attempt ${attempt}/3 failed:`, firestoreError);
+                    if (attempt === 3) {
+                        throw new Error(`Firestore save failed after 3 attempts: ${firestoreError}`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
+            }
+
+            if (!firestoreSaved) {
+                throw new Error('Failed to save global photo to Firestore after retries');
+            }
 
             // 5. Delete from IndexedDB after confirmation
             await photoStorageService.deletePhoto(photoId);
@@ -375,11 +445,19 @@ export const usePhotoUpload = ({
                 [key]: { photoId, status: 'success' }
             }));
 
+            // ✅ Toast solo después de confirmación completa
             toast.success('Foto global subida exitosamente');
 
         } catch (error) {
             console.error('Error uploading global peso bruto photo:', error);
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+
+            let userMessage = 'Error al subir foto global.';
+            if (errorMessage.includes('Firestore')) {
+                userMessage = 'Foto subida a Drive pero falló guardar en base de datos. Se reintentará automáticamente.';
+            } else {
+                userMessage = 'Error al subir foto global. Se guardó localmente y puedes reintentar.';
+            }
 
             await photoStorageService.updatePhotoStatus(photoId, 'error', undefined, errorMessage);
             setPhotoStatus(prev => ({
@@ -387,7 +465,7 @@ export const usePhotoUpload = ({
                 [key]: { photoId, status: 'error' }
             }));
 
-            toast.error('Error al subir foto global. Se guardó localmente y puedes reintentar.');
+            toast.error(userMessage);
         } finally {
             setUploadingPhotos(prev => {
                 const next = new Set(prev);
