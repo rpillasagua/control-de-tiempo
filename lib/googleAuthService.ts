@@ -50,6 +50,11 @@ class GoogleAuthService {
   private USER_STORAGE_KEY = 'google_user_v2';
   private TOKEN_EXPIRY_KEY = 'google_token_expiry';
 
+  // Resolvers para la promesa de login
+  private loginResolve: ((value: void | PromiseLike<void>) => void) | null = null;
+  private loginReject: ((reason?: any) => void) | null = null;
+  private loginPromise: Promise<void> | null = null;
+
   constructor() {
     this.config = {
       clientId: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID || '',
@@ -223,11 +228,27 @@ class GoogleAuthService {
         logger.warn('⚠️ Refresh silencioso falló (interaction_required). El usuario debe re-autenticar.');
         // No mostramos alert, solo limpiamos la sesión para que la UI pida login
         this.clearStoredAuth();
+
+        // Rechazar promesa si existe
+        if (this.loginReject) {
+          this.loginReject(new Error('Interacción requerida'));
+          this.loginReject = null;
+          this.loginResolve = null;
+          this.loginPromise = null;
+        }
         return;
       }
 
       logger.error('❌ Error en autenticación Google:', response.error);
       alert(`Error de autenticación: ${response.error}`);
+
+      // Rechazar promesa si existe
+      if (this.loginReject) {
+        this.loginReject(new Error(response.error));
+        this.loginReject = null;
+        this.loginResolve = null;
+        this.loginPromise = null;
+      }
       return;
     }
 
@@ -256,6 +277,14 @@ class GoogleAuthService {
       this.scheduleTokenRefresh(refreshDelay);
 
       this.notifyListeners();
+
+      // Resolver promesa si existe
+      if (this.loginResolve) {
+        this.loginResolve();
+        this.loginResolve = null;
+        this.loginReject = null;
+        this.loginPromise = null;
+      }
     }
   };
 
@@ -297,13 +326,25 @@ class GoogleAuthService {
 
   /**
    * Inicia el flujo de login
+   * Retorna una promesa que se resuelve cuando el login es exitoso
    */
   async login(): Promise<void> {
     if (!this.tokenClient) {
       await this.initialize();
     }
 
-    this.tokenClient?.requestAccessToken();
+    // Si ya hay un login en proceso, retornar la promesa existente
+    if (this.loginPromise) {
+      return this.loginPromise;
+    }
+
+    this.loginPromise = new Promise((resolve, reject) => {
+      this.loginResolve = resolve;
+      this.loginReject = reject;
+      this.tokenClient?.requestAccessToken();
+    });
+
+    return this.loginPromise;
   }
 
   /**

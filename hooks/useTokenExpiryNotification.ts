@@ -22,43 +22,19 @@ export function useTokenExpiryNotification() {
                 description: `Quedan ${minutesLeft} minutos. Haz clic en "Renovar Sesión" para continuar sin interrupciones.`,
                 action: {
                     label: '🔄 Renovar Sesión',
-                    onClick: async () => {
-                        let loadingToast: string | number | undefined;
-
-                        try {
-                            // Mostrar loading toast
-                            loadingToast = toast.loading('Renovando sesión...');
-
-                            await googleAuthService.login();
-
-                            // Cerrar loading toast primero
-                            if (loadingToast) {
-                                toast.dismiss(loadingToast);
-                            }
-
-                            // Cerrar warning original
-                            toast.dismiss(warningToastId);
-
-                            // Mostrar éxito
-                            toast.success('✅ Sesión renovada exitosamente', {
-                                description: 'Puedes continuar trabajando sin problemas',
-                                duration: 3000
-                            });
-                        } catch (error) {
-                            console.error('Error renovando sesión:', error);
-
-                            // ✅ CRÍTICO: Cerrar loading toast en caso de error
-                            if (loadingToast) {
-                                toast.dismiss(loadingToast);
-                            }
-
-                            toast.dismiss(warningToastId);
-
-                            toast.error('❌ Error al renovar sesión', {
-                                description: 'Intenta recargar la página (F5) para continuar',
-                                duration: 10000
-                            });
-                        }
+                    onClick: () => {
+                        toast.promise(googleAuthService.login(), {
+                            loading: 'Renovando sesión...',
+                            success: () => {
+                                toast.dismiss(warningToastId);
+                                return '✅ Sesión renovada exitosamente';
+                            },
+                            error: (err) => {
+                                toast.dismiss(warningToastId);
+                                console.error('Error renovando sesión:', err);
+                                return '❌ Error al renovar sesión. Intenta recargar (F5).';
+                            },
+                        });
                     }
                 },
                 duration: Infinity, // NO se auto-cierra - usuario debe actuar
