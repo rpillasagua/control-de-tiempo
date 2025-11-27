@@ -239,7 +239,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-4 pb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-6">
         {/* Report Card */}
         {showReportModal && (
           <div className="mb-3 animate-slide-up">
@@ -248,14 +248,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
         )}
 
         {/* Grid de Análisis - Compacto y optimizado para móvil */}
-        <div
-          className="grid gap-6"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
-            gap: '24px'
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredAnalyses.map((analysis, index) => (
             <div
               key={`${analysis.id}-${index}`}
