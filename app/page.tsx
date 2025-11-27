@@ -154,15 +154,19 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                   className="fixed inset-0 z-40"
                   onClick={() => setIsDropdownOpen(false)}
                 ></div>
-                <div className="absolute right-4 mt-3 w-[160px] bg-white rounded-xl p-3 z-[100] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-2"
-                  style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-
+                <div
+                  className="absolute right-0 mt-3 w-[200px] bg-white p-[16px] z-[100] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-[12px]"
+                  style={{
+                    borderRadius: '14px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+                  }}
+                >
                   <div className="flex flex-col items-center text-center">
-                    <p className="text-sm font-bold text-slate-800 truncate w-full">{user.name}</p>
-                    <p className="text-xs text-slate-500 truncate w-full mt-0.5">{user.email}</p>
+                    <p className="text-[14px] font-[700] text-[#111827] truncate w-full">{user.name}</p>
+                    <p className="text-[12px] text-[#6B7280] truncate w-full mt-[2px]">{user.email}</p>
                   </div>
 
-                  <hr className="border-t border-slate-100 w-full" />
+                  <hr className="border-t border-[#E5E7EB] w-full m-0" />
 
                   <button
                     onClick={() => {
@@ -179,7 +183,19 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                       // Force hard reload
                       window.location.href = window.location.href;
                     }}
-                    className="w-full px-3 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg flex items-center justify-center gap-1.5 transition-colors duration-200"
+                    className="w-full text-[13px] font-[600] rounded-[12px] flex items-center justify-center gap-[6px] transition-all"
+                    style={{
+                      padding: '10px 12px',
+                      backgroundColor: '#EFF6FF',
+                      color: '#2563EB',
+                      border: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#DBEAFE';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#EFF6FF';
+                    }}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -192,7 +208,19 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                       setIsDropdownOpen(false);
                       onLogout();
                     }}
-                    className="w-full px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center gap-1.5 transition-colors duration-200"
+                    className="w-full text-[13px] font-[600] rounded-[12px] flex items-center justify-center gap-[6px] transition-all"
+                    style={{
+                      padding: '10px 12px',
+                      backgroundColor: '#FEF2F2',
+                      color: '#EF4444',
+                      border: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE2E2';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEF2F2';
+                    }}
                   >
                     <LogOut size={14} />
                     Cerrar Sesión
@@ -206,6 +234,7 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
     </header>
   );
 };
+
 
 // --- Main Page ---
 
