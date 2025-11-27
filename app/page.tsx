@@ -119,14 +119,14 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
             >
               {user.picture ? (
                 <div
-                  className="relative h-12 w-12 rounded-full overflow-hidden shadow-md transition-transform duration-200 hover:scale-105"
-                  style={{ borderRadius: '50%' }}
+                  className="relative h-12 w-12 overflow-hidden shadow-md transition-all duration-200 hover:scale-105"
+                  style={{ borderRadius: '14px' }}
                 >
                   <img
                     src={user.picture}
                     alt={user.name}
                     className="h-full w-full object-cover"
-                    style={{ borderRadius: '50%' }}
+                    style={{ borderRadius: '14px' }}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       const parent = e.currentTarget.parentElement;
@@ -137,12 +137,18 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                       }
                     }}
                   />
-                  <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-blue-600 bg-blue-100 rounded-full hidden fallback-text">
+                  <span
+                    className="absolute inset-0 flex items-center justify-center text-lg font-bold text-blue-600 bg-blue-100 hidden fallback-text"
+                    style={{ borderRadius: '14px' }}
+                  >
                     {user.name.charAt(0)}
                   </span>
                 </div>
               ) : (
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-md hover:scale-105 transition-transform duration-200">
+                <div
+                  className="w-12 h-12 bg-blue-100 flex items-center justify-center text-blue-600 shadow-md hover:scale-105 transition-transform duration-200"
+                  style={{ borderRadius: '14px' }}
+                >
                   <span className="text-lg font-bold">{user.name.charAt(0)}</span>
                 </div>
               )}
