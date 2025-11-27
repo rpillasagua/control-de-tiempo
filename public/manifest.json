@@ -1,12 +1,3 @@
-{
-  "name": "Análisis en Descongelado - Aquagold",
-  "short_name": "Análisis Aquagold",
-  "description": "Sistema de control de calidad para análisis de productos en descongelado",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
   "orientation": "portrait",
   "icons": [
     {
