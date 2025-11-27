@@ -138,16 +138,47 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
         return labels[field] || field;
     };
 
-    // Auto-retry when connection is restored
+    // Auto-retry when connection is restored (with debouncing)
     useEffect(() => {
+        let retryTimeout: NodeJS.Timeout | null = null;
+
         const handleOnline = () => {
-            console.log('🌐 Conexión restaurada. Reintentando subidas...');
-            handleRetryAll();
+            console.log('🌐 Conexión restaurada. Preparando auto-retry...');
+
+            // Clear any existing timeout to prevent multiple retries
+            if (retryTimeout) {
+                clearTimeout(retryTimeout);
+            }
+
+            // Debounce: Wait 3 seconds before retrying to avoid multiple attempts on flickering connection
+            retryTimeout = setTimeout(async () => {
+                const totalPending = pendingPhotos.length + failedPhotos.length;
+
+                if (totalPending === 0) {
+                    console.log('✅ No hay fotos pendientes para reintentar');
+                    return;
+                }
+
+                console.log(`🔄 Auto-retry iniciado para ${totalPending} fotos...`);
+
+                try {
+                    await handleRetryAll();
+                    console.log('✅ Auto-retry completado exitosamente');
+                } catch (error) {
+                    console.error('❌ Error en auto-retry:', error);
+                }
+            }, 3000); // 3 second debounce
         };
 
         window.addEventListener('online', handleOnline);
-        return () => window.removeEventListener('online', handleOnline);
-    }, [onRetryAll]);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            if (retryTimeout) {
+                clearTimeout(retryTimeout);
+            }
+        };
+    }, [pendingPhotos.length, failedPhotos.length]); // Re-run if photo counts change
 
     const totalIssues = pendingPhotos.length + failedPhotos.length;
 

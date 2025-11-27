@@ -14,11 +14,11 @@ interface PendingPhoto {
     uploadUrl?: string;
     retryCount: number;
     lastError?: string;
-    metadata?: {
-        codigo?: string;
-        lote?: string;
-        batchCode?: string;      // Unique identifier: "codigo-lote-analysis#"
-        analysisIndex?: number;
+    metadata: {
+        codigo: string;
+        lote: string;
+        batchCode: string;      // Unique identifier: "codigo-lote-analysis#"
+        analysisIndex?: number; // Optional only for global photos
     };
 }
 
@@ -78,10 +78,27 @@ class PhotoStorageService {
     }
 
     /**
+     * Validate photo metadata to ensure all required fields are present
+     */
+    private validateMetadata(metadata: PendingPhoto['metadata']): void {
+        if (!metadata.codigo || !metadata.lote || !metadata.batchCode) {
+            throw new Error('Invalid photo metadata: codigo, lote, and batchCode are required');
+        }
+
+        // For non-global photos, analysisIndex should be a valid number
+        if (!metadata.batchCode.includes('-global') && metadata.analysisIndex === undefined) {
+            throw new Error('Invalid photo metadata: analysisIndex is required for non-global photos');
+        }
+    }
+
+    /**
      * Save a photo locally before uploading
      */
     async savePhoto(photo: Omit<PendingPhoto, 'timestamp' | 'retryCount'>): Promise<string> {
         const db = await this.ensureDB();
+
+        // ✅ VALIDATE METADATA BEFORE SAVING
+        this.validateMetadata(photo.metadata);
 
         const pendingPhoto: PendingPhoto = {
             ...photo,

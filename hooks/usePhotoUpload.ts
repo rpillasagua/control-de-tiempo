@@ -416,17 +416,39 @@ export const usePhotoUpload = ({
     const retryPhotoUpload = useCallback(async (photo: PendingPhoto) => {
         console.log(`🔄 RETRY - ID: ${photo.id}, Field: ${photo.field}, Status: ${photo.status}`);
 
+        // ✅ STRICT VALIDATION: Ensure metadata is complete
+        if (!photo.metadata.codigo || !photo.metadata.lote || !photo.metadata.batchCode) {
+            console.error('⛔ INVALID METADATA: Missing required fields', photo.metadata);
+            toast.error('Esta foto no tiene contexto válido y no puede ser subida');
+            await photoStorageService.updatePhotoStatus(photo.id, 'error', undefined, 'Metadata incompleta');
+            return;
+        }
+
         // 1. Validate Context (Code/Lote)
         // We ensure the photo belongs to the current production batch (Code + Lote)
-        if (photo.metadata?.codigo !== codigo || photo.metadata?.lote !== lote) {
-            console.log(`⛔ ABORTING: Photo context mismatch. Photo: ${photo.metadata?.codigo}-${photo.metadata?.lote}, Current: ${codigo}-${lote}`);
+        if (photo.metadata.codigo !== codigo || photo.metadata.lote !== lote) {
+            console.log(`⛔ ABORTING: Photo context mismatch. Photo: ${photo.metadata.codigo}-${photo.metadata.lote}, Current: ${codigo}-${lote}`);
             toast.error('Esta foto pertenece a otro lote o código. No se puede reintentar aquí.');
             return;
         }
 
         // 2. Determine Target Analysis Index
-        // Use the original analysis index from metadata if available, otherwise fallback to active (risky but fallback)
-        const targetIndex = photo.metadata?.analysisIndex ?? activeAnalysisIndex;
+        // For global photos, there's no analysisIndex
+        let targetIndex: number;
+
+        if (photo.field === 'global-pesoBruto' || photo.metadata.batchCode.includes('-global')) {
+            // Global photo, no index needed
+            targetIndex = -1; // Will be handled separately
+        } else {
+            // ✅ CRITICAL FIX: NO FALLBACK! Metadata MUST have analysisIndex
+            if (photo.metadata.analysisIndex === undefined) {
+                console.error('⛔ CRITICAL: Non-global photo missing analysisIndex', photo);
+                toast.error('Esta foto no tiene información de muestra y no puede ser subida');
+                await photoStorageService.updatePhotoStatus(photo.id, 'error', undefined, 'Missing analysisIndex');
+                return;
+            }
+            targetIndex = photo.metadata.analysisIndex;
+        }
 
         console.log(`🎯 Target Analysis Index: ${targetIndex} (Active: ${activeAnalysisIndex})`);
 
