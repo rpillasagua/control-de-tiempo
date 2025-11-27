@@ -164,7 +164,8 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                   className="absolute right-0 mt-3 w-[200px] bg-white p-[16px] z-[100] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-[12px]"
                   style={{
                     borderRadius: '14px',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                    transform: 'translateX(-40%)'
                   }}
                 >
                   <div className="flex flex-col items-center text-center">
@@ -173,41 +174,6 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                   </div>
 
                   <hr className="border-t border-[#E5E7EB] w-full m-0" />
-
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      // Clear all local storage and caches
-                      localStorage.clear();
-                      sessionStorage.clear();
-                      // Unregister service workers if any
-                      if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.getRegistrations().then(registrations => {
-                          registrations.forEach(registration => registration.unregister());
-                        });
-                      }
-                      // Force hard reload
-                      window.location.href = window.location.href;
-                    }}
-                    className="w-full text-[13px] font-[600] rounded-[12px] flex items-center justify-center gap-[6px] transition-all"
-                    style={{
-                      padding: '10px 12px',
-                      backgroundColor: '#EFF6FF',
-                      color: '#2563EB',
-                      border: 'none'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#DBEAFE';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#EFF6FF';
-                    }}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Reparar / Recargar
-                  </button>
 
                   <button
                     onClick={() => {
@@ -240,6 +206,7 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
     </header>
   );
 };
+
 
 
 // --- Main Page ---
