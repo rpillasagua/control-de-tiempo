@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2, Clock, AlertCircle, Hash, Package, Ruler, Building2, Tag, Box } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
@@ -626,133 +626,75 @@ export default function NewMultiAnalysisPageContent() {
                         <ViewModeSelector viewMode={viewMode} onModeChange={setViewMode} />
                     </div>
 
-                    {/* Información del Producto - MODERNO CON COLORES VIBRANTES */}
+                    {/* Información del Producto - Estilo DailyReportCard */}
                     {(clientName || brandName || masterInfo || codigo || lote || talla) && (
                         <div
-                            className="relative overflow-hidden rounded-2xl border-2 border-blue-200"
+                            className="bg-white p-5"
                             style={{
-                                background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 50%, #E0E7FF 100%)',
-                                boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.2), 0 8px 10px -6px rgba(99, 102, 241, 0.15)'
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                borderRadius: '14px'
                             }}
                         >
-                            {/* Content */}
-                            <div className="relative p-5">
-                                {/* Top section - Código, Lote, Talla con badges modernos */}
-                                <div className="grid grid-cols-3 gap-3 mb-4">
-                                    {/* Código - Badge Azul */}
-                                    <div
-                                        className="rounded-xl p-3 border-2 border-blue-300"
-                                        style={{
-                                            background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
-                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.25)'
-                                        }}
-                                    >
-                                        <div className="text-[10px] font-black tracking-wider text-blue-700 uppercase mb-1.5">CÓDIGO</div>
-                                        <div className="text-lg font-black text-blue-900">
-                                            {codigo}
-                                        </div>
+                            {/* Grid de toda la información */}
+                            <div className="grid grid-cols-3 gap-4">
+                                {/* Código */}
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <Hash className="w-4 h-4 text-blue-600" />
+                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Código</div>
                                     </div>
-
-                                    {/* Lote - Badge Índigo */}
-                                    <div
-                                        className="rounded-xl p-3 border-2 border-indigo-300"
-                                        style={{
-                                            background: 'linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%)',
-                                            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.25)'
-                                        }}
-                                    >
-                                        <div className="text-[10px] font-black tracking-wider text-indigo-700 uppercase mb-1.5">LOTE</div>
-                                        <div className="text-lg font-black text-indigo-900">
-                                            {lote}
-                                        </div>
-                                    </div>
-
-                                    {/* Talla - Badge Púrpura */}
-                                    {talla && (
-                                        <div
-                                            className="rounded-xl p-3 border-2 border-purple-300"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)',
-                                                boxShadow: '0 4px 6px -1px rgba(168, 85, 247, 0.25)'
-                                            }}
-                                        >
-                                            <div className="text-[10px] font-black tracking-wider text-purple-700 uppercase mb-1.5">TALLA</div>
-                                            <div className="text-lg font-black text-purple-900">
-                                                {talla}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="text-sm font-bold text-slate-900 ml-5">{codigo}</div>
                                 </div>
 
-                                {/* Divider con gradiente visible */}
-                                <div
-                                    className="h-0.5 rounded-full my-4"
-                                    style={{
-                                        background: 'linear-gradient(90deg, transparent 0%, #3B82F6 50%, transparent 100%)'
-                                    }}
-                                ></div>
-
-                                {/* Bottom section - Cliente, Marca, Presentación */}
-                                <div className="space-y-2.5">
-                                    {/* Cliente */}
-                                    <div className="flex items-baseline gap-2">
-                                        <span
-                                            className="text-[10px] font-black tracking-wider uppercase shrink-0 px-2 py-1 rounded"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                                                color: 'white'
-                                            }}
-                                        >
-                                            CLIENTE
-                                        </span>
-                                        <span className="text-base font-bold text-slate-900 truncate">
-                                            {clientName}
-                                        </span>
+                                {/* Lote */}
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <Package className="w-4 h-4 text-indigo-600" />
+                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Lote</div>
                                     </div>
-
-                                    {/* Marca */}
-                                    <div className="flex items-baseline gap-2">
-                                        <span
-                                            className="text-[10px] font-black tracking-wider uppercase shrink-0 px-2 py-1 rounded"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                                                color: 'white'
-                                            }}
-                                        >
-                                            MARCA
-                                        </span>
-                                        <span className="text-base font-bold text-slate-900 truncate">
-                                            {brandName}
-                                        </span>
-                                    </div>
-
-                                    {/* Presentación */}
-                                    {masterInfo && (
-                                        <div className="flex items-baseline gap-2 pt-1">
-                                            <span
-                                                className="text-[10px] font-black tracking-wider uppercase shrink-0 px-2 py-1 rounded"
-                                                style={{
-                                                    background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 100%)',
-                                                    color: 'white'
-                                                }}
-                                            >
-                                                PRESENTACIÓN
-                                            </span>
-                                            <span className="text-base font-bold text-slate-900">
-                                                {masterInfo}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <div className="text-sm font-bold text-slate-900 ml-5">{lote}</div>
                                 </div>
+
+                                {/* Talla */}
+                                {talla && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <Ruler className="w-4 h-4 text-purple-600" />
+                                            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Talla</div>
+                                        </div>
+                                        <div className="text-sm font-bold text-slate-900 ml-5">{talla}</div>
+                                    </div>
+                                )}
+
+                                {/* Cliente */}
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <Building2 className="w-4 h-4 text-slate-600" />
+                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Cliente</div>
+                                    </div>
+                                    <div className="text-sm font-medium text-slate-900 ml-5">{clientName}</div>
+                                </div>
+
+                                {/* Marca */}
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <Tag className="w-4 h-4 text-slate-600" />
+                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Marca</div>
+                                    </div>
+                                    <div className="text-sm font-medium text-slate-900 ml-5">{brandName}</div>
+                                </div>
+
+                                {/* Presentación */}
+                                {masterInfo && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <Box className="w-4 h-4 text-slate-600" />
+                                            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Presentación</div>
+                                        </div>
+                                        <div className="text-sm font-medium text-slate-900 ml-5">{masterInfo}</div>
+                                    </div>
+                                )}
                             </div>
-
-                            {/* Barra inferior con gradiente arcoíris visible */}
-                            <div
-                                className="h-2"
-                                style={{
-                                    background: 'linear-gradient(90deg, #3B82F6 0%, #6366F1 33%, #A855F7 66%, #EC4899 100%)'
-                                }}
-                            ></div>
                         </div>
                     )}
 
@@ -1161,12 +1103,12 @@ export default function NewMultiAnalysisPageContent() {
                             <div className="pt-8 flex justify-center">
                                 <button
                                     onClick={handleCompleteAnalysis}
-                                    className="w-full max-w-[340px] bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400/50 hover:from-green-600 hover:to-emerald-700 hover:border-green-300 p-[14px] rounded-[14px] text-[15px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
+                                    className="w-full max-w-[280px] bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400/50 hover:from-green-600 hover:to-emerald-700 hover:border-green-300 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
                                     style={{
                                         boxShadow: '0 10px 20px -5px rgba(34, 197, 94, 0.3)'
                                     }}
                                 >
-                                    <CheckCircle2 className="w-5 h-5" />
+                                    <CheckCircle2 className="w-4 h-4" />
                                     <span>Completar Análisis</span>
                                 </button>
                             </div>
@@ -1174,19 +1116,17 @@ export default function NewMultiAnalysisPageContent() {
                     }
 
                     {/* Delete Section - Styled like DailyReportCard */}
-                    <div className="pt-8 pb-4 flex justify-center">
+                    <div className="pt-6 pb-4 flex justify-center">
                         <div
-                            className="bg-white p-[25px] rounded-[24px] w-full max-w-[340px] text-center"
+                            className="bg-white p-[18px] rounded-[14px] w-full max-w-[280px] text-center"
                             style={{
-                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
                             }}
                         >
-
-
                             <button
                                 type="button"
                                 onClick={handleSmartDelete}
-                                className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] hover:shadow-md"
+                                className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[10px] rounded-[14px] text-[13px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] hover:shadow-md"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 <span>Borrar Análisis</span>

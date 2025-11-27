@@ -27,7 +27,7 @@ export const WeightInputRow = ({
     const isCompact = viewMode === 'COMPACTA';
 
     return (
-        <div className={`bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group ${isCompact ? 'p-2' : 'p-4'}`}>
+        <div className={`bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group ${isCompact ? 'p-2' : 'p-4'}`} style={{ borderRadius: '14px' }}>
             <div className={`flex items-center justify-between ${isCompact ? 'mb-1' : 'mb-2'}`}>
                 <label className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-slate-700 flex items-center gap-2`}>
                     {label}
@@ -44,8 +44,12 @@ export const WeightInputRow = ({
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        style={{ height: isCompact ? '40px' : '56px' }}
-                        className={`w-full pl-4 ${isCompact ? '!h-10 text-base' : '!h-14 text-lg'} bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-center`}
+                        style={{
+                            height: isCompact ? '40px' : '56px',
+                            borderRadius: '12px',
+                            backgroundColor: '#F3F4F6'
+                        }}
+                        className={`w-full pl-4 ${isCompact ? '!h-10 text-base' : '!h-14 text-lg'} border-2 border-transparent text-slate-900 font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-center`}
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
                     />
@@ -59,7 +63,8 @@ export const WeightInputRow = ({
                             <img
                                 src={photoUrl}
                                 alt="Evidencia"
-                                className="w-full h-full object-cover rounded-lg border border-slate-200 cursor-pointer"
+                                style={{ borderRadius: '12px' }}
+                                className="w-full h-full object-cover border border-slate-200 cursor-pointer"
                                 onClick={onPhotoClick} // Podría abrir un modal
                             />
                             {/* Botón borrar pequeño */}
@@ -76,7 +81,8 @@ export const WeightInputRow = ({
                         <button
                             onClick={onPhotoClick}
                             disabled={isUploading}
-                            className={`${isCompact ? 'w-10 h-10' : 'w-11 h-11'} flex items-center justify-center rounded-lg border transition-all
+                            style={{ borderRadius: '12px' }}
+                            className={`${isCompact ? 'w-10 h-10' : 'w-11 h-11'} flex items-center justify-center border transition-all
                 ${error
                                     ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100'
                                     : 'bg-white border-slate-200 text-slate-500 hover:border-blue-400 hover:text-blue-600'
