@@ -23,14 +23,20 @@ export function useTokenExpiryNotification() {
                 action: {
                     label: '🔄 Renovar Sesión',
                     onClick: async () => {
+                        let loadingToast: string | number | undefined;
+
                         try {
                             // Mostrar loading toast
-                            const loadingToast = toast.loading('Renovando sesión...');
+                            loadingToast = toast.loading('Renovando sesión...');
 
                             await googleAuthService.login();
 
-                            // Cerrar AMBOS toasts (loading y warning original)
-                            toast.dismiss(loadingToast);
+                            // Cerrar loading toast primero
+                            if (loadingToast) {
+                                toast.dismiss(loadingToast);
+                            }
+
+                            // Cerrar warning original
                             toast.dismiss(warningToastId);
 
                             // Mostrar éxito
@@ -40,7 +46,14 @@ export function useTokenExpiryNotification() {
                             });
                         } catch (error) {
                             console.error('Error renovando sesión:', error);
+
+                            // ✅ CRÍTICO: Cerrar loading toast en caso de error
+                            if (loadingToast) {
+                                toast.dismiss(loadingToast);
+                            }
+
                             toast.dismiss(warningToastId);
+
                             toast.error('❌ Error al renovar sesión', {
                                 description: 'Intenta recargar la página (F5) para continuar',
                                 duration: 10000
