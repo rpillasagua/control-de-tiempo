@@ -560,9 +560,13 @@ export const usePhotoUpload = ({
             const { googleAuthService } = await import('@/lib/googleAuthService');
             const user = googleAuthService.getUser();
 
-            const targetAnalysis = analyses[targetIndex];
-            if (!targetAnalysis) {
-                throw new Error(`Analysis #${targetIndex + 1} no longer exists`);
+            // 🔧 CRITICAL FIX: Load from Firestore instead of using React state
+            // This ensures retry works even when user is in a different analysis
+            const { getAnalysisById } = await import('@/lib/analysisService');
+            const analysisDoc = await getAnalysisById(photo.analysisId);
+
+            if (!analysisDoc) {
+                throw new Error('Análisis no encontrado en base de datos');
             }
 
             let oldUrl: string | undefined;
@@ -570,15 +574,29 @@ export const usePhotoUpload = ({
 
             // Determine filename and oldUrl based on field type
             if (photo.field.startsWith('pesobruto-')) {
+                // For peso bruto array items
+                const targetAnalysis = analysisDoc.analyses[targetIndex];
+                if (!targetAnalysis) {
+                    throw new Error(`Muestra #${targetIndex + 1} no existe en este análisis`);
+                }
+
                 const registroId = photo.field.replace('pesobruto-', '');
                 const registro = targetAnalysis.pesosBrutos?.find(r => r.id === registroId);
                 oldUrl = registro?.fotoUrl;
                 driveFileName = `peso_bruto_${registroId}_analysis${targetIndex + 1}`;
+
             } else if (photo.field === 'global-pesoBruto') {
-                oldUrl = globalPesoBruto.fotoUrl;
+                // For global peso bruto
+                oldUrl = analysisDoc.globalPesoBruto?.fotoUrl;
                 driveFileName = 'peso_bruto_global';
+
             } else {
-                // Standard fields
+                // For standard analysis fields
+                const targetAnalysis = analysisDoc.analyses[targetIndex];
+                if (!targetAnalysis) {
+                    throw new Error(`Muestra #${targetIndex + 1} no existe en este análisis`);
+                }
+
                 if (photo.field === 'fotoCalidad') {
                     oldUrl = targetAnalysis.fotoCalidad;
                 } else if (photo.field.startsWith('uniformidad_')) {
@@ -606,6 +624,7 @@ export const usePhotoUpload = ({
 
             // Update State & Firestore
             if (photo.field.startsWith('pesobruto-')) {
+                // Update React state
                 const registroId = photo.field.replace('pesobruto-', '');
                 setAnalyses(prev => prev.map((a, i) => {
                     if (i !== targetIndex) return a;
@@ -614,14 +633,21 @@ export const usePhotoUpload = ({
                         pesosBrutos: a.pesosBrutos?.map(r => r.id === registroId ? { ...r, fotoUrl: url } : r)
                     };
                 }));
+                // Save to Firestore
+                await saveDocument();
+
             } else if (photo.field === 'global-pesoBruto') {
+                // Update React state
                 setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
+                // Save to Firestore
                 const { saveGlobalPhotoUrl } = await import('@/lib/analysisService');
                 await saveGlobalPhotoUrl(analysisId, url);
+
             } else {
+                // Update React state
                 setAnalyses(prev => updateAnalysisField(prev, targetIndex, photo.field, url));
 
-                // Firestore Update
+                // Save to Firestore
                 const { saveAnalysisPhotoUrl } = await import('@/lib/analysisService');
                 let fieldPath = photo.field;
                 if (photo.field.startsWith('uniformidad_')) {
@@ -631,11 +657,6 @@ export const usePhotoUpload = ({
                     fieldPath = `${photo.field}.fotoUrl`;
                 }
                 await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
-            }
-
-            // If it was a peso bruto array item, we need to save the whole document to be safe/consistent with original logic
-            if (photo.field.startsWith('pesobruto-')) {
-                await saveDocument();
             }
 
             // Cleanup
