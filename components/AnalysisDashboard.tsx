@@ -123,18 +123,20 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
           <div className="flex gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/dashboard/tests/new')}
-              className="flex-1 text-white px-4 py-3 text-base font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 min-w-0"
+              className="flex-1 text-white px-4 py-3 text-base font-[600] transition-all flex items-center justify-center gap-2 min-w-0"
               style={{
                 backgroundColor: '#2563EB',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 border: 'none',
-                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1d4ed8';
+                e.currentTarget.style.backgroundColor = '#1D4ED8';
+                e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = '#2563EB';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
               <Plus className="h-5 w-5 flex-shrink-0" />
@@ -142,18 +144,21 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
             </button>
             <button
               onClick={() => setShowReportModal(!showReportModal)}
-              className="flex-1 px-4 py-3 text-base font-semibold transition-all flex items-center justify-center gap-2 min-w-0"
+              className="flex-1 px-4 py-3 text-base font-[600] transition-all flex items-center justify-center gap-2 min-w-0"
               style={{
-                backgroundColor: 'transparent',
+                backgroundColor: 'white',
                 color: '#2563EB',
                 border: '2px solid #2563EB',
-                borderRadius: '12px'
+                borderRadius: '14px',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#eff6ff';
+                e.currentTarget.style.backgroundColor = '#EFF6FF';
+                e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
               <FileText className="h-5 w-5 flex-shrink-0" />
@@ -161,20 +166,23 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-3 text-base font-semibold transition-all flex items-center justify-center gap-2 min-w-0"
+              className="px-4 py-3 text-base font-[600] transition-all flex items-center justify-center gap-2 min-w-0"
               style={{
-                backgroundColor: 'transparent',
-                color: '#4B5563',
+                backgroundColor: '#F3F4F6',
+                color: '#6B7280',
                 border: '2px solid #E5E7EB',
-                borderRadius: '12px'
+                borderRadius: '14px',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F6';
-                e.currentTarget.style.borderColor = '#D1D5DB';
+                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                e.currentTarget.style.color = '#374151';
+                e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = '#E5E7EB';
+                e.currentTarget.style.backgroundColor = '#F3F4F6';
+                e.currentTarget.style.color = '#6B7280';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
               title="Actualizar lista"
             >
@@ -184,36 +192,23 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
 
           {/* Search Bar moderno */}
           <div className="relative" style={{ marginTop: '16px' }}>
-            <input
-              type="text"
-              placeholder="Buscar por lote o código..."
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="w-full px-4 text-base transition-all outline-none text-center"
+            <div className="flex items-center rounded-[12px] px-[16px] py-[12px] border-2 border-transparent transition-all"
               style={{
                 backgroundColor: '#F3F4F6',
-                border: '2px solid transparent',
-                borderRadius: '12px',
-                color: '#1F2937',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', // Sombra más fuerte para efecto flotante
-                position: 'relative',
-                zIndex: 1
               }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#2563EB';
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(37, 99, 235, 0.25)'; // Sombra azul intensa al enfocar
-                e.currentTarget.style.transform = 'translateY(-4px)'; // Elevación más notable
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.backgroundColor = '#F3F4F6';
-                e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            />
+            >
+              <span className="mr-[10px] text-[18px]">🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar por lote o código..."
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="border-none bg-transparent w-full text-[15px] outline-none font-[500]"
+                style={{
+                  color: '#1F2937'
+                }}
+              />
+            </div>
           </div>
 
           {/* Tabs Navigation */}
