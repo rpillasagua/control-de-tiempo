@@ -22,6 +22,7 @@ export async function compressImage(
         maxWidthOrHeight: 1920, // Max dimension
         quality: 0.85, // 85% quality
         useWebWorker: true, // Use web worker for better performance
+        fileType: 'image/jpeg', // Force JPEG for compatibility (fixes HEIC issues)
     };
 
     const compressionOptions = { ...defaultOptions, ...options };
