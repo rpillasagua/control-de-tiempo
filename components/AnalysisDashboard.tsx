@@ -21,7 +21,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   const [analyses, setAnalyses] = useState<QualityAnalysis[]>(initialAnalyses);
   const [searchTerm, setSearchTerm] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'completados' | 'en_progreso'>('completados');
+  const [activeTab, setActiveTab] = useState<'completados' | 'en_progreso'>('en_progreso');
   const [showPendingUploads, setShowPendingUploads] = useState(false);
 
   // Pagination state
@@ -220,16 +220,6 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
           <div className="flex justify-center" style={{ marginTop: '12px', marginBottom: '16px' }}>
             <div className="flex items-center gap-1 glass p-1 rounded-full shadow-md">
               <button
-                onClick={() => setActiveTab('completados')}
-                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'completados'
-                  ? 'gradient-blue text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-                  }`}
-                style={{ border: 'none' }}
-              >
-                Completados
-              </button>
-              <button
                 onClick={() => setActiveTab('en_progreso')}
                 className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'en_progreso'
                   ? 'gradient-blue text-white shadow-md'
@@ -238,6 +228,16 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                 style={{ border: 'none' }}
               >
                 En Progreso
+              </button>
+              <button
+                onClick={() => setActiveTab('completados')}
+                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'completados'
+                  ? 'gradient-blue text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                  }`}
+                style={{ border: 'none' }}
+              >
+                Completados
               </button>
             </div>
           </div>
