@@ -422,5 +422,6 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = {
     '00510': { client: 'FRESH&GOOD OÜ', type: 'COLA', master: '1 Und * 12 Kg', brand: 'GOLD FULIN', unit: deriveUnit('1 Und * 12 Kg') },
     '00511': { client: 'THALASSA SEAFOODS', type: 'COLA', master: '10 Und * 1.7 Kg', brand: 'GOLDEN SHRIMP', unit: deriveUnit('10 Und * 1.7 Kg') },
     '00514': { client: 'YUAN SYIN TRADING CO., LTD', type: 'ENTERO', master: '12 Und * 0.6 Kg', brand: 'VITAGULF', unit: deriveUnit('12 Und * 0.6 Kg') },
+    '00516': { client: 'AQUAGOLD S.A.', type: 'ENTERO', master: '6 Und * 1.5 Kg', brand: 'JIN PAI', unit: deriveUnit('6 Und * 1.5 Kg') },
     '00517': { client: 'Bright Springs Foods, LLC', type: 'VALOR_AGREGADO', master: '4 Und * 5 Lb', brand: 'VITAGULF', unit: deriveUnit('4 Und * 5 Lb') },
 };
