@@ -255,16 +255,16 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
               onClick={() => router.push(`/dashboard/tests/edit?id=${analysis.id}`)}
               className="cursor-pointer relative group transition-all duration-300 hover:-translate-y-1"
               style={{
-                borderRadius: '24px',
+                borderRadius: '14px',
                 background: 'white',
                 border: 'none',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
               }}
             >
               {/* Franja de color del analista */}
@@ -286,8 +286,8 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                     }
                     return color;
                   })(),
-                  borderTopLeftRadius: '24px',
-                  borderBottomLeftRadius: '24px',
+                  borderTopLeftRadius: '14px',
+                  borderBottomLeftRadius: '14px',
                   zIndex: 10
                 }}
               />
