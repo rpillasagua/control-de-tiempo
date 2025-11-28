@@ -107,6 +107,7 @@ export const usePhotoUpload = ({
                 file,
                 codigo,
                 lote,
+                analysisId,
                 `${field}_analysis${targetIndex + 1}`,
                 oldUrl,
                 user?.email
@@ -256,6 +257,7 @@ export const usePhotoUpload = ({
                 file,
                 codigo,
                 lote,
+                analysisId,
                 `peso_bruto_${registroId}_analysis${targetIndex + 1}`,
                 oldUrl,
                 user?.email
@@ -299,7 +301,7 @@ export const usePhotoUpload = ({
             await photoStorageService.deletePhoto(photoId);
             console.log('🗑️ Peso bruto deleted from IndexedDB');
 
-            setPhotoStatus(prev => ({
+            setPhotoStatus((prev: Record<string, { photoId: string; status: string }>) => ({
                 ...prev,
                 [key]: { photoId, status: 'success' }
             }));
@@ -394,6 +396,7 @@ export const usePhotoUpload = ({
                 file,
                 codigo,
                 lote,
+                analysisId,
                 'peso_bruto_global',
                 oldUrl,
                 user?.email
@@ -606,6 +609,7 @@ export const usePhotoUpload = ({
                 photo.file as File,
                 codigo,
                 lote,
+                photo.analysisId,
                 driveFileName,
                 oldUrl,
                 user?.email

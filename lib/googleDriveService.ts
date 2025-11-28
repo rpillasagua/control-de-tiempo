@@ -674,6 +674,7 @@ class GoogleDriveService {
    * @param file Archivo de imagen
    * @param codigo Código del análisis
    * @param lote Lote del análisis
+   * @param analysisId ID del análisis (para crear subcarpeta)
    * @param photoType Tipo de foto (ej: 'peso_bruto', 'uniformidad_grandes')
    * @param oldPhotoUrl URL de la foto anterior (opcional, se eliminará si existe)
    */
@@ -681,6 +682,7 @@ class GoogleDriveService {
     file: File,
     codigo: string,
     lote: string,
+    analysisId: string,
     photoType: string,
     oldPhotoUrl?: string,
     viewerEmail?: string
@@ -714,17 +716,22 @@ class GoogleDriveService {
       }
       logger.log('✅ Carpeta raíz verificada:', this.rootFolderId);
 
-      // Estructura: descongelado/CODIGO/LOTE/TIPO_FOTO.jpg
+      // Estructura: descongelado/CODIGO/LOTE/ANALYSIS_ID/TIPO_FOTO.jpg
 
-      // Obtener o crear carpeta del código
+      // 1. Obtener o crear carpeta del código
       logger.log(`📁 Creando/verificando carpeta del código: ${codigo}`);
       const codigoFolderId = await this.getOrCreateFolder(codigo, this.rootFolderId || undefined);
       logger.log('✅ Carpeta del código:', codigoFolderId);
 
-      // Obtener o crear carpeta del lote
+      // 2. Obtener o crear carpeta del lote
       logger.log(`📁 Creando/verificando carpeta del lote: ${lote}`);
       const loteFolderId = await this.getOrCreateFolder(lote, codigoFolderId);
       logger.log('✅ Carpeta del lote:', loteFolderId);
+
+      // 3. Obtener o crear carpeta del análisis (NUEVO)
+      logger.log(`📁 Creando/verificando carpeta del análisis: ${analysisId}`);
+      const analysisFolderId = await this.getOrCreateFolder(analysisId, loteFolderId);
+      logger.log('✅ Carpeta del análisis:', analysisFolderId);
 
       // Generar nombre de archivo con timestamp para evitar duplicados
       const timestamp = Date.now();
@@ -733,11 +740,11 @@ class GoogleDriveService {
       const fileName = `${photoType}_${timestamp}.${extension}`;
       logger.log(`📄 Nombre de archivo generado: ${fileName}`);
 
-      // Subir archivo
+      // Subir archivo a la carpeta del ANÁLISIS
       logger.log(`⬆️ Subiendo archivo a Google Drive...`);
-      const url = await this.uploadFile(file, fileName, loteFolderId);
+      const url = await this.uploadFile(file, fileName, analysisFolderId);
 
-      logger.log(`✅ Foto subida exitosamente: descongelado/${codigo}/${lote}/${fileName}`);
+      logger.log(`✅ Foto subida exitosamente: descongelado/${codigo}/${lote}/${analysisId}/${fileName}`);
 
       // Si se proporcionó un email de visualizador, compartir explícitamente
       if (viewerEmail) {

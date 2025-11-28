@@ -259,44 +259,6 @@ npm run build
   completedAt?: "2025-11-27T10:00:00Z",
   createdBy: "user@example.com",
   shift: "DIA" | "NOCHE",
-  date: "2025-11-27",
-  status: "EN_PROGRESO" | "COMPLETADO"
-}
-```
-
-### Defectos por Tipo de Producto
-
-**ENTERO** (23 defectos): Cabeza Roja Fuerte, Cabeza Naranja, Branquias Oscuras, Hepatopáncreas Reventado, Melanosis, Manchas Negras, Deformes, Quebrados, etc.
-
-**COLA** (15 defectos): Melanosis, Hepatopáncreas Regado, Semi Rosado, Rosados, Rojos, Deformes, Quebrados, Pequeños/Juveniles, Material Extraño, etc.
-
-**VALOR_AGREGADO** (21 defectos): Melanosis, Mal Descabezados, Corbata, Patas, Sin Telson, Corte Irregular, Corte Profundo, Lomo Dañado, Ojal, etc.
-
-## 📁 Estructura en Google Drive
-
-```
-Google Drive/
-└── descongelado/
-    ├── CAM-2025-001/              # Por código
-    │   ├── 0003540-25/            # Por lote
-    │   │   └── fotos/
-    │   │       ├── analysis_1_peso_bruto.jpg
-    │   │       ├── analysis_1_peso_congelado.jpg
-    │   │       ├── analysis_1_calidad.jpg
-    │   │       ├── analysis_2_peso_bruto.jpg
-    │   │       └── peso_bruto_1.jpg  # Control de pesos
-    │   └── 0003541-25/
-    │       └── fotos/
-    ├── CAM-2025-002/
-    │   └── ...
-    └── Reportes/
-        ├── Reporte_Turno_DIA_2025-11-27.xlsx
-        └── Reporte_Turno_NOCHE_2025-11-27.xlsx
-```
-
-## 🔧 Flujos de Trabajo Clave
-
-### Crear Análisis
 
 1. Click en **"+ Nuevo"**
 2. Completar formulario inicial:
