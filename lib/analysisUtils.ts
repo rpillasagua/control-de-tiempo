@@ -65,7 +65,7 @@ export const updateAnalysisField = (
         }
 
         // Caso 2: Campos de Peso (pesoBruto, pesoCongelado, pesoNeto)
-        if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo'].includes(field)) {
+        if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoSinGlaseo', 'pesoSubmuestra'].includes(field)) {
             const currentFieldValue = analysis[field as keyof Analysis] as any || {};
 
             // Si value es string, es URL de foto

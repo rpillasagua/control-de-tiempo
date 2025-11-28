@@ -127,7 +127,7 @@ export const usePhotoUpload = ({
             if (field.startsWith('uniformidad_')) {
                 const tipo = field.split('_')[1];
                 fieldPath = `uniformidad.${tipo}.fotoUrl`;
-            } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo', 'glaseo'].includes(field)) {
+            } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoSinGlaseo', 'pesoSubmuestra'].includes(field)) {
                 fieldPath = `${field}.fotoUrl`;
             }
 
@@ -653,7 +653,7 @@ export const usePhotoUpload = ({
                 if (photo.field.startsWith('uniformidad_')) {
                     const tipo = photo.field.split('_')[1];
                     fieldPath = `uniformidad.${tipo}.fotoUrl`;
-                } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo', 'glaseo'].includes(photo.field)) {
+                } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoSinGlaseo', 'pesoSubmuestra'].includes(photo.field)) {
                     fieldPath = `${photo.field}.fotoUrl`;
                 }
                 await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
