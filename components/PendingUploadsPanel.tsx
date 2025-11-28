@@ -46,6 +46,7 @@ export const PendingUploadsPanel: React.FC<PendingUploadsPanelProps> = ({
         const init = async () => {
             try {
                 await photoStorageService.resetStuckUploads();
+                await photoStorageService.cleanupDuplicates();
             } catch (error) {
                 console.error('Error resetting stuck uploads:', error);
             }

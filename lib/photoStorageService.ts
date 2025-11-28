@@ -379,6 +379,93 @@ class PhotoStorageService {
     }
 
     /**
+     * Delete all photos for a specific context (analysisId + field)
+     * Used to cleanup old failed attempts before starting a new one
+     */
+    async deletePhotosByContext(analysisId: string, field: string): Promise<void> {
+        const db = await this.ensureDB();
+        const photos = await this.getPhotosByAnalysis(analysisId);
+
+        // Filter for the specific field
+        const photosToDelete = photos.filter(p => p.field === field);
+
+        if (photosToDelete.length === 0) return;
+
+        console.log(`🧹 Cleaning up ${photosToDelete.length} old photos for ${field}`);
+
+        const transaction = db.transaction([this.storeName], 'readwrite');
+        const objectStore = transaction.objectStore(this.storeName);
+
+        photosToDelete.forEach(photo => {
+            objectStore.delete(photo.id);
+        });
+
+        return new Promise((resolve, reject) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    /**
+     * Scan for duplicates (same context) and keep only the most recent one
+     * This fixes the issue where retries might create ghost duplicates
+     */
+    async cleanupDuplicates(): Promise<number> {
+        const db = await this.ensureDB();
+        const photos = await this.getStorageStats().then(async () => {
+            // We need all photos, so we use getAll via a transaction
+            return new Promise<PendingPhoto[]>((resolve, reject) => {
+                const transaction = db.transaction([this.storeName], 'readonly');
+                const store = transaction.objectStore(this.storeName);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        });
+
+        // Group by context key: analysisId + field
+        const groups = new Map<string, PendingPhoto[]>();
+        photos.forEach(p => {
+            const key = `${p.analysisId}-${p.field}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(p);
+        });
+
+        let deletedCount = 0;
+        const idsToDelete: string[] = [];
+
+        groups.forEach((group) => {
+            if (group.length > 1) {
+                // Sort by timestamp descending (newest first)
+                group.sort((a, b) => b.timestamp - a.timestamp);
+
+                // Keep the first one (newest), delete the rest
+                // Exception: If one is 'uploading', prefer that one? 
+                // Actually, newest is usually the best bet.
+
+                const toDelete = group.slice(1);
+                toDelete.forEach(p => idsToDelete.push(p.id));
+            }
+        });
+
+        if (idsToDelete.length > 0) {
+            console.log(`🧹 Found ${idsToDelete.length} duplicates to clean up`);
+            const transaction = db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+
+            idsToDelete.forEach(id => store.delete(id));
+
+            await new Promise<void>((resolve, reject) => {
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+            });
+            deletedCount = idsToDelete.length;
+        }
+
+        return deletedCount;
+    }
+
+    /**
      * Reset photos that were stuck in 'uploading' state (e.g. due to page reload)
      */
     async resetStuckUploads(): Promise<number> {
@@ -397,10 +484,6 @@ class PhotoStorageService {
                     resolve(0);
                     return;
                 }
-
-                // Create a new transaction for updates to ensure atomicity per item or just use the same one?
-                // We can reuse the same transaction if we iterate and put.
-                // However, getAll returns the values, we need to put them back.
 
                 photos.forEach(photo => {
                     const updatedPhoto: PendingPhoto = {

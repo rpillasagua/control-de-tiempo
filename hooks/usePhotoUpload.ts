@@ -52,6 +52,11 @@ export const usePhotoUpload = ({
 
             const batchCode = `${codigo}-${lote}-analysis${targetIndex + 1}`;
 
+            const batchCode = `${codigo}-${lote}-analysis${targetIndex + 1}`;
+
+            // 🧹 CLEANUP: Delete any previous pending/error photos for this field
+            await photoStorageService.deletePhotosByContext(analysisId, field);
+
             await photoStorageService.savePhoto({
                 id: photoId,
                 analysisId,
@@ -212,6 +217,11 @@ export const usePhotoUpload = ({
 
             const batchCode = `${codigo}-${lote}-analysis${targetIndex + 1}`;
 
+            const batchCode = `${codigo}-${lote}-analysis${targetIndex + 1}`;
+
+            // 🧹 CLEANUP: Delete any previous pending/error photos for this field
+            await photoStorageService.deletePhotosByContext(analysisId, `pesobruto-${registroId}`);
+
             await photoStorageService.savePhoto({
                 id: photoId,
                 analysisId,
@@ -357,6 +367,12 @@ export const usePhotoUpload = ({
 
             // Note: Global photos don't have analysisIndex, but we still need batchCode for grouping
             const batchCode = `${codigo}-${lote}-global`;
+
+            // Note: Global photos don't have analysisIndex, but we still need batchCode for grouping
+            const batchCode = `${codigo}-${lote}-global`;
+
+            // 🧹 CLEANUP: Delete any previous pending/error photos for this field
+            await photoStorageService.deletePhotosByContext(analysisId, 'global-pesoBruto');
 
             await photoStorageService.savePhoto({
                 id: photoId,
