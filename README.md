@@ -1,10 +1,8 @@
-# 🦐 Sistema de Análisis de Descongelado - Aquagold
+# Sistema de Análisis de Descongelado
 
-**Sistema de Gestión de Calidad v2.2.0** - Aplicación web moderna para análisis de calidad del proceso de descongelado de productos marinos con gestión avanzada de fotos y análisis múltiples.
+**Sistema de Gestión de Calidad** - Aplicación web moderna para análisis de calidad del proceso de descongelado de productos marinos con gestión avanzada de fotos y análisis múltiples.
 
-## ✨ Versión 2.2.0 - Noviembre 2025
-
-### 🎉 Características Principales
+## ✨ Características Principales
 
 Este sistema especializado ofrece:
 
@@ -482,7 +480,6 @@ firebase deploy --only hosting
 
 | Métrica | Valor | Estado |
 |---------|-------|--------|
-| Versión | 2.2.0 | ✅ |
 | TypeScript Errors | 0 | ✅ |
 | Build Success | 100% | ✅ |
 | Códigos de Producto | 5900+ | ✅ |
@@ -500,42 +497,4 @@ firebase deploy --only hosting
 
 ---
 
-## 📝 Changelog
-
-### v2.2.0 (Noviembre 2025)
-
-**Nuevas Características:**
-- ✅ Sistema de retry de fotos con banner y panel
-- ✅ Análisis múltiples (sub-análisis) con pestañas
-- ✅ Colores de analista para identificación visual
-- ✅ Control de pesos brutos con registros múltiples
-- ✅ Dashboard mejorado con pestañas "En Progreso" y "Completados"
-- ✅ Catálogo de productos ampliado (5900+ códigos)
-- ✅ Vista previa de fotos con zoom
-- ✅ Validación de contexto en retry de fotos
-
-**Mejoras:**
-- ⚡ Auto-guardado optimizado
-- 🎨 UI con glassmorphism mejorado
-- 📱 Responsive design refinado
-- 🔍 Búsqueda más rápida
-- 🔄 Gestión de estados mejorada
-
-### v2.0.0 (Noviembre 2025)
-
-- ✅ Migración de Azure AD a Google OAuth2
-- ✅ Eliminación de WorkModeSwitch
-- ✅ Código simplificado (-92%)
-- ✅ Sistema dedicado a análisis de descongelado
-- ✅ Google Drive como almacenamiento único
-
----
-
-**Versión:** 2.2.0  
-**Última actualización:** 27 de Noviembre, 2025  
-**Estado:** ✅ Producción - Completamente Funcional  
 **Repositorio:** [github.com/rpillasagua/Analisis_Descongelado](https://github.com/rpillasagua/Analisis_Descongelado)
-
----
-
-Desarrollado con ❤️ para Aquagold S.A.
