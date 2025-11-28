@@ -592,8 +592,24 @@ export const saveAnalysisPhotoUrl = async (
         const keys = path.split('.');
         let current = obj;
         for (let i = 0; i < keys.length - 1; i++) {
-          if (!current[keys[i]]) current[keys[i]] = {};
-          current = current[keys[i]];
+          const key = keys[i];
+
+          // Si no existe, crear objeto vacío
+          if (current[key] === undefined || current[key] === null) {
+            current[key] = {};
+          }
+          // Si existe pero NO es un objeto (ej: es un número o string corrupto)
+          else if (typeof current[key] !== 'object') {
+            // Si es un número, preservarlo como 'valor' (migración automática)
+            if (typeof current[key] === 'number') {
+              current[key] = { valor: current[key] };
+            } else {
+              // Si es string u otro, resetear a objeto vacío para corregir estructura
+              current[key] = {};
+            }
+          }
+
+          current = current[key];
         }
         current[keys[keys.length - 1]] = value;
       };
