@@ -108,7 +108,8 @@ export const DEFECTOS_COLA = [
   'PEQUENOS_JUVENILES',
   'MATERIAL_EXTRANO',
   'MAL_DESCABEZADO',
-  'MALTRATADO'
+  'MALTRATADO',
+  'DESHIDRATADO'
 ] as const;
 
 export const DEFECTOS_VALOR_AGREGADO = [
@@ -132,7 +133,8 @@ export const DEFECTOS_VALOR_AGREGADO = [
   'ROSADOS',
   'ROJOS',
   'MALTRATADO',
-  'QUEBRADOS'
+  'QUEBRADOS',
+  'DESHIDRATADO'
 ] as const;
 
 export const DEFECTO_LABELS: Record<string, string> = {
@@ -178,7 +180,8 @@ export const DEFECTO_LABELS: Record<string, string> = {
   OJAL: 'Ojal',
   LOMO_DANADO: 'Lomo Dañado',
   PEGADOS_Y_AGRUPADOS: 'Pegados y Agrupados',
-  MALTRATADO: 'Maltratado'
+  MALTRATADO: 'Maltratado',
+  DESHIDRATADO: 'Deshidratado'
 };
 
 // ============================================
