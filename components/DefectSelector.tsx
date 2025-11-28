@@ -57,53 +57,62 @@ export default function DefectSelector({
     return normalizedLabel.includes(normalizedSearch);
   });
 
+  // Sincronizar cambios del padre hacia local (ej. cambiar de análisis)
   useEffect(() => {
+    const newItems: DefectItem[] = Object.entries(selectedDefects).map(([key, quantity]) => ({
+      key,
+      label: DEFECTO_LABELS[key] || key,
+      quantity: quantity === 0 ? '' : quantity
+    }));
+
+    // Verificar si hay cambios reales para evitar re-renders infinitos
+    const isDifferent =
+      newItems.length !== selectedItems.length ||
+      newItems.some((item, index) => {
+        const current = selectedItems[index];
+        return !current || item.key !== current.key || (item.quantity !== current.quantity && item.quantity !== '' && current.quantity !== 0);
+      });
+
+    if (isDifferent) {
+      setSelectedItems(newItems);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDefects]);
+
+  const notifyParent = (items: DefectItem[]) => {
     const newSelectedDefects: { [key: string]: number } = {};
-    selectedItems.forEach(item => {
+    items.forEach(item => {
       const quantity = item.quantity === '' ? 0 : item.quantity;
       newSelectedDefects[item.key] = quantity;
     });
-
-    const currentDefects = selectedDefects || {};
-    const hasChanges =
-      Object.keys(newSelectedDefects).length !== Object.keys(currentDefects).length ||
-      Object.keys(newSelectedDefects).some(key => newSelectedDefects[key] !== currentDefects[key]);
-
-    if (hasChanges) {
-      onDefectsChange(newSelectedDefects);
-    }
-  }, [selectedItems, onDefectsChange, selectedDefects]);
-
-  useEffect(() => {
-    if (Object.keys(selectedDefects).length > 0 && selectedItems.length === 0) {
-      const existingItems: DefectItem[] = Object.entries(selectedDefects).map(([key, quantity]) => ({
-        key,
-        label: DEFECTO_LABELS[key] || key,
-        quantity
-      }));
-      setSelectedItems(existingItems);
-    }
-  }, []);
+    onDefectsChange(newSelectedDefects);
+  };
 
   const handleAddDefect = (key: string) => {
     const label = DEFECTO_LABELS[key] || key;
     const newItem: DefectItem = { key, label, quantity: '' };
-    setSelectedItems([...selectedItems, newItem]);
+    const newItems = [...selectedItems, newItem];
+    setSelectedItems(newItems);
     setSearchTerm('');
     setShowSuggestions(false);
+    notifyParent(newItems);
   };
 
   const handleRemoveDefect = (key: string) => {
-    setSelectedItems(selectedItems.filter(item => item.key !== key));
+    const newItems = selectedItems.filter(item => item.key !== key);
+    setSelectedItems(newItems);
+    notifyParent(newItems);
   };
 
   const handleQuantityChange = (key: string, value: string) => {
     const numValue = value === '' ? '' : parseInt(value);
     if (value !== '' && isNaN(numValue as number)) return;
 
-    setSelectedItems(selectedItems.map(item =>
+    const newItems = selectedItems.map(item =>
       item.key === key ? { ...item, quantity: numValue as number | '' } : item
-    ));
+    );
+    setSelectedItems(newItems);
+    notifyParent(newItems);
   };
 
   return (

@@ -386,10 +386,13 @@ const createStandardProductSheet = (
                 row.alignment = { vertical: 'middle' };
 
                 // 🔴 Highlight defects > 0 (NO marcar ceros)
-                // Calculate start column for defects
-                // Base columns: 16 (Hora...Total Defectos)
-                // If VALOR_AGREGADO: +2 columns (Peso Submuestra, Peso Sin Glaseo) -> 18
-                const baseColumnsCount = productType === 'VALOR_AGREGADO' ? 18 : 16;
+                // Calculate start column for defects dynamically
+                // Find index of 'Total Defectos' in headers array
+                // headers is 0-indexed, getCell is 1-indexed.
+                // 'Total Defectos' is at index X. Column is X+1.
+                // First defect is at X+2.
+                const totalDefectosIndex = headers.indexOf('Total Defectos');
+                const baseColumnsCount = totalDefectosIndex >= 0 ? totalDefectosIndex + 2 : (productType === 'VALOR_AGREGADO' ? 18 : 16);
 
                 defectosValues.forEach((value, index) => {
                     // ✅ SOLO resaltar si el valor es mayor a 0
