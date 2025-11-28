@@ -42,6 +42,24 @@ body {
   background: #a0a0a0;
 }
 
+/* Custom Scrollbar for containers (thinner) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
 /* Utilities: Less reliance on borders, more on elevation/shadows */
 .ig-card {
   background-color: white;

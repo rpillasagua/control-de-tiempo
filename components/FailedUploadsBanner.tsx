@@ -41,30 +41,30 @@ export default function FailedUploadsBanner({ onClick }: { onClick?: () => void 
         <div className="sticky top-0 z-50 animate-in slide-in-from-top duration-500 ease-out">
             <div
                 onClick={onClick}
-                className="bg-red-500/10 backdrop-blur-md border-b border-red-500/20 px-4 py-3 sm:px-6 shadow-lg relative overflow-hidden cursor-pointer hover:bg-red-500/20 transition-colors group"
+                className="bg-[#FEF2F2] backdrop-blur-md border-b-2 border-[#FCA5A5] px-4 py-3 sm:px-6 shadow-md relative overflow-hidden cursor-pointer hover:bg-[#FEE2E2] transition-all group rounded-b-[12px]"
             >
                 {/* Decorative background glow */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500/0 via-red-500/50 to-red-500/0 opacity-50" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#EF4444]/0 via-[#EF4444]/50 to-[#EF4444]/0" />
 
                 <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3 relative z-10">
                     <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 bg-red-100/80 p-1.5 rounded-full animate-pulse group-hover:scale-110 transition-transform">
-                            <AlertCircle className="h-5 w-5 text-red-600" aria-hidden="true" />
+                        <div className="flex-shrink-0 bg-[#FEE2E2] p-2 rounded-full animate-pulse group-hover:scale-110 transition-transform">
+                            <AlertCircle className="h-5 w-5 text-[#EF4444]" aria-hidden="true" />
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-                            <p className="text-sm font-bold text-red-900">
+                            <p className="text-[15px] font-[700] text-[#991B1B]">
                                 {failedCount === 1
                                     ? '1 foto pendiente de subir'
                                     : `${failedCount} fotos pendientes de subir`}
                             </p>
-                            <p className="text-xs sm:text-sm text-red-700/80 font-medium">
+                            <p className="text-[13px] sm:text-[14px] text-[#B91C1C] font-[500]">
                                 Toca para ver detalles y reintentar
                             </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-red-800 bg-red-100/50 px-3 py-1.5 rounded-full border border-red-200/50">
+                        <div className="hidden sm:flex items-center gap-2 text-[12px] font-[600] text-[#991B1B] bg-[#FEE2E2] px-3 py-2 rounded-[10px] border-2 border-[#FCA5A5]">
                             <RefreshCw className="w-3.5 h-3.5" />
                             <span>Ver lista de errores</span>
                         </div>
@@ -74,7 +74,7 @@ export default function FailedUploadsBanner({ onClick }: { onClick?: () => void 
                                 e.stopPropagation();
                                 setIsVisible(false);
                             }}
-                            className="p-2 hover:bg-red-500/10 rounded-full transition-colors text-red-700 hover:text-red-900 active:scale-95"
+                            className="p-2 hover:bg-[#FEE2E2] rounded-full transition-colors text-[#DC2626] hover:text-[#991B1B] active:scale-95"
                             title="Ocultar notificación"
                         >
                             <X className="w-5 h-5" />

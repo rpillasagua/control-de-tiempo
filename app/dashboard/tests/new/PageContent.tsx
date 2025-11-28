@@ -925,19 +925,20 @@ export default function NewMultiAnalysisPageContent() {
                             (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="flex justify-between items-center">
+                                        <CardTitle className="flex items-center gap-24">
                                             <span>📏 Uniformidad</span>
+                                            <span>&nbsp;&nbsp;</span>
                                             {currentAnalysis.uniformidad?.grandes?.valor && currentAnalysis.uniformidad?.pequenos?.valor && currentAnalysis.uniformidad?.pequenos?.valor > 0 && (
-                                                <span className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">
+                                                <span className="text-[18px] font-[800] text-[#2563EB] bg-[#EFF6FF] px-4 py-2 rounded-[10px] border-2 border-[#BFDBFE]">
                                                     {(currentAnalysis.uniformidad.grandes.valor / currentAnalysis.uniformidad.pequenos.valor).toFixed(2)}
                                                 </span>
                                             )}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'flex justify-center gap-10' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
+                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-2 gap-20 justify-items-center' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
                                             {/* Grandes */}
-                                            <div className="space-y-3" style={{ width: viewMode === 'COMPACTA' ? '30%' : 'auto', minWidth: viewMode === 'COMPACTA' ? '120px' : 'auto' }}>
+                                            <div className="space-y-3" style={{ maxWidth: viewMode === 'COMPACTA' ? '140px' : 'auto' }}>
                                                 <div className="flex items-center justify-between">
                                                     <Label>Grandes (kg)</Label>
                                                     {currentAnalysis.uniformidad?.grandes?.valor && (
@@ -972,7 +973,7 @@ export default function NewMultiAnalysisPageContent() {
                                             </div>
 
                                             {/* Pequeños */}
-                                            <div className="space-y-3" style={{ width: viewMode === 'COMPACTA' ? '30%' : 'auto', minWidth: viewMode === 'COMPACTA' ? '120px' : 'auto' }}>
+                                            <div className="space-y-3" style={{ maxWidth: viewMode === 'COMPACTA' ? '140px' : 'auto' }}>
                                                 <div className="flex items-center justify-between">
                                                     <Label>Pequeños (kg)</Label>
                                                     {currentAnalysis.uniformidad?.pequenos?.valor && (
