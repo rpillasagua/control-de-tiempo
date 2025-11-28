@@ -31,15 +31,14 @@ export const usePhotoUpload = ({
     const [isUploadingGlobal, setIsUploadingGlobal] = useState(false);
     const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
     const [photoStatus, setPhotoStatus] = useState<Record<string, { photoId: string; status: PendingPhoto['status'] }>>({});
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [photos, setPhotos] = useState<Record<string, File>>({});
+
 
     const handlePhotoCapture = useCallback(async (field: string, file: File) => {
         const targetIndex = activeAnalysisIndex;
         const key = `${targetIndex}-${field}`;
         const photoId = generateId();
 
-        setPhotos(prev => ({ ...prev, [key]: file }));
+
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true);
 
@@ -340,7 +339,6 @@ export const usePhotoUpload = ({
         const key = 'global-pesoBruto';
         const photoId = generateId();
 
-        setPhotos(prev => ({ ...prev, [key]: file }));
         setUploadingPhotos(prev => new Set(prev).add(key));
         setIsUploadingGlobal(true);
 
