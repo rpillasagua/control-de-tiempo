@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+
 import { RefreshCw, ChevronDown, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 import { UploadStatusIndicator } from './UploadStatusIndicator';
@@ -343,5 +343,5 @@ export const PendingUploadsPanel = ({
         </div>
     );
 
-    return typeof window !== 'undefined' ? createPortal(panelContent, document.body) : null;
+    return panelContent;
 };
