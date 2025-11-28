@@ -301,7 +301,7 @@ export const usePhotoUpload = ({
             await photoStorageService.deletePhoto(photoId);
             console.log('🗑️ Peso bruto deleted from IndexedDB');
 
-            setPhotoStatus((prev: Record<string, { photoId: string; status: string }>) => ({
+            setPhotoStatus((prev: Record<string, { photoId: string; status: 'error' | 'success' | 'pending' | 'uploading' }>) => ({
                 ...prev,
                 [key]: { photoId, status: 'success' }
             }));
