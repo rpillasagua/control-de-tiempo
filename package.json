@@ -26,6 +26,7 @@
   "dependencies": {
     "@azure/msal-browser": "^3.11.1",
     "@azure/msal-react": "^2.0.21",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^20.10.6",
     "@types/react": "^18.3.26",
