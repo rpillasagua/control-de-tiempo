@@ -1,3 +1,60 @@
+import withPWAInit from 'next-pwa';
+
+const withPWA = withPWAInit({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+
+  // 🚀 OPTIMIZACIÓN: Excluir archivos innecesarios del pre-caché
+  buildExcludes: [/middleware-manifest\.json$/, /_buildManifest\.js$/, /_ssgManifest\.js$/],
+
+  // 📦 PRE-CACHÉ: Assets críticos que se cachean al instalar la PWA
+  publicExcludes: ['!*.map', '!*.svg'], // No pre-cachear mapas ni todos los SVGs
+
+  // 🔄 FALLBACKS: Páginas offline cuando no hay conexión
+  fallbacks: {
+    document: '/_offline', // Página offline para rutas HTML
+  },
+
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'firestore-cache',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 horas
+        },
+        networkTimeoutSeconds: 10
+      }
+    },
+    {
+      urlPattern: /^https:\/\/lh3\.googleusercontent\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-images',
+        expiration: {
+          maxEntries: 60,
+          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 días
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'static-images',
+        expiration: {
+          maxEntries: 64,
+          maxAgeSeconds: 30 * 24 * 60 * 60
+        }
+      }
+    }
+  ]
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuración para SPA + PWA
@@ -100,4 +157,5 @@ const nextConfig = {
   // No funcionan con output: 'export' porque requieren un servidor
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
+
