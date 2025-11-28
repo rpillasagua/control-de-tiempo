@@ -393,9 +393,10 @@ const createStandardProductSheet = (
 
                 defectosValues.forEach((value, index) => {
                     // ✅ SOLO resaltar si el valor es mayor a 0
-                    if (value && value > 0) {
-                        const cell = row.getCell(baseColumnsCount + 1 + index);
-                        cell.font = STYLES.defectHighlight?.font || {};
+                    if (value && Number(value) > 0) {
+                        const cell = row.getCell(baseColumnsCount + index);
+                        if (STYLES.defectHighlight?.font) cell.font = STYLES.defectHighlight.font;
+                        if (STYLES.defectHighlight?.fill) cell.fill = STYLES.defectHighlight.fill;
                     }
                 });
             });

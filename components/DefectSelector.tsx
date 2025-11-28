@@ -47,10 +47,10 @@ export default function DefectSelector({
   };
 
   const availableDefects = getDefectosForProductType().filter(
-    defecto => !selectedItems.some(item => item.key === defecto)
+    (defecto: string) => !selectedItems.some(item => item.key === defecto)
   );
 
-  const filteredSuggestions = availableDefects.filter(defecto => {
+  const filteredSuggestions = availableDefects.filter((defecto: string) => {
     const label = DEFECTO_LABELS[defecto] || '';
     const normalizedLabel = normalizeText(label);
     const normalizedSearch = normalizeText(searchTerm);
@@ -162,7 +162,7 @@ export default function DefectSelector({
           <div className="relative z-20 w-full mt-2 bg-white rounded-[12px] border border-gray-100 max-h-60 overflow-y-auto" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
             {filteredSuggestions.length > 0 ? (
               <div className="p-2 space-y-1">
-                {filteredSuggestions.slice(0, 5).map((defecto) => (
+                {filteredSuggestions.slice(0, 5).map((defecto: string) => (
                   <button
                     key={defecto}
                     onClick={() => handleAddDefect(defecto)}
