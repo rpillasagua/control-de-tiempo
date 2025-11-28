@@ -18,16 +18,17 @@ const withPWA = withPWAInit({
   },
 
   runtimeCaching: [
+    // 📊 FIRESTORE: Análisis y datos de la app (NetworkFirst con mejor offline support)
     {
       urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'firestore-cache',
         expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60 // 24 horas
+          maxEntries: 100, // Más análisis cacheados
+          maxAgeSeconds: 7 * 24 * 60 * 60 // 7 días para análisis históricos
         },
-        networkTimeoutSeconds: 10
+        networkTimeoutSeconds: 3 // Respuesta más rápida offline
       }
     },
     {
