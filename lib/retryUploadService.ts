@@ -48,6 +48,7 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
             fileToUpload,
             codigo,
             lote,
+            analysisId,
             driveFileName,
             undefined, // We don't have the old URL here, but that's okay for retry
             user?.email
