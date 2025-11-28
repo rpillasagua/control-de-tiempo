@@ -195,35 +195,32 @@ export default function DefectSelector({
           <div
             key={item.key}
             className={`
-              relative flex items-center gap-4 p-4 rounded-[12px] border transition-all
-              ${isEditMode ? 'border-red-200 bg-red-50 pr-12' : 'border-gray-100 bg-white hover:border-blue-200'}
+              relative flex items-center justify-between gap-3 p-3 rounded-[12px] border transition-all
+              ${isEditMode ? 'border-red-200 bg-red-50 pr-10' : 'border-gray-100 bg-white hover:border-blue-200'}
             `}
           >
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-[600] text-[#374151] truncate" title={item.label}>
+            <div className="flex-1 min-w-0 mr-2">
+              <div className="text-[14px] font-[600] text-[#374151] break-words leading-tight" title={item.label}>
                 {item.label}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-[#F3F4F6] px-4 py-2 rounded-[10px] border-2 border-transparent focus-within:bg-white focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.1)] transition-all">
-                <span className="text-[11px] font-[600] text-[#6B7280] uppercase tracking-wide">Cant</span>
-                <input
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => handleQuantityChange(item.key, e.target.value)}
-                  placeholder="0"
-                  className="w-14 bg-transparent text-[15px] font-[600] text-[#1F2937] text-right focus:outline-none"
-                  min="0"
-                  disabled={isEditMode}
-                />
-              </div>
+            <div className="flex-shrink-0">
+              <input
+                type="number"
+                value={item.quantity}
+                onChange={(e) => handleQuantityChange(item.key, e.target.value)}
+                placeholder="0"
+                className="w-[50px] bg-transparent text-[16px] font-[700] text-[#1F2937] text-center focus:outline-none border-b-2 border-gray-100 focus:border-[#2563EB] transition-all placeholder-gray-300 py-1"
+                min="0"
+                disabled={isEditMode}
+              />
             </div>
 
             {isEditMode && (
               <button
                 onClick={() => handleRemoveDefect(item.key)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-[#EF4444] text-white border-none rounded-full hover:bg-[#DC2626] transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#EF4444] text-white border-none rounded-full hover:bg-[#DC2626] transition-all"
                 style={{ boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}
                 title="Eliminar defecto"
               >

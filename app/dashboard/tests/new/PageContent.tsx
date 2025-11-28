@@ -938,30 +938,33 @@ export default function NewMultiAnalysisPageContent() {
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
                                         <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-2 gap-20 justify-items-center' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
                                             {/* Grandes */}
-                                            <div className="space-y-3" style={{ maxWidth: viewMode === 'COMPACTA' ? '140px' : 'auto' }}>
-                                                <div className="flex items-center justify-between">
-                                                    <Label>Grandes (kg)</Label>
-                                                    {currentAnalysis.uniformidad?.grandes?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
+                                            <div className="space-y-3" style={{ maxWidth: viewMode === 'COMPACTA' ? '100%' : 'auto' }}>
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <Label className="flex-1">Grandes</Label>
+                                                    <div className="flex items-center gap-3">
+                                                        {currentAnalysis.uniformidad?.grandes?.valor && (
+                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                        <Input
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder="0.00"
+                                                            value={currentAnalysis.uniformidad?.grandes?.valor || ''}
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
+                                                                uniformidad: {
+                                                                    ...currentAnalysis.uniformidad,
+                                                                    grandes: {
+                                                                        ...currentAnalysis.uniformidad?.grandes,
+                                                                        valor: parseFloat(e.target.value) || undefined
+                                                                    }
+                                                                }
+                                                            })}
+                                                            className="w-[80px] text-center font-bold"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    value={currentAnalysis.uniformidad?.grandes?.valor || ''}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                        uniformidad: {
-                                                            ...currentAnalysis.uniformidad,
-                                                            grandes: {
-                                                                ...currentAnalysis.uniformidad?.grandes,
-                                                                valor: parseFloat(e.target.value) || undefined
-                                                            }
-                                                        }
-                                                    })}
-                                                />
                                                 <PhotoCapture
                                                     key={`uniformidad-grandes-${activeAnalysisIndex}`}
                                                     label="Foto Grandes"
@@ -973,30 +976,33 @@ export default function NewMultiAnalysisPageContent() {
                                             </div>
 
                                             {/* Pequeños */}
-                                            <div className="space-y-3" style={{ maxWidth: viewMode === 'COMPACTA' ? '140px' : 'auto' }}>
-                                                <div className="flex items-center justify-between">
-                                                    <Label>Pequeños (kg)</Label>
-                                                    {currentAnalysis.uniformidad?.pequenos?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
+                                            <div className="space-y-3" style={{ maxWidth: viewMode === 'COMPACTA' ? '100%' : 'auto' }}>
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <Label className="flex-1">Pequeños</Label>
+                                                    <div className="flex items-center gap-3">
+                                                        {currentAnalysis.uniformidad?.pequenos?.valor && (
+                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                        <Input
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder="0.00"
+                                                            value={currentAnalysis.uniformidad?.pequenos?.valor || ''}
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
+                                                                uniformidad: {
+                                                                    ...currentAnalysis.uniformidad,
+                                                                    pequenos: {
+                                                                        ...currentAnalysis.uniformidad?.pequenos,
+                                                                        valor: parseFloat(e.target.value) || undefined
+                                                                    }
+                                                                }
+                                                            })}
+                                                            className="w-[80px] text-center font-bold"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    value={currentAnalysis.uniformidad?.pequenos?.valor || ''}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCurrentAnalysis({
-                                                        uniformidad: {
-                                                            ...currentAnalysis.uniformidad,
-                                                            pequenos: {
-                                                                ...currentAnalysis.uniformidad?.pequenos,
-                                                                valor: parseFloat(e.target.value) || undefined
-                                                            }
-                                                        }
-                                                    })}
-                                                />
                                                 <PhotoCapture
                                                     key={`uniformidad-pequenos-${activeAnalysisIndex}`}
                                                     label="Foto Pequeños"
@@ -1020,31 +1026,32 @@ export default function NewMultiAnalysisPageContent() {
                                         <CardTitle>🔢 Conteo</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <Label>Número de piezas</Label>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <Label className="flex-1">Número de piezas</Label>
+                                            <div className="flex items-center gap-3">
                                                 {currentAnalysis.conteo && (
                                                     <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                         <CheckCircle2 className="w-3 h-3 text-white" />
                                                     </div>
                                                 )}
+                                                <Input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    value={currentAnalysis.conteo || ''}
+                                                    onChange={(e) => {
+                                                        const count = parseInt(e.target.value) || undefined;
+                                                        setAnalyses(prev => {
+                                                            const updated = [...prev];
+                                                            updated[activeAnalysisIndex] = {
+                                                                ...updated[activeAnalysisIndex],
+                                                                conteo: count
+                                                            };
+                                                            return updated;
+                                                        });
+                                                    }}
+                                                    className="w-[80px] text-center font-bold"
+                                                />
                                             </div>
-                                            <Input
-                                                type="number"
-                                                placeholder="0"
-                                                value={currentAnalysis.conteo || ''}
-                                                onChange={(e) => {
-                                                    const count = parseInt(e.target.value) || undefined;
-                                                    setAnalyses(prev => {
-                                                        const updated = [...prev];
-                                                        updated[activeAnalysisIndex] = {
-                                                            ...updated[activeAnalysisIndex],
-                                                            conteo: count
-                                                        };
-                                                        return updated;
-                                                    });
-                                                }}
-                                            />
                                         </div>
                                     </CardContent>
                                 </Card>
