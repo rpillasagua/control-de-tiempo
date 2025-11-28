@@ -108,8 +108,8 @@ export default function DefectSelector({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[22px] font-[800] text-[#111827] flex items-center gap-2">
           <span className="text-2xl">🐛</span>
           Defectos de Calidad
         </h3>
@@ -118,13 +118,14 @@ export default function DefectSelector({
             type="button"
             onClick={() => setIsEditMode(!isEditMode)}
             className={`
-              px-4 py-2 rounded-xl text-sm font-bold cursor-pointer flex justify-center items-center gap-2 
-              transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md
+              px-4 py-3 rounded-[12px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-2 
+              transition-all active:scale-[0.98] border-none
               ${isEditMode
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400 hover:from-green-600 hover:to-emerald-700'
-                : 'bg-gradient-to-r from-red-500 to-rose-600 text-white border-2 border-red-400 hover:from-red-600 hover:to-rose-700'
+                ? 'bg-[#10B981] text-white hover:bg-[#059669]'
+                : 'bg-[#EF4444] text-white hover:bg-[#DC2626]'
               }
             `}
+            style={{ boxShadow: isEditMode ? '0 4px 12px rgba(16, 185, 129, 0.3)' : '0 4px 12px rgba(239, 68, 68, 0.3)' }}
           >
             {isEditMode ? (
               <>
@@ -142,37 +143,40 @@ export default function DefectSelector({
       </div>
 
       <div className="relative" ref={searchInputRef as any}>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onFocus={() => setShowSuggestions(true)}
-          placeholder="Buscar defecto para agregar..."
-          className="w-full bg-white border border-slate-200 rounded-xl px-4 h-12 text-slate-900 placeholder-slate-400 transition-all duration-200 outline-none text-base shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 hover:border-slate-300"
-        />
+        <div className="flex items-center bg-[#F3F4F6] rounded-[12px] px-[16px] py-[12px] border-2 border-transparent transition-all focus-within:bg-white focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]">
+          <span className="mr-[10px] text-[18px]">🔍</span>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            placeholder="Buscar defecto para agregar..."
+            className="border-none bg-transparent w-full text-[15px] text-[#1F2937] outline-none font-[500] placeholder-[#9CA3AF]"
+          />
+        </div>
 
         {showSuggestions && searchTerm.trim() !== '' && (
-          <div className="relative z-20 w-full mt-2 bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-100 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+          <div className="relative z-20 w-full mt-2 bg-white rounded-[12px] border border-gray-100 max-h-60 overflow-y-auto" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
             {filteredSuggestions.length > 0 ? (
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-2 space-y-1">
                 {filteredSuggestions.slice(0, 5).map((defecto) => (
                   <button
                     key={defecto}
                     onClick={() => handleAddDefect(defecto)}
-                    className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-blue-50 text-sm text-slate-700 hover:text-blue-700 transition-all flex items-center justify-between group"
+                    className="w-full text-left px-3 py-2.5 rounded-[8px] hover:bg-blue-50 text-[14px] text-[#374151] hover:text-[#2563EB] transition-all flex items-center justify-between group font-[500]"
                   >
-                    <span className="font-medium">{DEFECTO_LABELS[defecto] || defecto}</span>
-                    <Plus className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all" />
+                    <span>{DEFECTO_LABELS[defecto] || defecto}</span>
+                    <Plus className="w-4 h-4 text-gray-300 group-hover:text-[#2563EB] transition-all" />
                   </button>
                 ))}
               </div>
             ) : (
               <div className="p-6 text-center">
-                <p className="text-sm text-slate-500 font-medium">No se encontraron defectos</p>
-                <p className="text-xs text-slate-400 mt-1">Intenta con otro término</p>
+                <p className="text-[14px] text-[#6B7280] font-[500]">No se encontraron defectos</p>
+                <p className="text-[12px] text-[#9CA3AF] mt-1">Intenta con otro término</p>
               </div>
             )}
           </div>
@@ -186,30 +190,30 @@ export default function DefectSelector({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 mt-6">
+      <div className="grid grid-cols-1 gap-3 mt-4">
         {selectedItems.map((item) => (
           <div
             key={item.key}
             className={`
-              relative flex items-center gap-4 p-4 bg-white rounded-xl border shadow-sm transition-all duration-300
-              ${isEditMode ? 'border-red-300 bg-red-50/50 shadow-red-100/50 pr-12' : 'border-slate-200 hover:border-blue-400 hover:shadow-md'}
+              relative flex items-center gap-4 p-4 rounded-[12px] border transition-all
+              ${isEditMode ? 'border-red-200 bg-red-50 pr-12' : 'border-gray-100 bg-white hover:border-blue-200'}
             `}
           >
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-slate-800 truncate" title={item.label}>
+              <div className="text-[14px] font-[600] text-[#374151] truncate" title={item.label}>
                 {item.label}
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-2 rounded-xl border border-slate-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Cant</span>
+              <div className="flex items-center gap-2 bg-[#F3F4F6] px-4 py-2 rounded-[10px] border-2 border-transparent focus-within:bg-white focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.1)] transition-all">
+                <span className="text-[11px] font-[600] text-[#6B7280] uppercase tracking-wide">Cant</span>
                 <input
                   type="number"
                   value={item.quantity}
                   onChange={(e) => handleQuantityChange(item.key, e.target.value)}
                   placeholder="0"
-                  className="w-14 bg-transparent text-base font-bold text-slate-900 text-right focus:outline-none"
+                  className="w-14 bg-transparent text-[15px] font-[600] text-[#1F2937] text-right focus:outline-none"
                   min="0"
                   disabled={isEditMode}
                 />
@@ -219,7 +223,8 @@ export default function DefectSelector({
             {isEditMode && (
               <button
                 onClick={() => handleRemoveDefect(item.key)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md border border-red-400 rounded-full hover:from-red-600 hover:to-red-700 hover:shadow-lg transition-all animate-in fade-in zoom-in duration-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-[#EF4444] text-white border-none rounded-full hover:bg-[#DC2626] transition-all"
+                style={{ boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}
                 title="Eliminar defecto"
               >
                 <X className="w-4 h-4" />
@@ -229,12 +234,12 @@ export default function DefectSelector({
         ))}
 
         {selectedItems.length === 0 && (
-          <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Plus className="w-6 h-6 text-slate-400" />
+          <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-[12px] bg-gray-50">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Plus className="w-6 h-6 text-gray-400" />
             </div>
-            <div className="text-sm font-medium text-slate-600">No hay defectos registrados</div>
-            <div className="text-xs text-slate-400 mt-1">Usa el buscador para agregar defectos encontrados</div>
+            <div className="text-[14px] font-[600] text-[#6B7280]">No hay defectos registrados</div>
+            <div className="text-[12px] text-[#9CA3AF] mt-1">Usa el buscador para agregar defectos encontrados</div>
           </div>
         )}
       </div>
