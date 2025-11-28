@@ -925,7 +925,14 @@ export default function NewMultiAnalysisPageContent() {
                             (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>📏 Uniformidad</CardTitle>
+                                        <CardTitle className="flex justify-between items-center">
+                                            <span>📏 Uniformidad</span>
+                                            {currentAnalysis.uniformidad?.grandes?.valor && currentAnalysis.uniformidad?.pequenos?.valor && currentAnalysis.uniformidad?.pequenos?.valor > 0 && (
+                                                <span className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">
+                                                    {(currentAnalysis.uniformidad.grandes.valor / currentAnalysis.uniformidad.pequenos.valor).toFixed(2)}
+                                                </span>
+                                            )}
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
                                         <div className={viewMode === 'COMPACTA' ? 'flex justify-center gap-6' : 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4'}>
