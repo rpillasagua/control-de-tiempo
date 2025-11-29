@@ -55,6 +55,14 @@ try:
             'packing': clean_value(row.get('EMBALAJE')),
             'preservative': clean_value(row.get('CONSERVANTE')),
         }
+        
+        # Clean packing: remove "Estiba" and everything after
+        if products[code]['packing']:
+            packing_val = products[code]['packing']
+            if 'Estiba' in packing_val:
+                products[code]['packing'] = packing_val.split('Estiba')[0].strip()
+            elif 'ESTIBA' in packing_val:
+                products[code]['packing'] = packing_val.split('ESTIBA')[0].strip()
 
     # 2. Parse TALLAS
     print("Parsing TALLAS...")
@@ -65,10 +73,19 @@ try:
         if code not in tallas_by_code:
             tallas_by_code[code] = []
         
+        uniformity_val = row.get('UNIFORMIDAD')
+        try:
+            if pd.notna(uniformity_val):
+                uniformity_val = float(uniformity_val)
+            else:
+                uniformity_val = None
+        except:
+            uniformity_val = None
+
         tallas_by_code[code].append({
             'sizeMp': clean_value(row.get('TALLA_MP')),
             'sizeMarked': clean_value(row.get('TALLA_MARCADA')),
-            'uniformity': clean_value(row.get('UNIFORMIDAD')),
+            'uniformity': uniformity_val,
             'countFinal': clean_value(row.get('CONTEO_FINAL'))
         })
 
