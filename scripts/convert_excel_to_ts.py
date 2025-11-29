@@ -64,6 +64,13 @@ try:
             elif 'ESTIBA' in packing_val:
                 products[code]['packing'] = packing_val.split('ESTIBA')[0].strip()
 
+        # Clean preservative: remove "EMPAQUES" and everything after
+        if products[code]['preservative']:
+            preservative_val = products[code]['preservative']
+            if 'EMPAQUES' in preservative_val:
+                products[code]['preservative'] = preservative_val.split('EMPAQUES')[0].strip()
+
+
     # 2. Parse TALLAS
     print("Parsing TALLAS...")
     df_tallas = pd.read_excel(xls, 'TALLAS')
