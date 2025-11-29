@@ -25,7 +25,7 @@ export interface ProductSpec {
 export interface SizeSpec {
     sizeMp: string;
     sizeMarked: string;
-    uniformity: number;
+    uniformity: number | null;
     countFinal: string;
 }
 
