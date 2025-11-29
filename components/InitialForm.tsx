@@ -55,6 +55,8 @@ const ModernInput = ({ error, label, id, icon, ...props }: CustomInputProps) => 
     </div>
 );
 
+import { useTechnicalSpecs } from '@/hooks/useTechnicalSpecs';
+
 export default function InitialForm({ onComplete, initialData }: InitialFormProps) {
     // 3. Estado unificado
     const [formData, setFormData] = useState<AnalysisData>({
@@ -67,6 +69,8 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
     const [errors, setErrors] = useState<Partial<Record<keyof AnalysisData, string>>>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const { validateSize } = useTechnicalSpecs();
 
     // Actualizar campos y limpiar errores
     const handleChange = (field: keyof AnalysisData, value: any) => {
@@ -148,7 +152,22 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 }
             }
         }
-        if (field === 'talla' && !formData.talla.trim()) error = 'La talla es requerida';
+        if (field === 'talla') {
+            if (!formData.talla.trim()) {
+                error = 'La talla es requerida';
+            } else {
+                const normalizedCode = getNormalizedCode(formData.codigo);
+                const product = PRODUCT_DATA[normalizedCode];
+                // Validate size using technical specs if we have a product type
+                // We use the product type from PRODUCT_DATA or initialData if available
+                const pType = product?.type || initialData?.productType || '';
+
+                const sizeValidation = validateSize(normalizedCode, formData.talla, pType);
+                if (!sizeValidation.isValid) {
+                    error = sizeValidation.message || 'Talla inválida';
+                }
+            }
+        }
         if (field === 'color' && !formData.color) error = 'Selecciona un color';
 
         setErrors(prev => ({ ...prev, [field]: error || undefined }));

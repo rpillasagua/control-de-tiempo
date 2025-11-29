@@ -21,7 +21,8 @@
     "generate-cert": "openssl req -x509 -newkey rsa:2048 -keyout certs/localhost.key -out certs/localhost.crt -days 365 -nodes -subj '/CN=localhost'",
     "generate-icons": "node scripts/generate-pwa-icons.js",
     "pwa:check": "node scripts/check-pwa.js",
-    "migrate-photo-urls": "npx tsx scripts/migrate-photo-urls.ts"
+    "migrate-photo-urls": "npx tsx scripts/migrate-photo-urls.ts",
+    "update-specs": "python scripts/convert_excel_to_ts.py"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.11.1",
