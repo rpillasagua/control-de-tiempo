@@ -961,9 +961,9 @@ export default function NewMultiAnalysisPageContent() {
                             )
                         }
 
-                        {/* Uniformidad (Solo para COLA) */}
+                        {/* Uniformidad */}
                         {
-                            productType === 'COLA' && (
+                            productType !== 'CONTROL_PESOS' && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>📏 Uniformidad</CardTitle>
