@@ -150,8 +150,46 @@ export default function NewMultiAnalysisPageContent() {
         setGlobalPesoBruto
     });
 
+    // Technical Specs Hook - Para obtener límites
+    const { getSpecs } = useTechnicalSpecs();
+    const specs = getSpecs(codigo);
+    const sizeSpec = specs?.sizes.find(s => s.sizeMp === talla);
 
+    // Calcular ratio de uniformidad
+    const uniformityRatio = React.useMemo(() => {
+        const grandes = currentAnalysis.uniformidad?.grandes?.valor;
+        const pequenos = currentAnalysis.uniformidad?.pequenos?.valor;
+        if (!grandes || !pequenos || pequenos === 0) return null;
+        return grandes / pequenos;
+    }, [currentAnalysis.uniformidad]);
 
+    // Validar uniformidad
+    const uniformityValidation = React.useMemo(() => {
+        if (!uniformityRatio || !sizeSpec?.uniformity) {
+            return { isValid: true, message: '' };
+        }
+        const isValid = uniformityRatio <= sizeSpec.uniformity;
+        return {
+            isValid,
+            message: isValid
+                ? `✓ Dentro (≤ ${sizeSpec.uniformity.toFixed(2)})`
+                : `⚠️ Fuera (límite: ${sizeSpec.uniformity.toFixed(2)})`
+        };
+    }, [uniformityRatio, sizeSpec]);
+
+    // Validar conteo
+    const conteoValidation = React.useMemo(() => {
+        const conteo = currentAnalysis.conteo;
+        if (!conteo || !sizeSpec?.countFinal) return { isValid: true, message: '' };
+        const match = sizeSpec.countFinal.match(/(\d+)-(\d+)/);
+        if (!match) return { isValid: true, message: '' };
+        const [, min, max] = [null, parseInt(match[1]), parseInt(match[2])];
+        const isValid = conteo >= min && conteo <= max;
+        return {
+            isValid,
+            message: isValid ? `✓ Rango OK (${sizeSpec.countFinal})` : `⚠️ Fuera (${sizeSpec.countFinal})`
+        };
+    }, [currentAnalysis.conteo, sizeSpec]);
 
 
     // Prevenir cierre de pestaña si hay subidas en progreso
@@ -365,16 +403,6 @@ export default function NewMultiAnalysisPageContent() {
     // Use the new hook for weight inputs
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { handleWeightChange } = useWeightInput(currentAnalysis, updateCurrentAnalysis);
-
-    const { validateCount, validateUniformity } = useTechnicalSpecs();
-
-    // Calculate validations
-    const conteoValidation = validateCount(codigo, talla, currentAnalysis.conteo || 0);
-
-    const uniformityRatio = (currentAnalysis.uniformidad?.grandes?.valor && currentAnalysis.uniformidad?.pequenos?.valor)
-        ? currentAnalysis.uniformidad.grandes.valor / currentAnalysis.uniformidad.pequenos.valor
-        : 0;
-    const uniformityValidation = validateUniformity(codigo, talla, uniformityRatio);
 
     // Handler for deleting peso bruto registro (including Drive cleanup)
     const handlePesoBrutoDelete = async (registro: PesoBrutoRegistro) => {
