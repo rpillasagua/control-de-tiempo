@@ -17,7 +17,7 @@ export interface ProductSpec {
     certification: string;
     color: string;
     packing: string;
-    preservative: string;
+    preservative: string | null;
     sizes: SizeSpec[];
     defects: DefectSpec[];
 }
