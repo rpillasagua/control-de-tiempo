@@ -79,7 +79,8 @@ const getTimestampMillis = (val: string | Timestamp | undefined | unknown): numb
 };
 
 /**
- * Guarda un nuevo análisis en Firestore
+ * Guarda un nuevo análisis en Firestore con protección contra sobrescritura multi-dispositivo
+ * Usa transacciones para verificar que la versión local sea más nueva antes de sobrescribir
  */
 export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => {
   if (!db) {
@@ -88,15 +89,55 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
 
   try {
     const analysisRef = getAnalysisRef(analysis.id);
+    const newTimestamp = Timestamp.now();
+
     const cleanedAnalysis = cleanDataForFirestore({
       ...analysis,
-      updatedAt: Timestamp.now()
+      updatedAt: newTimestamp
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await setDoc(analysisRef, cleanedAnalysis as any);
+    // Usar transacción para verificar timestamp antes de guardar
+    await runTransaction(db, async (transaction) => {
+      const doc = await transaction.get(analysisRef);
+
+      if (doc.exists()) {
+        // Documento existe - verificar timestamp
+        const existingData = doc.data();
+        const existingTimestamp = existingData?.updatedAt;
+
+        // Convertir timestamp del análisis a Firestore Timestamp para comparación
+        const analysisTimestamp = analysis.updatedAt
+          ? (typeof analysis.updatedAt === 'string'
+            ? Timestamp.fromDate(new Date(analysis.updatedAt))
+            : analysis.updatedAt)
+          : newTimestamp;
+
+        // Solo sobrescribir si la versión local es más nueva o igual
+        // (igual permite actualizaciones del mismo dispositivo)
+        if (existingTimestamp && existingTimestamp.toMillis() > analysisTimestamp.toMillis()) {
+          logger.warn('⚠️ Servidor tiene versión más nueva, abortando guardado para evitar sobrescritura:', {
+            local: analysisTimestamp.toMillis(),
+            server: existingTimestamp.toMillis(),
+            diff: existingTimestamp.toMillis() - analysisTimestamp.toMillis()
+          });
+          throw new Error('STALE_DATA: El servidor tiene una versión más reciente');
+        }
+
+        logger.log('✅ Timestamp verificado, procediendo con actualización');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      transaction.set(analysisRef, cleanedAnalysis as any);
+    });
+
     logger.log('✅ Análisis guardado:', analysis.codigo);
   } catch (error) {
+    // Si el error es STALE_DATA, no es realmente un error - solo evitamos sobrescribir
+    if (error instanceof Error && error.message.includes('STALE_DATA')) {
+      logger.log('📌 Guardado omitido: servidor tiene datos más nuevos');
+      return; // Salir silenciosamente
+    }
+
     logger.error('❌ Error guardando análisis:', error);
     throw error;
   }
