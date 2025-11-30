@@ -9,7 +9,7 @@ export interface ProductSpec {
     netWeightUnit: string;
     grossWeight: number;
     grossWeightUnit: string;
-    overweightPct: string;
+    overweightPct: string | null;
     productType: string;
     freezingMethod: string;
     destination: string;
@@ -24,9 +24,9 @@ export interface ProductSpec {
 
 export interface SizeSpec {
     sizeMp: string;
-    sizeMarked: string;
+    sizeMarked: string | null;
     uniformity: number | null;
-    countFinal: string;
+    countFinal: string | null;
 }
 
 export interface DefectSpec {
