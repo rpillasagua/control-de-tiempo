@@ -56,12 +56,12 @@ export function TechnicalSpecsViewer({ code }: TechnicalSpecsViewerProps) {
                                     </td>
                                     <td className="px-4 py-2.5 text-right font-bold text-slate-900">
                                         {defect.limit === 'NO' ? (
-                                            <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs border border-red-100">
-                                                NO PERMITIDO
+                                            <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded text-xs border border-amber-100">
+                                                MONITOREAR
                                             </span>
                                         ) : defect.limit === 'SI' ? (
                                             <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs border border-green-100">
-                                                MONITOREAR
+                                                PERMITIDO
                                             </span>
                                         ) : (
                                             <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">
