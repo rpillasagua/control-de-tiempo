@@ -20,7 +20,7 @@ export interface DefectCalculationResult {
         message: string;
         limit: number;
     };
-    isApplicable: boolean; // True only for BLOCK FROZEN
+    isApplicable: boolean; // True only for BLOCK FROZEN or BRINE
 }
 
 export function useDefectCalculation(
@@ -34,8 +34,8 @@ export function useDefectCalculation(
     const specs = getSpecs(productCode);
 
     return useMemo(() => {
-        // 1. Check Applicability (BLOCK FROZEN only)
-        if (!specs || specs.freezingMethod !== 'BLOCK FROZEN' || !netWeight || !count || !productType) {
+        // 1. Check Applicability (BLOCK FROZEN or BRINE)
+        if (!specs || (specs.freezingMethod !== 'BLOCK FROZEN' && specs.freezingMethod !== 'BRINE') || !netWeight || !count || !productType) {
             return {
                 totalPieces: 0,
                 defectResults: {},
@@ -63,6 +63,26 @@ export function useDefectCalculation(
             // Target: KG
             if (specs.netWeightUnit === 'LB') {
                 convertedWeight = convertedWeight / 2.20462; // LB to KG
+            }
+        }
+
+        // BRINE LOGIC & SPECIAL PACKING HANDLING
+        // Apply 3kg rule if packing starts with 1 Und, 2 Und, or 3 Und, regardless of freezing method label
+        // (Some products might be labeled BLOCK FROZEN but still have this packing)
+        const packing = specs.packing || '';
+        const isOneTwoOrThreeUnits = /^(1|2|3)\s*Und/i.test(packing);
+
+        if (specs.freezingMethod === 'BRINE' || isOneTwoOrThreeUnits) {
+            if (isOneTwoOrThreeUnits) {
+                // Force base weight to 3 KG for these packing types
+                let baseWeightKg = 3;
+
+                // Convert to appropriate unit if necessary
+                if (productType === 'COLA') {
+                    convertedWeight = baseWeightKg * 2.20462; // KG to LB
+                } else {
+                    convertedWeight = baseWeightKg; // KG
+                }
             }
         }
 
