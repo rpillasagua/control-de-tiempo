@@ -285,10 +285,15 @@ export const useAnalysisSave = ({
         // 🔧 deterministicStringify and saveDocument excluded to prevent infinite loops
     ]);
 
+    const dismissError = useCallback(() => {
+        setSaveError(null);
+    }, []);
+
     return {
         isSaving,
         saveError,
         lastSaved,
-        saveDocument
+        saveDocument,
+        dismissError
     };
 };

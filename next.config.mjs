@@ -37,7 +37,7 @@ const withPWA = withPWAInit({
       options: {
         cacheName: 'google-images',
         expiration: {
-          maxEntries: 60,
+          maxEntries: 100, // Increased from 60
           maxAgeSeconds: 30 * 24 * 60 * 60 // 30 días
         }
       }

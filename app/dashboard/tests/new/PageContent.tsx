@@ -107,7 +107,8 @@ export default function NewMultiAnalysisPageContent() {
         isSaving,
         saveError,
         lastSaved,
-        saveDocument
+        saveDocument,
+        dismissError
     } = useAnalysisSave({
         analysisId,
         basicsCompleted,
@@ -571,6 +572,7 @@ export default function NewMultiAnalysisPageContent() {
                     isSaving={isSaving}
                     lastSaved={lastSaved}
                     saveError={saveError}
+                    onDismissError={dismissError}
                 />
             </div>
 

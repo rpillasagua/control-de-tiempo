@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { RefreshCw, ChevronDown, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { RefreshCw, ChevronDown, Image as ImageIcon, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 import { UploadStatusIndicator } from './UploadStatusIndicator';
 
@@ -78,7 +78,6 @@ export const PendingUploadsPanel = ({
         }
     };
 
-    // ✅ DELETE HANDLERS
     const handleDeletePhoto = async (photoId: string) => {
         if (!confirm('¿Borrar esta foto pendiente?')) return;
 
@@ -139,7 +138,7 @@ export const PendingUploadsPanel = ({
         return labels[field] || field;
     };
 
-    // Auto-retry when connection is restored (with debouncing)
+    // Auto-retry when connection is restored
     useEffect(() => {
         let retryTimeout: NodeJS.Timeout | null = null;
 
@@ -181,7 +180,6 @@ export const PendingUploadsPanel = ({
 
     const totalIssues = pendingPhotos.length + failedPhotos.length;
 
-    // If not open, don't render UI, but keep hooks running
     if (!isOpen) {
         return null;
     }
@@ -197,53 +195,51 @@ export const PendingUploadsPanel = ({
     });
 
     const panelContent = (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <style jsx global>{`
-                @keyframes floatUp {
-                    from { transform: translateY(20px); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-            `}</style>
-
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-gray-900/80 via-blue-900/60 to-purple-900/80 backdrop-blur-md animate-in fade-in duration-300">
             <div
-                className="bg-white w-[90%] max-w-[400px] p-6 rounded-[24px] relative text-left max-h-[85vh] flex flex-col overflow-hidden border border-gray-100"
+                className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 w-[90%] max-w-[450px] rounded-3xl relative text-left max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border-2 border-white/50"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 style={{
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                    animation: 'floatUp 0.3s ease-out'
+                    boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.4), 0 0 100px rgba(99, 102, 241, 0.3)',
                 }}
             >
+                {/* Decorative gradient bar */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-5 right-5 z-10 bg-gray-50 hover:bg-gray-100 border-none w-8 h-8 rounded-full text-gray-500 hover:text-gray-700 cursor-pointer flex items-center justify-center transition-all active:scale-95"
+                    className="absolute top-5 right-5 z-10 bg-white/90 hover:bg-white border-2 border-gray-200 w-10 h-10 rounded-full text-gray-600 hover:text-gray-900 cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg"
                 >
                     <ChevronDown className="h-5 w-5" />
                 </button>
 
                 {/* Header */}
-                <div className="mb-6">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-amber-50 rounded-xl">
-                            <ImageIcon className="w-6 h-6 text-amber-500" />
+                <div className="p-6 pb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30">
+                            <ImageIcon className="w-7 h-7 text-white" />
                         </div>
-                        <h2 className="m-0 text-[20px] font-[800] text-gray-900">
-                            Fotos Pendientes
-                        </h2>
+                        <div>
+                            <h2 className="m-0 text-2xl font-black tracking-tight">
+                                Fotos Pendientes
+                            </h2>
+                            <p className="text-sm font-semibold text-blue-100 mt-1">
+                                {totalIssues === 0 ? '✨ Todo sincronizado' : `📤 ${totalIssues} fotos requieren atención`}
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-[14px] text-gray-500 font-[500] ml-1">
-                        {totalIssues === 0 ? 'Todo sincronizado' : `${totalIssues} fotos requieren atención`}
-                    </p>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                     {totalIssues === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-4">
-                            <div className="p-4 bg-gray-50 rounded-full">
-                                <RefreshCw className="w-8 h-8 opacity-20" />
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="p-6 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-4 shadow-lg">
+                                <CheckCircle className="w-12 h-12 text-green-600" />
                             </div>
-                            <p className="font-[500]">No hay fotos pendientes</p>
+                            <p className="text-xl font-bold text-gray-800">¡Todo listo!</p>
+                            <p className="text-sm text-gray-500 mt-2 font-medium">No hay fotos pendientes</p>
                         </div>
                     ) : (
                         <>
@@ -253,7 +249,7 @@ export const PendingUploadsPanel = ({
                                     <button
                                         onClick={handleRetryAll}
                                         disabled={isRetrying}
-                                        className="flex-1 bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-none py-3 px-4 rounded-[14px] text-[14px] font-[700] cursor-pointer flex justify-center items-center gap-2 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
+                                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-none py-3.5 px-5 rounded-xl text-sm font-bold cursor-pointer flex justify-center items-center gap-2 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl"
                                     >
                                         <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
                                         {isRetrying ? 'Reintentando...' : 'Reintentar Todo'}
@@ -261,27 +257,27 @@ export const PendingUploadsPanel = ({
                                 )}
                                 <button
                                     onClick={handleDeleteAll}
-                                    className="px-4 bg-red-50 hover:bg-red-100 text-red-600 border-none rounded-[14px] transition-colors flex items-center justify-center active:scale-95"
+                                    className="px-5 bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200 text-red-700 border-none rounded-xl transition-all flex items-center justify-center active:scale-95 shadow-md hover:shadow-lg"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
 
                             {/* List */}
-                            <div className="space-y-6">
+                            <div className="space-y-5">
                                 {Array.from(photosByBatch.entries()).map(([batchCode, photos]) => {
                                     const failed = photos.filter(p => p.status === 'error');
                                     const pending = photos.filter(p => p.status !== 'error');
 
                                     return (
                                         <div key={batchCode} className="space-y-3">
-                                            <div className="flex items-center justify-between px-1">
-                                                <span className="text-[12px] font-[700] text-gray-400 uppercase tracking-wider bg-gray-50 px-2 py-1 rounded-md">
+                                            <div className="flex items-center justify-between px-2">
+                                                <span className="text-xs font-black text-gray-700 uppercase tracking-widest bg-gradient-to-r from-yellow-200 to-amber-200 px-3 py-1.5 rounded-lg shadow-sm">
                                                     {batchCode}
                                                 </span>
                                                 <button
                                                     onClick={() => handleDeleteByAnalysis(batchCode)}
-                                                    className="text-[12px] text-red-500 hover:text-red-700 font-[600] transition-colors"
+                                                    className="text-xs text-red-600 hover:text-red-700 font-bold transition-colors hover:underline"
                                                 >
                                                     Borrar grupo
                                                 </button>
@@ -290,29 +286,29 @@ export const PendingUploadsPanel = ({
                                             <div className="space-y-3">
                                                 {/* Failed Items */}
                                                 {failed.map((photo) => (
-                                                    <div key={photo.id} className="bg-white p-4 rounded-[16px] shadow-sm border border-red-100 flex gap-4 transition-all hover:shadow-md">
-                                                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-red-100">
-                                                            <ImageIcon className="w-6 h-6 text-red-500" />
+                                                    <div key={photo.id} className="bg-gradient-to-br from-red-50 to-pink-50 p-4 rounded-2xl shadow-md border-2 border-red-200 flex gap-4 transition-all hover:shadow-xl hover:scale-[1.02]">
+                                                        <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                                                            <AlertCircle className="w-7 h-7 text-white" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="flex justify-between items-start mb-1">
-                                                                <h4 className="font-[700] text-gray-900 text-[15px] truncate">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-black text-gray-900 text-base truncate">
                                                                     {getFieldLabel(photo.field)}
                                                                 </h4>
                                                             </div>
-                                                            <p className="text-[13px] text-red-500 font-[500] line-clamp-1 bg-red-50/50 px-2 py-0.5 rounded-md w-fit mb-3">
+                                                            <p className="text-xs text-red-700 font-bold bg-red-100 px-3 py-1.5 rounded-lg w-fit mb-3 shadow-sm">
                                                                 {photo.lastError || 'Error de conexión'}
                                                             </p>
-                                                            <div className="flex items-center gap-4">
+                                                            <div className="flex items-center gap-3">
                                                                 <button
                                                                     onClick={() => handleRetryPhoto(photo)}
-                                                                    className="text-[13px] font-[700] text-[#2563EB] hover:text-[#1d4ed8] transition-colors"
+                                                                    className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
                                                                 >
-                                                                    Reintentar
+                                                                    🔄 Reintentar
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDeletePhoto(photo.id)}
-                                                                    className="text-[13px] font-[600] text-gray-400 hover:text-red-500 transition-colors"
+                                                                    className="text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors"
                                                                 >
                                                                     Eliminar
                                                                 </button>
@@ -323,15 +319,16 @@ export const PendingUploadsPanel = ({
 
                                                 {/* Pending Items */}
                                                 {pending.map((photo) => (
-                                                    <div key={photo.id} className="bg-gray-50/50 p-4 rounded-[16px] border border-gray-100 flex gap-4">
-                                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center flex-shrink-0 border border-gray-100 shadow-sm">
+                                                    <div key={photo.id} className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-2xl border-2 border-blue-200 flex gap-4 shadow-md hover:shadow-lg transition-all">
+                                                        <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
                                                             <UploadStatusIndicator status="pending" size="sm" />
                                                         </div>
                                                         <div className="flex-1">
-                                                            <h4 className="font-[700] text-gray-700 text-[15px]">
+                                                            <h4 className="font-black text-gray-800 text-base mb-1">
                                                                 {getFieldLabel(photo.field)}
                                                             </h4>
-                                                            <p className="text-[13px] text-gray-400 font-[500] mt-1">
+                                                            <p className="text-sm text-blue-700 font-semibold flex items-center gap-2">
+                                                                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                                                                 Esperando conexión...
                                                             </p>
                                                         </div>
@@ -345,6 +342,9 @@ export const PendingUploadsPanel = ({
                         </>
                     )}
                 </div>
+
+                {/* Footer Gradient */}
+                <div className="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
             </div>
         </div>
     );
