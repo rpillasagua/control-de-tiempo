@@ -6,7 +6,7 @@ import { uploadWithRetry, generateId, compressImage } from '@/lib/utils';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 
 interface UsePhotoUploadProps {
-    analysisId: string; // Added analysisId
+    analysisId: string;
     analyses: Analysis[];
     setAnalyses: React.Dispatch<React.SetStateAction<Analysis[]>>;
     activeAnalysisIndex: number;
@@ -133,7 +133,10 @@ export const usePhotoUpload = ({
             let firestoreSaved = false;
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
-                    await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
+                    // Use ID instead of index for safety
+                    const analysisItemId = analyses[targetIndex].id;
+                    // Pass targetIndex as hint for legacy migration
+                    await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
                     console.log(`✅ Firestore confirmed (attempt ${attempt}/3)`);
                     firestoreSaved = true;
                     break;
@@ -651,7 +654,11 @@ export const usePhotoUpload = ({
                 } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoSinGlaseo', 'pesoSubmuestra'].includes(photo.field)) {
                     fieldPath = `${photo.field}.fotoUrl`;
                 }
-                await saveAnalysisPhotoUrl(analysisId, targetIndex, fieldPath, url);
+
+                // Use ID from the fetched analysis document
+                const analysisItemId = analysisDoc.analyses[targetIndex].id;
+                // Pass targetIndex as hint for legacy migration
+                await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
             }
 
             // Cleanup

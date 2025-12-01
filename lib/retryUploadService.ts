@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import { PendingPhoto, photoStorageService } from '@/lib/photoStorageService';
-import { uploadWithRetry } from '@/lib/utils';
+import { uploadWithRetry, generateId } from '@/lib/utils';
 
 /**
  * Retries a photo upload without updating local React state (for use in Dashboard)
@@ -60,19 +60,27 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
         if (photo.field === 'global-pesoBruto') {
             await saveGlobalPhotoUrl(analysisId, url);
         } else {
+            // We need to fetch the document to get the ID and ensure existence
+            const analysisDoc = await getAnalysisById(analysisId);
+            if (!analysisDoc) throw new Error('Analysis document not found');
+
+            const targetIndex = analysisIndex ?? 0;
+            const targetAnalysis = analysisDoc.analyses?.[targetIndex];
+
+            if (!targetAnalysis) {
+                throw new Error(`Analysis item #${targetIndex} not found`);
+            }
+
+            // Use ID for safety - generate if missing (legacy data)
+            const analysisItemId = targetAnalysis.id || generateId();
+
             let fieldPath = photo.field;
             if (photo.field.startsWith('pesobruto-')) {
-                // For peso bruto array, we need to find the index. 
-                // We must fetch the document to find the index.
-                const analysisDoc = await getAnalysisById(analysisId);
-                if (!analysisDoc) throw new Error('Analysis document not found');
-
-                const targetAnalysis = analysisDoc.analyses?.[analysisIndex ?? 0];
-                const pbIndex = targetAnalysis?.pesosBrutos?.findIndex((r: any) => r.id === photo.field.replace('pesobruto-', ''));
+                const pbIndex = targetAnalysis.pesosBrutos?.findIndex((r: any) => r.id === photo.field.replace('pesobruto-', ''));
 
                 if (pbIndex !== undefined && pbIndex !== -1) {
                     fieldPath = `pesosBrutos.${pbIndex}.fotoUrl`;
-                    await saveAnalysisPhotoUrl(analysisId, analysisIndex ?? 0, fieldPath, url);
+                    await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
                 } else {
                     console.warn('Could not find peso bruto record index');
                 }
@@ -84,7 +92,7 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
                 } else if (['pesoBruto', 'pesoCongelado', 'pesoNeto', 'pesoConGlaseo', 'pesoSinGlaseo', 'glaseo'].includes(photo.field)) {
                     fieldPath = `${photo.field}.fotoUrl`;
                 }
-                await saveAnalysisPhotoUrl(analysisId, analysisIndex ?? 0, fieldPath, url);
+                await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
             }
         }
 

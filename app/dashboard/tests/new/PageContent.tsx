@@ -108,7 +108,8 @@ export default function NewMultiAnalysisPageContent() {
         saveError,
         lastSaved,
         saveDocument,
-        dismissError
+        dismissError,
+        markAsRemoteUpdate
     } = useAnalysisSave({
         analysisId,
         basicsCompleted,
@@ -220,6 +221,7 @@ export default function NewMultiAnalysisPageContent() {
 
     const handleAddAnalysis = () => {
         const newAnalysis: Analysis = {
+            id: generateId(),
             numero: analyses.length + 1,
         };
         setAnalyses(prev => [...prev, newAnalysis]);
@@ -232,7 +234,7 @@ export default function NewMultiAnalysisPageContent() {
         setTalla(data.talla);
         setAnalystColor(data.color);
         setBasicsCompleted(true);
-        setAnalyses([{ numero: 1 }]);
+        setAnalyses([{ id: generateId(), numero: 1 }]);
         setAnalysisId(generateId());
     };
 
@@ -350,13 +352,23 @@ export default function NewMultiAnalysisPageContent() {
 
                     unsubscribe = subscribeToAnalysis(id, (data) => {
                         if (data) {
+                            // Mark this as a remote update to prevent auto-save
+                            markAsRemoteUpdate();
+
                             setAnalysisId(data.id);
                             setProductType(data.productType);
                             setCodigo(data.codigo);
                             setLote(data.lote);
                             setTalla(data.talla || '');
                             setAnalystColor(data.analystColor);
-                            setAnalyses(data.analyses);
+
+                            // Backfill IDs if missing (migration)
+                            const analysesWithIds = data.analyses.map(a => ({
+                                ...a,
+                                id: a.id || generateId()
+                            }));
+                            setAnalyses(analysesWithIds);
+
                             setGlobalPesoBruto(data.globalPesoBruto || {});
                             setBasicsCompleted(true);
 
@@ -440,7 +452,9 @@ export default function NewMultiAnalysisPageContent() {
                     const index = currentAnalysis.pesosBrutos.findIndex(r => r.id === registro.id);
                     if (index !== -1) {
                         const { deleteAnalysisPhoto } = await import('@/lib/analysisService');
-                        await deleteAnalysisPhoto(analysisId, activeAnalysisIndex, `pesosBrutos.${index}.fotoUrl`);
+                        // Use ID for safe deletion
+                        const analysisItemId = currentAnalysis.id;
+                        await deleteAnalysisPhoto(analysisId, analysisItemId, `pesosBrutos.${index}.fotoUrl`);
                         console.log('✅ Foto eliminada de Firestore transaccionalmente');
                     }
                 }

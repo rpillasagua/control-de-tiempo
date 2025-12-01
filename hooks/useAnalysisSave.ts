@@ -50,6 +50,7 @@ export const useAnalysisSave = ({
     const previousDataRef = useRef<string>('');
     const saveInProgressRef = useRef<boolean>(false);
     const lastKeyPressRef = useRef<number>(Date.now());
+    const isRemoteUpdateRef = useRef<boolean>(false);
 
     // Helper function for deterministic JSON serialization
     // Recursively sorts object keys to ensure consistent string output
@@ -213,7 +214,6 @@ export const useAnalysisSave = ({
         if (!basicsCompleted || !analysisId || isCompleted || isDeleting) return;
 
         // Create a data object to check for changes
-        // We only include fields that should trigger a save
         const dataToCheck = {
             analyses,
             globalPesoBruto,
@@ -227,21 +227,33 @@ export const useAnalysisSave = ({
         // Use deterministic serialization to avoid false positives from property order changes
         const currentDataString = deterministicStringify(dataToCheck);
 
-        // If data hasn't changed, don't schedule a save
-        if (currentDataString === previousDataRef.current) {
+        // Check if data changed and update ref FIRST (before remote check)
+        const hasChanges = currentDataString !== previousDataRef.current;
+
+        if (hasChanges) {
+            // DEBUG: Log what changed
+            if (previousDataRef.current) {
+                console.log('[AUTO-SAVE] Data changed!');
+                console.log('[AUTO-SAVE] Previous:', previousDataRef.current.substring(0, 200) + '...');
+                console.log('[AUTO-SAVE] Current:', currentDataString.substring(0, 200) + '...');
+            }
+
+            // Update ref immediately to prevent multiple schedules for same data
+            previousDataRef.current = currentDataString;
+        }
+
+        // THEN check if this is a remote update from Firestore
+        if (isRemoteUpdateRef.current) {
+            console.log('[AUTO-SAVE] Skipping - remote update from Firestore');
+            isRemoteUpdateRef.current = false; // Reset flag
+            return; // Skip save (previousDataRef already updated above)
+        }
+
+        // If data hasn't changed (local check), don't schedule a save
+        if (!hasChanges) {
             console.log('[AUTO-SAVE] No changes detected, skipping save');
             return;
         }
-
-        // DEBUG: Log what changed
-        if (previousDataRef.current) {
-            console.log('[AUTO-SAVE] Data changed!');
-            console.log('[AUTO-SAVE] Previous:', previousDataRef.current.substring(0, 200) + '...');
-            console.log('[AUTO-SAVE] Current:', currentDataString.substring(0, 200) + '...');
-        }
-
-        // Update ref immediately to prevent multiple schedules for same data
-        previousDataRef.current = currentDataString;
 
         // Clear existing timeout
         if (timeoutRef.current) {
@@ -289,11 +301,16 @@ export const useAnalysisSave = ({
         setSaveError(null);
     }, []);
 
+    const markAsRemoteUpdate = useCallback(() => {
+        isRemoteUpdateRef.current = true;
+    }, []);
+
     return {
         isSaving,
         saveError,
         lastSaved,
         saveDocument,
-        dismissError
+        dismissError,
+        markAsRemoteUpdate
     };
 };

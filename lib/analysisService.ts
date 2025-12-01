@@ -609,7 +609,8 @@ export const searchAnalyses = async (searchTerm: string): Promise<QualityAnalysi
  */
 export const saveAnalysisPhotoUrl = async (
   analysisId: string,
-  analysisIndex: number,
+  analysisItemId: string,
+  analysisIndexHint: number,
   fieldPath: string,
   photoUrl: string
 ): Promise<void> => {
@@ -626,9 +627,23 @@ export const saveAnalysisPhotoUrl = async (
 
       const data = docSnap.data() as QualityAnalysis;
       const analyses = [...(data.analyses || [])];
+      let needsArrayUpdate = false;
 
-      if (!analyses[analysisIndex]) {
-        throw new Error(`Análisis índice ${analysisIndex} no existe`);
+      // 1. Try to find by ID
+      let analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
+
+      // 2. If not found, check if it's a legacy item (no ID) at the hint index
+      if (analysisIndex === -1) {
+        const hintItem = analyses[analysisIndexHint];
+        if (hintItem && !hintItem.id) {
+          // Found legacy item! Migrate it.
+          console.log(`⚠️ Migrating legacy analysis item at index ${analysisIndexHint} with new ID ${analysisItemId}`);
+          analyses[analysisIndexHint].id = analysisItemId;
+          analysisIndex = analysisIndexHint;
+          needsArrayUpdate = true;
+        } else {
+          throw new Error(`Análisis con ID ${analysisItemId} no encontrado (y no se pudo recuperar por índice)`);
+        }
       }
 
       // Helper para actualizar campo anidado
@@ -661,6 +676,7 @@ export const saveAnalysisPhotoUrl = async (
       // Actualizar el campo específico en el objeto de análisis correcto
       updateNestedField(analyses[analysisIndex], fieldPath, photoUrl);
 
+      // Siempre actualizamos todo el array 'analyses' para persistir cambios (incluyendo ID backfill)
       transaction.update(analysisRef, {
         analyses: analyses,
         updatedAt: Timestamp.now()
@@ -679,7 +695,7 @@ export const saveAnalysisPhotoUrl = async (
  */
 export const deleteAnalysisPhoto = async (
   analysisId: string,
-  analysisIndex: number,
+  analysisItemId: string,
   fieldPath: string
 ): Promise<void> => {
   if (!db) throw new Error('Firestore no está configurado');
@@ -696,8 +712,11 @@ export const deleteAnalysisPhoto = async (
       const data = docSnap.data() as QualityAnalysis;
       const analyses = [...(data.analyses || [])];
 
-      if (!analyses[analysisIndex]) {
-        throw new Error(`Análisis índice ${analysisIndex} no existe`);
+      // Find index by ID
+      const analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
+
+      if (analysisIndex === -1) {
+        throw new Error(`Análisis con ID ${analysisItemId} no encontrado`);
       }
 
       // Helper para eliminar campo anidado (set to null/undefined)
@@ -711,9 +730,6 @@ export const deleteAnalysisPhoto = async (
         // Borrar la propiedad o ponerla en null
         const lastKey = keys[keys.length - 1];
         if (current[lastKey]) {
-          // Si es un objeto complejo (ej: PesoConFoto), quizás solo queramos borrar la URL
-          // Pero aquí asumimos que el fieldPath apunta a la propiedad que contiene la URL o el objeto foto
-          // Si fieldPath es 'pesoBruto.fotoUrl', borramos solo la URL.
           delete current[lastKey];
         }
       };

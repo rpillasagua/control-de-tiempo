@@ -246,6 +246,7 @@ export const ANALYST_COLOR_HEX: Record<AnalystColor, string> = {
  * Permite múltiples análisis para el mismo lote/código/talla
  */
 export interface Analysis {
+  id: string; // Unique identifier for multi-device safety
   numero: number; // 1, 2, 3, etc.
 
   // Pesos con fotos opcionales
