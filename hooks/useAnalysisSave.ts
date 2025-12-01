@@ -129,7 +129,17 @@ export const useAnalysisSave = ({
             const result = validateAnalysisData(document);
             if (!result.success) {
                 const errors = getValidationErrors(result.error);
-                console.warn('⚠️ Validación fallida en auto-save:', errors);
+                console.error('🔴 VALIDACIÓN FALLIDA - Bloqueando guardado:', {
+                    totalErrors: errors.length,
+                    errors: errors,
+                    document: document
+                });
+
+                // CRÍTICO: NO guardar si la validación falla
+                setSaveError(`Validación fallida: ${errors.length} errores`);
+                setIsSaving(false);
+                saveInProgressRef.current = false;
+                return; // ❌ BLOQUEAR guardado
             }
 
             const { saveAnalysis } = await import('@/lib/analysisService');
