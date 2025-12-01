@@ -165,7 +165,7 @@ const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void
                   style={{
                     borderRadius: '14px',
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                    transform: 'translateX(-40%)'
+                    transform: 'translateX(-20px)'
                   }}
                 >
                   <div className="flex flex-col items-center text-center">
