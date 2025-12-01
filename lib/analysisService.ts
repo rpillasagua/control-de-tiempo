@@ -91,10 +91,11 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
     const analysisRef = getAnalysisRef(analysis.id);
     const newTimestamp = Timestamp.now();
 
-    const cleanedAnalysis = cleanDataForFirestore({
+    // Data is already sanitized by caller (useAnalysisSave)
+    const analysisToSave = {
       ...analysis,
       updatedAt: newTimestamp
-    });
+    };
 
     // Usar transacción para verificar timestamp antes de guardar
     await runTransaction(db, async (transaction) => {
@@ -130,7 +131,7 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      transaction.set(analysisRef, cleanedAnalysis as any);
+      transaction.set(analysisRef, analysisToSave as any);
     });
 
     logger.log('✅ Análisis guardado:', analysis.codigo);
