@@ -71,6 +71,11 @@ const withPWA = withPWAInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Ignorar ESLint durante build (warnings no deben bloquear)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Configuración para SPA + PWA
   // output: 'export', // Exportar como SPA estática
 

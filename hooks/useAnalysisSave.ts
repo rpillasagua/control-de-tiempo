@@ -51,6 +51,7 @@ export const useAnalysisSave = ({
     const saveInProgressRef = useRef<boolean>(false);
     const lastKeyPressRef = useRef<number>(Date.now());
     const isRemoteUpdateRef = useRef<boolean>(false);
+    const lastSavedDataRef = useRef<string>(''); // ✅ FIX #10: Track last saved data for deduplication
 
     // Helper function for deterministic JSON serialization
     // Recursively sorts object keys to ensure consistent string output
@@ -182,10 +183,22 @@ export const useAnalysisSave = ({
 
             const sanitizedDocument = sanitizeForFirestore(document);
 
+            // ✅ FIX #10: Deduplication - skip save if data hasn't changed
+            const currentDataString = deterministicStringify(sanitizedDocument);
+            if (currentDataString === lastSavedDataRef.current) {
+                console.log('⏭️ Skipping save - no changes detected');
+                setIsSaving(false);
+                saveInProgressRef.current = false;
+                return;
+            }
+
             const { saveAnalysis } = await import('@/lib/analysisService');
             await saveAnalysis(sanitizedDocument);
             setLastSaved(now);
             setSaveError(null);
+
+            // ✅ FIX #10: Update last saved data ref after successful save
+            lastSavedDataRef.current = currentDataString;
 
             // Update completion state
             if (status === 'COMPLETADO') {
