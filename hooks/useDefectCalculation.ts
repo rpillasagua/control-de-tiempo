@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTechnicalSpecs } from './useTechnicalSpecs';
 import { ProductType } from '@/lib/types';
+import { getNormalizedDefectKey } from '@/lib/defect-normalization';
 
 export interface DefectValidationResult {
     isValid: boolean;
@@ -144,10 +145,9 @@ export function useDefectCalculation(
 
             const percentage = (quantity / totalPieces) * 100;
 
-            // Find spec for this defect
-            // The defect keys in `types.ts` (e.g., 'MUDADO') might match `defect` in specs.
-            // We need to normalize or ensure exact match.
-            const defectSpec = specs.defects.find(d => d.defect === defectKey);
+            // Find spec for this defect using NORMALIZED key
+            const normalizedKey = getNormalizedDefectKey(defectKey);
+            const defectSpec = specs.defects.find(d => d.defect === normalizedKey);
 
             let isValid = true;
             let message = '';
