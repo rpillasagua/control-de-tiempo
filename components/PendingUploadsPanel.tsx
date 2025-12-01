@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-import { RefreshCw, ChevronDown, Image as ImageIcon, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { RefreshCw, ChevronDown, Image as ImageIcon, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { photoStorageService, PendingPhoto } from '@/lib/photoStorageService';
 import { UploadStatusIndicator } from './UploadStatusIndicator';
+
 
 interface PendingUploadsPanelProps {
     onRetryPhoto: (photo: PendingPhoto) => Promise<void>;
@@ -195,61 +196,62 @@ export const PendingUploadsPanel = ({
     });
 
     const panelContent = (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-gray-900/80 via-blue-900/60 to-purple-900/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in">
+            <style jsx global>{`
+                @keyframes floatUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
+
             <div
-                className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 w-[90%] max-w-[450px] rounded-3xl relative text-left max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border-2 border-white/50"
+                className="bg-white w-[90%] max-w-[450px] p-[25px] rounded-[24px] relative text-left max-h-[90vh] overflow-y-auto"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 style={{
-                    boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.4), 0 0 100px rgba(99, 102, 241, 0.3)',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    animation: 'floatUp 0.3s ease-out'
                 }}
             >
-                {/* Decorative gradient bar */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
-
-                {/* Close Button */}
+                {/* Close Button (X) */}
                 <button
                     onClick={onClose}
-                    className="absolute top-5 right-5 z-10 bg-white/90 hover:bg-white border-2 border-gray-200 w-10 h-10 rounded-full text-gray-600 hover:text-gray-900 cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg"
+                    className="absolute top-[20px] right-[20px] bg-[#F3F4F6] border-none w-[32px] h-[32px] rounded-full text-[#6B7280] text-[16px] cursor-pointer flex items-center justify-center transition-colors hover:bg-[#E5E7EB] hover:text-black"
+                    aria-label="Cerrar"
                 >
-                    <ChevronDown className="h-5 w-5" />
+                    <X className="h-4 w-4" />
                 </button>
 
                 {/* Header */}
-                <div className="p-6 pb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30">
-                            <ImageIcon className="w-7 h-7 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="m-0 text-2xl font-black tracking-tight">
-                                Fotos Pendientes
-                            </h2>
-                            <p className="text-sm font-semibold text-blue-100 mt-1">
-                                {totalIssues === 0 ? '✨ Todo sincronizado' : `📤 ${totalIssues} fotos requieren atención`}
-                            </p>
-                        </div>
-                    </div>
+                <div className="mb-6">
+                    <h2 className="m-0 text-[22px] font-[800] text-[#111827] flex items-center gap-2">
+                        <ImageIcon className="w-6 h-6 text-[#2563EB]" />
+                        Fotos Pendientes
+                    </h2>
+                    <p className="mt-[5px] text-[14px] text-[#6B7280]">
+                        {totalIssues === 0 ? '✨ Todo sincronizado' : `📤 ${totalIssues} fotos require${totalIssues === 1 ? '' : 'n'} atención`}
+                    </p>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {totalIssues === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <div className="p-6 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-4 shadow-lg">
+                            <div className="p-6 bg-green-100 rounded-full mb-4">
                                 <CheckCircle className="w-12 h-12 text-green-600" />
                             </div>
                             <p className="text-xl font-bold text-gray-800">¡Todo listo!</p>
-                            <p className="text-sm text-gray-500 mt-2 font-medium">No hay fotos pendientes</p>
+                            <p className="text-sm text-gray-500 mt-2">No hay fotos pendientes</p>
                         </div>
                     ) : (
                         <>
                             {/* Global Actions */}
-                            <div className="mb-6 flex gap-3">
+                            <div className="mb-[16px] flex gap-3">
                                 {failedPhotos.length > 0 && (
                                     <button
                                         onClick={handleRetryAll}
                                         disabled={isRetrying}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-none py-3.5 px-5 rounded-xl text-sm font-bold cursor-pointer flex justify-center items-center gap-2 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl"
+                                        className="flex-1 bg-[#2563EB] text-white border-none p-[14px] rounded-[14px] text-[15px] font-[600] cursor-pointer flex justify-center items-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                                        style={{ boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}
                                     >
                                         <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
                                         {isRetrying ? 'Reintentando...' : 'Reintentar Todo'}
@@ -257,7 +259,7 @@ export const PendingUploadsPanel = ({
                                 )}
                                 <button
                                     onClick={handleDeleteAll}
-                                    className="px-5 bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200 text-red-700 border-none rounded-xl transition-all flex items-center justify-center active:scale-95 shadow-md hover:shadow-lg"
+                                    className="px-4 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#6B7280] hover:text-[#EF4444] border-none rounded-[14px] transition-all flex items-center justify-center"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>
@@ -271,13 +273,13 @@ export const PendingUploadsPanel = ({
 
                                     return (
                                         <div key={batchCode} className="space-y-3">
-                                            <div className="flex items-center justify-between px-2">
-                                                <span className="text-xs font-black text-gray-700 uppercase tracking-widest bg-gradient-to-r from-yellow-200 to-amber-200 px-3 py-1.5 rounded-lg shadow-sm">
-                                                    {batchCode}
+                                            <div className="flex items-center justify-between px-2 mb-2">
+                                                <span className="text-[11px] font-[700] text-[#1F2937] uppercase tracking-wider bg-[#FEF3C7] px-3 py-1 rounded-lg">
+                                                    📦 {batchCode}
                                                 </span>
                                                 <button
                                                     onClick={() => handleDeleteByAnalysis(batchCode)}
-                                                    className="text-xs text-red-600 hover:text-red-700 font-bold transition-colors hover:underline"
+                                                    className="text-xs text-[#EF4444] hover:text-[#DC2626] font-[600] transition-colors"
                                                 >
                                                     Borrar grupo
                                                 </button>
@@ -286,29 +288,27 @@ export const PendingUploadsPanel = ({
                                             <div className="space-y-3">
                                                 {/* Failed Items */}
                                                 {failed.map((photo) => (
-                                                    <div key={photo.id} className="bg-gradient-to-br from-red-50 to-pink-50 p-4 rounded-2xl shadow-md border-2 border-red-200 flex gap-4 transition-all hover:shadow-xl hover:scale-[1.02]">
-                                                        <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                                                            <AlertCircle className="w-7 h-7 text-white" />
+                                                    <div key={photo.id} className="bg-[#FEF2F2] p-4 rounded-[16px] border border-[#FCA5A5] flex gap-3">
+                                                        <div className="w-12 h-12 bg-[#EF4444] rounded-[12px] flex items-center justify-center flex-shrink-0">
+                                                            <AlertCircle className="w-6 h-6 text-white" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <h4 className="font-black text-gray-900 text-base truncate">
-                                                                    {getFieldLabel(photo.field)}
-                                                                </h4>
-                                                            </div>
-                                                            <p className="text-xs text-red-700 font-bold bg-red-100 px-3 py-1.5 rounded-lg w-fit mb-3 shadow-sm">
+                                                            <h4 className="font-[700] text-[#111827] text-[14px] mb-1">
+                                                                {getFieldLabel(photo.field)}
+                                                            </h4>
+                                                            <p className="text-[12px] text-[#DC2626] bg-white px-2 py-1 rounded-md w-fit mb-2">
                                                                 {photo.lastError || 'Error de conexión'}
                                                             </p>
                                                             <div className="flex items-center gap-3">
                                                                 <button
                                                                     onClick={() => handleRetryPhoto(photo)}
-                                                                    className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
+                                                                    className="text-[13px] font-[600] text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
                                                                 >
                                                                     🔄 Reintentar
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDeletePhoto(photo.id)}
-                                                                    className="text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors"
+                                                                    className="text-[13px] font-[600] text-[#6B7280] hover:text-[#EF4444] transition-colors"
                                                                 >
                                                                     Eliminar
                                                                 </button>
