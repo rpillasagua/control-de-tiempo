@@ -746,14 +746,14 @@ class GoogleDriveService {
 
       logger.log(`✅ Foto subida exitosamente: descongelado/${codigo}/${lote}/${analysisId}/${fileName}`);
 
-      // Si se proporcionó un email de visualizador, compartir explícitamente
-      if (viewerEmail) {
-        // Extraer ID del archivo nuevo
-        const newFileId = this.extractFileIdFromUrl(url);
-        if (newFileId) {
-          await this.shareWithUser(newFileId, viewerEmail);
-        }
-      }
+      // NOTA: No es necesario compartir explícitamente porque el archivo ya es público
+      // El intento de compartir causaba errores 403 de rate limit sin beneficio alguno
+      // if (viewerEmail) {
+      //   const newFileId = this.extractFileIdFromUrl(url);
+      //   if (newFileId) {
+      //     await this.shareWithUser(newFileId, viewerEmail);
+      //   }
+      // }
 
       logger.log(`🔗 URL generada: ${url}`);
 
