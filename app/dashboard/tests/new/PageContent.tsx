@@ -22,6 +22,7 @@ import DefectSelector from '@/components/DefectSelector';
 import { WeightInputRow } from '@/components/WeightInputRow';
 import { PendingUploadsPanel } from '@/components/PendingUploadsPanel';
 import FailedUploadsBanner from '@/components/FailedUploadsBanner';
+import { SyncStatus } from '@/components/SyncStatus';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components
@@ -105,6 +106,7 @@ export default function NewMultiAnalysisPageContent() {
     const {
         isSaving,
         saveError,
+        lastSaved,
         saveDocument
     } = useAnalysisSave({
         analysisId,
@@ -563,34 +565,14 @@ export default function NewMultiAnalysisPageContent() {
     return (
         <div className="min-h-screen pb-20">
             <FailedUploadsBanner onClick={() => setShowPendingUploads(true)} />
-            {/* Floating Save Indicator - Solo errores */}
-            {saveError && (
-                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
-                    {isSaving ? (
-                        <div
-                            className="flex items-center gap-2 px-4 py-3 text-white rounded-[14px] text-sm font-[600] border-2 border-blue-400/50"
-                            style={{
-                                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                                boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)'
-                            }}
-                        >
-                            <Clock className="w-4 h-4 animate-spin" />
-                            <span>Guardando...</span>
-                        </div>
-                    ) : saveError ? (
-                        <div
-                            className="flex items-center gap-2 px-4 py-3 text-white rounded-[14px] text-sm font-[600] border-2 border-red-400/50"
-                            style={{
-                                background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-                                boxShadow: '0 8px 16px -4px rgba(239, 68, 68, 0.4)'
-                            }}
-                        >
-                            <AlertCircle className="w-4 h-4" />
-                            <span>Error al guardar</span>
-                        </div>
-                    ) : null}
-                </div>
-            )}
+            {/* Sync Status Indicator */}
+            <div className="fixed top-4 right-4 z-50">
+                <SyncStatus
+                    isSaving={isSaving}
+                    lastSaved={lastSaved}
+                    saveError={saveError}
+                />
+            </div>
 
             <div className="max-w-7xl mx-auto space-y-6 p-4">
                 {/* Minimalist Header */}
