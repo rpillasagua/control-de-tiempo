@@ -114,11 +114,14 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
 
         // Solo sobrescribir si la versión local es más nueva o igual
         // (igual permite actualizaciones del mismo dispositivo)
-        if (existingTimestamp && existingTimestamp.toMillis() > analysisTimestamp.toMillis()) {
+        const serverTimeMs = getTimestampMillis(existingTimestamp);
+        const localTimeMs = getTimestampMillis(analysis.updatedAt || newTimestamp);
+
+        if (serverTimeMs > 0 && serverTimeMs > localTimeMs) {
           logger.warn('⚠️ Servidor tiene versión más nueva, abortando guardado para evitar sobrescritura:', {
-            local: analysisTimestamp.toMillis(),
-            server: existingTimestamp.toMillis(),
-            diff: existingTimestamp.toMillis() - analysisTimestamp.toMillis()
+            local: localTimeMs,
+            server: serverTimeMs,
+            diff: serverTimeMs - localTimeMs
           });
           throw new Error('STALE_DATA: El servidor tiene una versión más reciente');
         }
