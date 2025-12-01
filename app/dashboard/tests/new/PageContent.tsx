@@ -982,9 +982,9 @@ export default function NewMultiAnalysisPageContent() {
                                                 <PhotoCapture
                                                     label="Foto Grandes"
                                                     photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad.grandes', file)}
-                                                    isUploading={isFieldUploading('uniformidad.grandes')}
-                                                    context={{ analysisId: analysisId || '', field: 'uniformidad.grandes' }}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
+                                                    isUploading={isFieldUploading('uniformidad_grandes')}
+                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_grandes' }}
                                                 />
                                             </div>
 
@@ -1016,9 +1016,9 @@ export default function NewMultiAnalysisPageContent() {
                                                 <PhotoCapture
                                                     label="Foto Pequeños"
                                                     photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad.pequenos', file)}
-                                                    isUploading={isFieldUploading('uniformidad.pequenos')}
-                                                    context={{ analysisId: analysisId || '', field: 'uniformidad.pequenos' }}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
+                                                    isUploading={isFieldUploading('uniformidad_pequenos')}
+                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos' }}
                                                 />
                                             </div>
                                         </div>
