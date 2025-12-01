@@ -47,6 +47,7 @@ import { PRODUCT_DATA } from '@/lib/product-data';
 import { usePhotoUpload } from '@/hooks/usePhotoUpload';
 import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { useTechnicalSpecs } from '@/hooks/useTechnicalSpecs';
+import { useDefectCalculation } from '@/hooks/useDefectCalculation';
 import { TechnicalSpecsViewer } from '@/components/TechnicalSpecsViewer';
 
 export default function NewMultiAnalysisPageContent() {
@@ -414,6 +415,15 @@ export default function NewMultiAnalysisPageContent() {
     const handleDefectsChange = (defects: { [key: string]: number }) => {
         updateCurrentAnalysis({ defectos: defects });
     };
+
+    // Defect Calculation Hook
+    const defectValidationResults = useDefectCalculation(
+        codigo,
+        productType,
+        currentAnalysis.pesoNeto?.valor,
+        currentAnalysis.conteo,
+        currentAnalysis.defectos || {}
+    );
 
     // Use the new hook for weight inputs
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1109,18 +1119,17 @@ export default function NewMultiAnalysisPageContent() {
                         {
                             productType !== 'CONTROL_PESOS' && (
                                 <Card>
-                                    <CardContent>
+                                    <CardContent className="pt-6">
                                         <DefectSelector
                                             productType={productType}
                                             selectedDefects={currentAnalysis.defectos || {}}
                                             onDefectsChange={handleDefectsChange}
+                                            validationResults={defectValidationResults}
                                         />
                                     </CardContent>
                                 </Card>
                             )
                         }
-
-                        {/* Foto de Calidad General */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>📸 Foto de Calidad General</CardTitle>
