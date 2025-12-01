@@ -676,9 +676,29 @@ export const saveAnalysisPhotoUrl = async (
       // Actualizar el campo específico en el objeto de análisis correcto
       updateNestedField(analyses[analysisIndex], fieldPath, photoUrl);
 
+      // Sanitize analyses array to remove undefined values (Firestore rejects undefined)
+      const sanitizeForFirestore = (obj: any): any => {
+        if (obj === undefined) return null;
+        if (obj === null) return null;
+        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+        if (typeof obj === 'object') {
+          const newObj: any = {};
+          for (const key in obj) {
+            const val = sanitizeForFirestore(obj[key]);
+            if (val !== undefined) {
+              newObj[key] = val;
+            }
+          }
+          return newObj;
+        }
+        return obj;
+      };
+
+      const sanitizedAnalyses = sanitizeForFirestore(analyses);
+
       // Siempre actualizamos todo el array 'analyses' para persistir cambios (incluyendo ID backfill)
       transaction.update(analysisRef, {
-        analyses: analyses,
+        analyses: sanitizedAnalyses,
         updatedAt: Timestamp.now()
       });
     });
