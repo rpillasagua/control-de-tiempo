@@ -48,20 +48,6 @@ Este sistema especializado ofrece:
 
 ✅ **Captura con Cámara** - Acceso directo a cámara del dispositivo  
 ✅ **Selección de Archivo** - Upload desde galería o archivos  
-✅ **Compresión Automática** - Reduce tamaño sin perder calidad  
-✅ **Vista Previa** - Thumbnail con zoom en modal  
-✅ **URLs Compartibles** - Links directos de Google Drive  
-✅ **Retry Automático** - Reintento automático en caso de fallo  
-✅ **Indicador de Estado** - Visual feedback del estado de upload  
-
-### 📁 Control de Pesos Brutos
-✅ **Paginación Infinita** - Carga más análisis al hacer scroll  
-
-## 🏗️ Arquitectura del Proyecto
-
-```
-resistencias-app/
-├── app/
 │   ├── api/
 │   │   ├── firestore/          # API REST de Firestore
 │   │   └── drive/              # API REST de Google Drive
