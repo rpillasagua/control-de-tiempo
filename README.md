@@ -55,19 +55,6 @@ Este sistema especializado ofrece:
 ✅ **Indicador de Estado** - Visual feedback del estado de upload  
 
 ### 📁 Control de Pesos Brutos
-
-✅ **Registros Múltiples** - Agregar tantos pesos como sea necesario  
-✅ **Foto por Registro** - Cada peso puede tener su foto  
-✅ **Talla Opcional** - Especificar talla para cada registro  
-✅ **Mini/Compacto** - Dos modos de vista para optimizar espacio  
-✅ **Gestión Individual** - Editar o eliminar registros individuales  
-
-### 🔍 Búsqueda y Dashboard
-
-✅ **Dos Pestañas** - "En Progreso" (por defecto) y "Completados"  
-✅ **Búsqueda Instantánea** - Por código o lote  
-✅ **Indicador de Completado** - Checkmark verde en análisis terminados  
-✅ **Identificación Visual** - Color del analista en borde lateral  
 ✅ **Paginación Infinita** - Carga más análisis al hacer scroll  
 
 ## 🏗️ Arquitectura del Proyecto
@@ -104,21 +91,6 @@ resistencias-app/
 │   ├── AnalystColorSelector.tsx # Selector de color de analista
 │   ├── PhotoCapture.tsx        # Captura de fotos con retry
 │   ├── ControlPesosBrutos.tsx  # Control de múltiples pesos
-│   ├── WeightInputRow.tsx      # Row de peso con foto
-│   ├── DefectSelector.tsx      # Selector de defectos con búsqueda
-│   ├── FailedUploadsBanner.tsx # Banner de fotos fallidas
-│   ├── PendingUploadsPanel.tsx # Panel de gestión de reintentos
-│   ├── DailyReportCard.tsx     # Card de reporte diario
-│   ├── GoogleLoginButton.tsx   # Botón de login
-│   └── InitialForm.tsx         # Formulario inicial (lote/código)
-├── hooks/
-│   └── useAnalysisSave.ts      # Hook de guardado automático
-├── public/
-│   ├── manifest.json           # PWA manifest
-│   └── sw.js                   # Service Worker
-├── android/                    # Configuración Android (Capacitor)
-├── .env.local                  # Variables de entorno (NO en Git)
-├── .env.local.example          # Ejemplo de configuración
 ├── next.config.mjs             # Configuración Next.js
 ├── capacitor.config.json       # Configuración Capacitor
 ├── firebase.json               # Config Firebase
