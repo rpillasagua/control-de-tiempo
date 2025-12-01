@@ -67,16 +67,48 @@ export function useDefectCalculation(
         }
 
         // BRINE LOGIC & SPECIAL PACKING HANDLING
-        // Apply 3kg rule if packing starts with 1 Und, 2 Und, or 3 Und.
-        // CRITICAL: Exclude 'LB' products to avoid false positives with Block Frozen (e.g., "2 Und * 20 Lb").
-        const packing = specs.packing || '';
-        const isOneTwoOrThreeUnits = /^(1|2|3)\s*Und/i.test(packing);
-        const isNotLb = specs.netWeightUnit !== 'LB';
+        // Logic:
+        // 1. Identify Brine: Explicit 'BRINE' label OR ('KG' unit + 'Und' packing).
+        //    (We exclude LB from auto-detection to avoid Block Frozen false positives like "2 Und * 20 Lb").
+        // 2. Efficiency Rule:
+        //    - Calculate Unit Weight = NetWeight / Units.
+        //    - If Unit Weight < 3kg (or 7lb): Use NetWeight (Input).
+        //    - If Unit Weight >= 3kg (or 7lb): Force Base Weight to 3kg.
 
-        // Only apply if explicitly BRINE OR (Matches packing AND is not LB)
-        if (specs.freezingMethod === 'BRINE' || (isOneTwoOrThreeUnits && isNotLb)) {
-            if (isOneTwoOrThreeUnits) {
-                // Force base weight to 3 KG for these packing types
+        const packing = specs.packing || '';
+        const packingMatch = /^(\d+)\s*Und/i.exec(packing);
+        const units = packingMatch ? parseInt(packingMatch[1], 10) : 1;
+
+        const isKg = specs.netWeightUnit === 'KG';
+        // Auto-detect Brine for KG products with "Und" packing (fixes "1 Und * 12 Kg" labeled as Block Frozen)
+        const isHiddenBrine = isKg && packingMatch !== null;
+
+        const isBrine = specs.freezingMethod === 'BRINE' || isHiddenBrine;
+
+        if (isBrine) {
+            // Calculate Unit Weight
+            // Note: netWeight here is the total weight from input (or specs).
+            // We use the input `netWeight` if available, otherwise specs.
+
+            // We need to use the raw input weight for threshold check, but convertedWeight for calculation.
+            // Let's approximate unit weight using convertedWeight (normalized to KG/LB).
+            // If productType is COLA, convertedWeight is LB. If ENTERO, it's KG.
+
+            const currentTotalWeight = convertedWeight;
+            const unitWeight = currentTotalWeight / units;
+
+            // Thresholds: 3 KG or 7 LB
+            // If convertedWeight is KG, threshold is 3. If LB, threshold is 7.
+            // We can infer the unit of convertedWeight from productType logic above.
+            let threshold = 3; // Default KG
+            if (productType === 'COLA') {
+                threshold = 7; // LB
+            } else if (productType === 'ENTERO') {
+                threshold = 3; // KG
+            }
+
+            if (unitWeight >= threshold) {
+                // Force base weight to 3 KG
                 let baseWeightKg = 3;
 
                 // Convert to appropriate unit if necessary
@@ -86,6 +118,7 @@ export function useDefectCalculation(
                     convertedWeight = baseWeightKg; // KG
                 }
             }
+            // Else: unitWeight < threshold -> Keep convertedWeight (which is based on NetWeight)
         }
 
         // Calculate total pieces: count * weight
