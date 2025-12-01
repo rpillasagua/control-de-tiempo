@@ -314,6 +314,7 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = {
     '00375': { client: 'SEAFOOD TRADING COMPANY SARL', type: 'ENTERO', master: '6 Und * 1.85 Kg', brand: 'OCEAN', unit: deriveUnit('6 Und * 1.85 Kg') },
     '00376': { client: 'BLUE SEA PRODUCTS LLC', type: 'COLA', master: '10 Und * 4 Lb', brand: 'BLUE SEA', unit: deriveUnit('10 Und * 4 Lb') },
     '00377': { client: 'PESCANOVA INC', type: 'VALOR_AGREGADO', master: '6 Und * 5 Lb', brand: 'SIN MARCA', unit: deriveUnit('6 Und * 5 Lb') },
+    '00378': { client: 'HEIPLOEG INTERNATIONAL B.V.', type: 'VALOR_AGREGADO', master: '2 Und * 12 Kg', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 12 Kg') },
     '00379': { client: 'AQUAGOLD S.A.', type: 'ENTERO', master: '2 Und * 12 Kg', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 12 Kg') },
     '00381': { client: 'BEST CHOICE TRADING CORP', type: 'COLA', master: '10 Und * 4 Lb', brand: 'BYC', unit: deriveUnit('10 Und * 4 Lb') },
     '00382': { client: 'BEST CHOICE TRADING CORP', type: 'COLA', master: '10 Und * 5 Lb', brand: 'GOLD', unit: deriveUnit('10 Und * 5 Lb') },
