@@ -43,7 +43,12 @@ export const AnalysisItemSchema = z.object({
     conteo: z.number().optional(),
     uniformidad: UniformidadSchema.optional(),
     defectos: DefectosSchema.optional(),
-    fotoCalidad: z.string().url().optional().or(z.literal('')),
+    fotoCalidad: z.union([
+        z.string().url(),
+        z.literal(''),
+        z.null(),
+        z.undefined()
+    ]).optional(),
     observations: z.string().optional()
 }).refine(
     (data) => {

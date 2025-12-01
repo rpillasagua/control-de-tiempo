@@ -65,7 +65,9 @@ export function TechnicalSpecsViewer({ code }: TechnicalSpecsViewerProps) {
                                             </span>
                                         ) : (
                                             <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">
-                                                {defect.limit}
+                                                {typeof defect.limit === 'number' && !isNaN(defect.limit)
+                                                    ? defect.limit
+                                                    : (typeof defect.limit === 'string' ? defect.limit : '-')}
                                             </span>
                                         )}
                                     </td>

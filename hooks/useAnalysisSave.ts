@@ -49,6 +49,23 @@ export const useAnalysisSave = ({
     const timeoutRef = useRef<NodeJS.Timeout>();
     const previousDataRef = useRef<string>('');
     const saveInProgressRef = useRef<boolean>(false);
+    const lastKeyPressRef = useRef<number>(Date.now());
+
+    // Helper function for deterministic JSON serialization
+    // Recursively sorts object keys to ensure consistent string output
+    const deterministicStringify = useCallback((obj: any): string => {
+        if (obj === null || obj === undefined) return JSON.stringify(obj);
+        if (typeof obj !== 'object') return JSON.stringify(obj);
+        if (Array.isArray(obj)) {
+            return '[' + obj.map(item => deterministicStringify(item)).join(',') + ']';
+        }
+        // Sort keys and serialize in alphabetical order
+        const sortedKeys = Object.keys(obj).sort();
+        const pairs = sortedKeys.map(key => {
+            return JSON.stringify(key) + ':' + deterministicStringify(obj[key]);
+        });
+        return '{' + pairs.join(',') + '}';
+    }, []); // Empty deps - pure function
 
     const saveDocument = useCallback(async (status: 'EN_PROGRESO' | 'COMPLETADO' = 'EN_PROGRESO') => {
         if (!analysisId || !basicsCompleted) return;
@@ -115,6 +132,8 @@ export const useAnalysisSave = ({
                         pesoConGlaseo: (a.pesoConGlaseo?.valor || a.pesoConGlaseo?.fotoUrl) ? a.pesoConGlaseo : undefined,
                         pesoSinGlaseo: (a.pesoSinGlaseo?.valor || a.pesoSinGlaseo?.fotoUrl) ? a.pesoSinGlaseo : undefined,
                         uniformidad: cleanUniformidad,
+                        // Convert null or empty string to undefined for fotoCalidad
+                        fotoCalidad: (typeof a.fotoCalidad === 'string' && a.fotoCalidad.trim() !== '') ? a.fotoCalidad : undefined,
                     };
                 }),
                 createdAt: originalCreatedAt || now.toISOString(),
@@ -180,7 +199,16 @@ export const useAnalysisSave = ({
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, []); // Empty deps - handler uses refs which are stable
 
-    // Auto-save Effect with Deep Equality Check
+    // Track key presses for adaptive debounce
+    useEffect(() => {
+        const handleKeyDown = () => {
+            lastKeyPressRef.current = Date.now();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // Auto-save Effect with Adaptive Debounce
     useEffect(() => {
         if (!basicsCompleted || !analysisId || isCompleted || isDeleting) return;
 
@@ -196,11 +224,20 @@ export const useAnalysisSave = ({
             productType
         };
 
-        const currentDataString = JSON.stringify(dataToCheck);
+        // Use deterministic serialization to avoid false positives from property order changes
+        const currentDataString = deterministicStringify(dataToCheck);
 
         // If data hasn't changed, don't schedule a save
         if (currentDataString === previousDataRef.current) {
+            console.log('[AUTO-SAVE] No changes detected, skipping save');
             return;
+        }
+
+        // DEBUG: Log what changed
+        if (previousDataRef.current) {
+            console.log('[AUTO-SAVE] Data changed!');
+            console.log('[AUTO-SAVE] Previous:', previousDataRef.current.substring(0, 200) + '...');
+            console.log('[AUTO-SAVE] Current:', currentDataString.substring(0, 200) + '...');
         }
 
         // Update ref immediately to prevent multiple schedules for same data
@@ -211,13 +248,22 @@ export const useAnalysisSave = ({
             clearTimeout(timeoutRef.current);
         }
 
-        // 🔧 FIX #1: Reduced delay from 2000ms to 500ms for faster saves
+        // Adaptive debounce: longer delay if user is typing
+        const timeSinceLastKeyPress = Date.now() - lastKeyPressRef.current;
+        const isTyping = timeSinceLastKeyPress < 3000; // User typed in last 3 seconds
+        const debounceTime = isTyping ? 2000 : 500; // 2s if typing, 500ms if idle
+
+        console.log(`[AUTO-SAVE] Scheduling save in ${debounceTime}ms (isTyping: ${isTyping})`);
+
         timeoutRef.current = setTimeout(() => {
             if (!saveInProgressRef.current) {
+                console.log('[AUTO-SAVE] Executing save...');
                 saveInProgressRef.current = true;
                 saveDocument();
+            } else {
+                console.log('[AUTO-SAVE] Save already in progress, skipping');
             }
-        }, 500); // ← 4x faster response time
+        }, debounceTime);
 
         return () => {
             if (timeoutRef.current) {
@@ -236,7 +282,7 @@ export const useAnalysisSave = ({
         analysisId,
         isCompleted,
         isDeleting
-        // 🔧 FIX #3: Removed saveDocument from deps to prevent infinite loops
+        // 🔧 deterministicStringify and saveDocument excluded to prevent infinite loops
     ]);
 
     return {
