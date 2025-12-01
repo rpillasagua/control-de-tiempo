@@ -162,8 +162,28 @@ export const useAnalysisSave = ({
                 return; // ❌ BLOQUEAR guardado
             }
 
+            // Sanitize document to remove undefined values (Firestore rejects undefined)
+            const sanitizeForFirestore = (obj: any): any => {
+                if (obj === undefined) return null;
+                if (obj === null) return null;
+                if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+                if (typeof obj === 'object') {
+                    const newObj: any = {};
+                    for (const key in obj) {
+                        const val = sanitizeForFirestore(obj[key]);
+                        if (val !== undefined) {
+                            newObj[key] = val;
+                        }
+                    }
+                    return newObj;
+                }
+                return obj;
+            };
+
+            const sanitizedDocument = sanitizeForFirestore(document);
+
             const { saveAnalysis } = await import('@/lib/analysisService');
-            await saveAnalysis(document);
+            await saveAnalysis(sanitizedDocument);
             setLastSaved(now);
             setSaveError(null);
 
