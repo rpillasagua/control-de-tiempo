@@ -67,12 +67,14 @@ export function useDefectCalculation(
         }
 
         // BRINE LOGIC & SPECIAL PACKING HANDLING
-        // Apply 3kg rule if packing starts with 1 Und, 2 Und, or 3 Und, regardless of freezing method label
-        // (Some products might be labeled BLOCK FROZEN but still have this packing)
+        // Apply 3kg rule if packing starts with 1 Und, 2 Und, or 3 Und.
+        // CRITICAL: Exclude 'LB' products to avoid false positives with Block Frozen (e.g., "2 Und * 20 Lb").
         const packing = specs.packing || '';
         const isOneTwoOrThreeUnits = /^(1|2|3)\s*Und/i.test(packing);
+        const isNotLb = specs.netWeightUnit !== 'LB';
 
-        if (specs.freezingMethod === 'BRINE' || isOneTwoOrThreeUnits) {
+        // Only apply if explicitly BRINE OR (Matches packing AND is not LB)
+        if (specs.freezingMethod === 'BRINE' || (isOneTwoOrThreeUnits && isNotLb)) {
             if (isOneTwoOrThreeUnits) {
                 // Force base weight to 3 KG for these packing types
                 let baseWeightKg = 3;
