@@ -757,8 +757,28 @@ export const deleteAnalysisPhoto = async (
 
       deleteNestedField(analyses[analysisIndex], fieldPath);
 
+      // Sanitize analyses array to remove undefined values
+      const sanitizeForFirestore = (obj: any): any => {
+        if (obj === undefined) return null;
+        if (obj === null) return null;
+        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+        if (typeof obj === 'object') {
+          const newObj: any = {};
+          for (const key in obj) {
+            const val = sanitizeForFirestore(obj[key]);
+            if (val !== undefined) {
+              newObj[key] = val;
+            }
+          }
+          return newObj;
+        }
+        return obj;
+      };
+
+      const sanitizedAnalyses = sanitizeForFirestore(analyses);
+
       transaction.update(analysisRef, {
-        analyses: analyses,
+        analyses: sanitizedAnalyses,
         updatedAt: Timestamp.now()
       });
     });
@@ -791,8 +811,28 @@ export const saveGlobalPhotoUrl = async (
       const data = docSnap.data() as QualityAnalysis;
       const globalPesoBruto = { ...(data.globalPesoBruto || {}), fotoUrl: photoUrl };
 
+      // Sanitize to remove undefined values
+      const sanitizeForFirestore = (obj: any): any => {
+        if (obj === undefined) return null;
+        if (obj === null) return null;
+        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+        if (typeof obj === 'object') {
+          const newObj: any = {};
+          for (const key in obj) {
+            const val = sanitizeForFirestore(obj[key]);
+            if (val !== undefined) {
+              newObj[key] = val;
+            }
+          }
+          return newObj;
+        }
+        return obj;
+      };
+
+      const sanitizedGlobalPesoBruto = sanitizeForFirestore(globalPesoBruto);
+
       transaction.update(analysisRef, {
-        globalPesoBruto: globalPesoBruto,
+        globalPesoBruto: sanitizedGlobalPesoBruto,
         updatedAt: Timestamp.now()
       });
     });
