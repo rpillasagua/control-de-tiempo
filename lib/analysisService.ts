@@ -92,10 +92,11 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
     const newTimestamp = Timestamp.now();
 
     // Data is already sanitized by caller (useAnalysisSave)
-    const analysisToSave = {
+    // BUT we sanitize again here to be defensive against other callers
+    const analysisToSave = cleanDataForFirestore({
       ...analysis,
       updatedAt: newTimestamp
-    };
+    });
 
     // Usar transacción para verificar timestamp antes de guardar
     await runTransaction(db, async (transaction) => {
