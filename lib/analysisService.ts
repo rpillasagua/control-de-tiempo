@@ -21,6 +21,7 @@ import {
 import { db } from './firebase';
 import { QualityAnalysis } from './types';
 import { logger } from './logger';
+import { withFirestoreRetry } from './retry-utils'; // ✅ FIX #13: Retry logic
 
 const ANALYSES_COLLECTION = 'quality_analyses';
 const VALID_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
@@ -99,41 +100,44 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
     });
 
     // Usar transacción para verificar timestamp antes de guardar
-    await runTransaction(db, async (transaction) => {
-      const doc = await transaction.get(analysisRef);
+    // ✅ FIX #13: Transaction with retry
+    await withFirestoreRetry(() =>
+      runTransaction(db, async (transaction) => {
+        const doc = await transaction.get(analysisRef);
 
-      if (doc.exists()) {
-        // Documento existe - verificar timestamp
-        const existingData = doc.data();
-        const existingTimestamp = existingData?.updatedAt;
+        if (doc.exists()) {
+          // Documento existe - verificar timestamp
+          const existingData = doc.data();
+          const existingTimestamp = existingData?.updatedAt;
 
-        // Convertir timestamp del análisis a Firestore Timestamp para comparación
-        const analysisTimestamp = analysis.updatedAt
-          ? (typeof analysis.updatedAt === 'string'
-            ? Timestamp.fromDate(new Date(analysis.updatedAt))
-            : analysis.updatedAt)
-          : newTimestamp;
+          // Convertir timestamp del análisis a Firestore Timestamp para comparación
+          const analysisTimestamp = analysis.updatedAt
+            ? (typeof analysis.updatedAt === 'string'
+              ? Timestamp.fromDate(new Date(analysis.updatedAt))
+              : analysis.updatedAt)
+            : newTimestamp;
 
-        // Solo sobrescribir si la versión local es más nueva o igual
-        // (igual permite actualizaciones del mismo dispositivo)
-        const serverTimeMs = getTimestampMillis(existingTimestamp);
-        const localTimeMs = getTimestampMillis(analysis.updatedAt || newTimestamp);
+          // Solo sobrescribir si la versión local es más nueva o igual
+          // (igual permite actualizaciones del mismo dispositivo)
+          const serverTimeMs = getTimestampMillis(existingTimestamp);
+          const localTimeMs = getTimestampMillis(analysis.updatedAt || newTimestamp);
 
-        if (serverTimeMs > 0 && serverTimeMs > localTimeMs) {
-          logger.warn('⚠️ Servidor tiene versión más nueva, abortando guardado para evitar sobrescritura:', {
-            local: localTimeMs,
-            server: serverTimeMs,
-            diff: serverTimeMs - localTimeMs
-          });
-          throw new Error('STALE_DATA: El servidor tiene una versión más reciente');
+          if (serverTimeMs > 0 && serverTimeMs > localTimeMs) {
+            logger.warn('⚠️ Servidor tiene versión más nueva, abortando guardado para evitar sobrescritura:', {
+              local: localTimeMs,
+              server: serverTimeMs,
+              diff: serverTimeMs - localTimeMs
+            });
+            throw new Error('STALE_DATA: El servidor tiene una versión más reciente');
+          }
+
+          logger.log('✅ Timestamp verificado, procediendo con actualización');
         }
 
-        logger.log('✅ Timestamp verificado, procediendo con actualización');
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      transaction.set(analysisRef, analysisToSave as any);
-    });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transaction.set(analysisRef, analysisToSave as any);
+      })
+    );
 
     logger.log('✅ Análisis guardado:', analysis.codigo);
   } catch (error) {
@@ -621,89 +625,92 @@ export const saveAnalysisPhotoUrl = async (
   const analysisRef = getAnalysisRef(analysisId);
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const docSnap = await transaction.get(analysisRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Documento ${analysisId} no existe`);
-      }
-
-      const data = docSnap.data() as QualityAnalysis;
-      const analyses = [...(data.analyses || [])];
-      let needsArrayUpdate = false;
-
-      // 1. Try to find by ID
-      let analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
-
-      // 2. If not found, check if it's a legacy item (no ID) at the hint index
-      if (analysisIndex === -1) {
-        const hintItem = analyses[analysisIndexHint];
-        if (hintItem && !hintItem.id) {
-          // Found legacy item! Migrate it.
-          console.log(`⚠️ Migrating legacy analysis item at index ${analysisIndexHint} with new ID ${analysisItemId}`);
-          analyses[analysisIndexHint].id = analysisItemId;
-          analysisIndex = analysisIndexHint;
-          needsArrayUpdate = true;
-        } else {
-          throw new Error(`Análisis con ID ${analysisItemId} no encontrado (y no se pudo recuperar por índice)`);
+    // ✅ FIX #13: Transaction with retry
+    await withFirestoreRetry(() =>
+      runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(analysisRef);
+        if (!docSnap.exists()) {
+          throw new Error(`Documento ${analysisId} no existe`);
         }
-      }
 
-      // Helper para actualizar campo anidado
-      const updateNestedField = (obj: any, path: string, value: any) => {
-        const keys = path.split('.');
-        let current = obj;
-        for (let i = 0; i < keys.length - 1; i++) {
-          const key = keys[i];
+        const data = docSnap.data() as QualityAnalysis;
+        const analyses = [...(data.analyses || [])];
+        let needsArrayUpdate = false;
 
-          // Si no existe, crear objeto vacío
-          if (current[key] === undefined || current[key] === null) {
-            current[key] = {};
+        // 1. Try to find by ID
+        let analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
+
+        // 2. If not found, check if it's a legacy item (no ID) at the hint index
+        if (analysisIndex === -1) {
+          const hintItem = analyses[analysisIndexHint];
+          if (hintItem && !hintItem.id) {
+            // Found legacy item! Migrate it.
+            console.log(`⚠️ Migrating legacy analysis item at index ${analysisIndexHint} with new ID ${analysisItemId}`);
+            analyses[analysisIndexHint].id = analysisItemId;
+            analysisIndex = analysisIndexHint;
+            needsArrayUpdate = true;
+          } else {
+            throw new Error(`Análisis con ID ${analysisItemId} no encontrado (y no se pudo recuperar por índice)`);
           }
-          // Si existe pero NO es un objeto (ej: es un número o string corrupto)
-          else if (typeof current[key] !== 'object') {
-            // Si es un número, preservarlo como 'valor' (migración automática)
-            if (typeof current[key] === 'number') {
-              current[key] = { valor: current[key] };
-            } else {
-              // Si es string u otro, resetear a objeto vacío para corregir estructura
+        }
+
+        // Helper para actualizar campo anidado
+        const updateNestedField = (obj: any, path: string, value: any) => {
+          const keys = path.split('.');
+          let current = obj;
+          for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+
+            // Si no existe, crear objeto vacío
+            if (current[key] === undefined || current[key] === null) {
               current[key] = {};
             }
-          }
-
-          current = current[key];
-        }
-        current[keys[keys.length - 1]] = value;
-      };
-
-      // Actualizar el campo específico en el objeto de análisis correcto
-      updateNestedField(analyses[analysisIndex], fieldPath, photoUrl);
-
-      // Sanitize analyses array to remove undefined values (Firestore rejects undefined)
-      const sanitizeForFirestore = (obj: any): any => {
-        if (obj === undefined) return null;
-        if (obj === null) return null;
-        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
-        if (typeof obj === 'object') {
-          const newObj: any = {};
-          for (const key in obj) {
-            const val = sanitizeForFirestore(obj[key]);
-            if (val !== undefined) {
-              newObj[key] = val;
+            // Si existe pero NO es un objeto (ej: es un número o string corrupto)
+            else if (typeof current[key] !== 'object') {
+              // Si es un número, preservarlo como 'valor' (migración automática)
+              if (typeof current[key] === 'number') {
+                current[key] = { valor: current[key] };
+              } else {
+                // Si es string u otro, resetear a objeto vacío para corregir estructura
+                current[key] = {};
+              }
             }
+
+            current = current[key];
           }
-          return newObj;
-        }
-        return obj;
-      };
+          current[keys[keys.length - 1]] = value;
+        };
 
-      const sanitizedAnalyses = sanitizeForFirestore(analyses);
+        // Actualizar el campo específico en el objeto de análisis correcto
+        updateNestedField(analyses[analysisIndex], fieldPath, photoUrl);
 
-      // Siempre actualizamos todo el array 'analyses' para persistir cambios (incluyendo ID backfill)
-      transaction.update(analysisRef, {
-        analyses: sanitizedAnalyses,
-        updatedAt: Timestamp.now()
-      });
-    });
+        // Sanitize analyses array to remove undefined values (Firestore rejects undefined)
+        const sanitizeForFirestore = (obj: any): any => {
+          if (obj === undefined) return null;
+          if (obj === null) return null;
+          if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+          if (typeof obj === 'object') {
+            const newObj: any = {};
+            for (const key in obj) {
+              const val = sanitizeForFirestore(obj[key]);
+              if (val !== undefined) {
+                newObj[key] = val;
+              }
+            }
+            return newObj;
+          }
+          return obj;
+        };
+
+        const sanitizedAnalyses = sanitizeForFirestore(analyses);
+
+        // Siempre actualizamos todo el array 'analyses' para persistir cambios (incluyendo ID backfill)
+        transaction.update(analysisRef, {
+          analyses: sanitizedAnalyses,
+          updatedAt: Timestamp.now()
+        });
+      })
+    );
 
     logger.log(`✅ Foto guardada transaccionalmente: ${fieldPath}`);
   } catch (error) {
@@ -725,64 +732,67 @@ export const deleteAnalysisPhoto = async (
   const analysisRef = getAnalysisRef(analysisId);
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const docSnap = await transaction.get(analysisRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Documento ${analysisId} no existe`);
-      }
-
-      const data = docSnap.data() as QualityAnalysis;
-      const analyses = [...(data.analyses || [])];
-
-      // Find index by ID
-      const analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
-
-      if (analysisIndex === -1) {
-        throw new Error(`Análisis con ID ${analysisItemId} no encontrado`);
-      }
-
-      // Helper para eliminar campo anidado (set to null/undefined)
-      const deleteNestedField = (obj: any, path: string) => {
-        const keys = path.split('.');
-        let current = obj;
-        for (let i = 0; i < keys.length - 1; i++) {
-          if (!current[keys[i]]) return; // Path no existe
-          current = current[keys[i]];
+    // ✅ FIX #13: Transaction with retry
+    await withFirestoreRetry(() =>
+      runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(analysisRef);
+        if (!docSnap.exists()) {
+          throw new Error(`Documento ${analysisId} no existe`);
         }
-        // Borrar la propiedad o ponerla en null
-        const lastKey = keys[keys.length - 1];
-        if (current[lastKey]) {
-          delete current[lastKey];
+
+        const data = docSnap.data() as QualityAnalysis;
+        const analyses = [...(data.analyses || [])];
+
+        // Find index by ID
+        const analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
+
+        if (analysisIndex === -1) {
+          throw new Error(`Análisis con ID ${analysisItemId} no encontrado`);
         }
-      };
 
-      deleteNestedField(analyses[analysisIndex], fieldPath);
-
-      // Sanitize analyses array to remove undefined values
-      const sanitizeForFirestore = (obj: any): any => {
-        if (obj === undefined) return null;
-        if (obj === null) return null;
-        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
-        if (typeof obj === 'object') {
-          const newObj: any = {};
-          for (const key in obj) {
-            const val = sanitizeForFirestore(obj[key]);
-            if (val !== undefined) {
-              newObj[key] = val;
-            }
+        // Helper para eliminar campo anidado (set to null/undefined)
+        const deleteNestedField = (obj: any, path: string) => {
+          const keys = path.split('.');
+          let current = obj;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]]) return; // Path no existe
+            current = current[keys[i]];
           }
-          return newObj;
-        }
-        return obj;
-      };
+          // Borrar la propiedad o ponerla en null
+          const lastKey = keys[keys.length - 1];
+          if (current[lastKey]) {
+            delete current[lastKey];
+          }
+        };
 
-      const sanitizedAnalyses = sanitizeForFirestore(analyses);
+        deleteNestedField(analyses[analysisIndex], fieldPath);
 
-      transaction.update(analysisRef, {
-        analyses: sanitizedAnalyses,
-        updatedAt: Timestamp.now()
-      });
-    });
+        // Sanitize analyses array to remove undefined values
+        const sanitizeForFirestore = (obj: any): any => {
+          if (obj === undefined) return null;
+          if (obj === null) return null;
+          if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+          if (typeof obj === 'object') {
+            const newObj: any = {};
+            for (const key in obj) {
+              const val = sanitizeForFirestore(obj[key]);
+              if (val !== undefined) {
+                newObj[key] = val;
+              }
+            }
+            return newObj;
+          }
+          return obj;
+        };
+
+        const sanitizedAnalyses = sanitizeForFirestore(analyses);
+
+        transaction.update(analysisRef, {
+          analyses: sanitizedAnalyses,
+          updatedAt: Timestamp.now()
+        });
+      })
+    );
 
     logger.log(`✅ Foto eliminada transaccionalmente: ${fieldPath}`);
   } catch (error) {
@@ -803,40 +813,43 @@ export const saveGlobalPhotoUrl = async (
   const analysisRef = getAnalysisRef(analysisId);
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const docSnap = await transaction.get(analysisRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Documento ${analysisId} no existe`);
-      }
-
-      const data = docSnap.data() as QualityAnalysis;
-      const globalPesoBruto = { ...(data.globalPesoBruto || {}), fotoUrl: photoUrl };
-
-      // Sanitize to remove undefined values
-      const sanitizeForFirestore = (obj: any): any => {
-        if (obj === undefined) return null;
-        if (obj === null) return null;
-        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
-        if (typeof obj === 'object') {
-          const newObj: any = {};
-          for (const key in obj) {
-            const val = sanitizeForFirestore(obj[key]);
-            if (val !== undefined) {
-              newObj[key] = val;
-            }
-          }
-          return newObj;
+    // ✅ FIX #13: Transaction with retry
+    await withFirestoreRetry(() =>
+      runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(analysisRef);
+        if (!docSnap.exists()) {
+          throw new Error(`Documento ${analysisId} no existe`);
         }
-        return obj;
-      };
 
-      const sanitizedGlobalPesoBruto = sanitizeForFirestore(globalPesoBruto);
+        const data = docSnap.data() as QualityAnalysis;
+        const globalPesoBruto = { ...(data.globalPesoBruto || {}), fotoUrl: photoUrl };
 
-      transaction.update(analysisRef, {
-        globalPesoBruto: sanitizedGlobalPesoBruto,
-        updatedAt: Timestamp.now()
-      });
-    });
+        // Sanitize to remove undefined values
+        const sanitizeForFirestore = (obj: any): any => {
+          if (obj === undefined) return null;
+          if (obj === null) return null;
+          if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+          if (typeof obj === 'object') {
+            const newObj: any = {};
+            for (const key in obj) {
+              const val = sanitizeForFirestore(obj[key]);
+              if (val !== undefined) {
+                newObj[key] = val;
+              }
+            }
+            return newObj;
+          }
+          return obj;
+        };
+
+        const sanitizedGlobalPesoBruto = sanitizeForFirestore(globalPesoBruto);
+
+        transaction.update(analysisRef, {
+          globalPesoBruto: sanitizedGlobalPesoBruto,
+          updatedAt: Timestamp.now()
+        });
+      })
+    );
 
     logger.log(`✅ Foto global guardada transaccionalmente`);
   } catch (error) {

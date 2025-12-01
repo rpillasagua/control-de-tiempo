@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, CheckCircle2, Clock, AlertCircle, Hash, Package, Ruler, Building2, Tag, Box } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2, Hash, Package, Ruler, Building2, Tag, Box } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
@@ -19,7 +19,7 @@ import AnalysisTabs from '@/components/AnalysisTabs';
 import PhotoCapture from '@/components/PhotoCapture';
 import ControlPesosBrutos from '@/components/ControlPesosBrutos';
 import DefectSelector from '@/components/DefectSelector';
-import { WeightInputRow } from '@/components/WeightInputRow';
+// import { WeightInputRow } from '@/components/WeightInputRow'; // Currently unused
 import { PendingUploadsPanel } from '@/components/PendingUploadsPanel';
 import FailedUploadsBanner from '@/components/FailedUploadsBanner';
 import { SyncStatus } from '@/components/SyncStatus';
