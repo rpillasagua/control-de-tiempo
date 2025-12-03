@@ -279,11 +279,15 @@ export const usePhotoUpload = ({
                 };
             }));
 
-            // 4. Save transactionally with retry (using saveDocument for array updates)
+            // 4. Save transactionally with retry (using targeted update)
+            const { savePesoBrutoPhotoUrl } = await import('@/lib/analysisService');
+
             let firestoreSaved = false;
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
-                    await saveDocument();
+                    // Use ID for safe deletion
+                    const analysisItemId = analyses[targetIndex].id;
+                    await savePesoBrutoPhotoUrl(analysisId, analysisItemId, registroId, url);
                     console.log(`✅ Firestore confirmed - Peso bruto saved (attempt ${attempt}/3)`);
                     firestoreSaved = true;
                     break;
@@ -632,7 +636,9 @@ export const usePhotoUpload = ({
                     };
                 }));
                 // Save to Firestore
-                await saveDocument();
+                const { savePesoBrutoPhotoUrl } = await import('@/lib/analysisService');
+                const analysisItemId = analysisDoc.analyses[targetIndex].id;
+                await savePesoBrutoPhotoUrl(photo.analysisId, analysisItemId, registroId, url);
 
             } else if (photo.field === 'global-pesoBruto') {
                 // Update React state

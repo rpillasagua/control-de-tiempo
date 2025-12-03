@@ -802,6 +802,90 @@ export const deleteAnalysisPhoto = async (
 };
 
 /**
+ * Guarda la URL de una foto de PESO BRUTO (item de array) de forma transaccional
+ * Actualiza SOLO el campo específico de la foto sin sobrescribir el resto del documento
+ */
+export const savePesoBrutoPhotoUrl = async (
+  analysisId: string,
+  analysisItemId: string,
+  pesoBrutoId: string,
+  photoUrl: string
+): Promise<void> => {
+  if (!db) throw new Error('Firestore no está configurado');
+
+  const analysisRef = getAnalysisRef(analysisId);
+
+  try {
+    // ✅ FIX #13: Transaction with retry
+    await withFirestoreRetry(() =>
+      runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(analysisRef);
+        if (!docSnap.exists()) {
+          throw new Error(`Documento ${analysisId} no existe`);
+        }
+
+        const data = docSnap.data() as QualityAnalysis;
+        const analyses = [...(data.analyses || [])];
+
+        // 1. Find analysis by ID
+        const analysisIndex = analyses.findIndex(a => a.id === analysisItemId);
+
+        if (analysisIndex === -1) {
+          throw new Error(`Análisis con ID ${analysisItemId} no encontrado`);
+        }
+
+        const targetAnalysis = analyses[analysisIndex];
+
+        // 2. Find peso bruto record by ID
+        if (!targetAnalysis.pesosBrutos) {
+          targetAnalysis.pesosBrutos = [];
+        }
+
+        const pesoBrutoIndex = targetAnalysis.pesosBrutos.findIndex(p => p.id === pesoBrutoId);
+
+        if (pesoBrutoIndex === -1) {
+          throw new Error(`Registro de peso bruto ${pesoBrutoId} no encontrado en análisis ${analysisItemId}`);
+        }
+
+        // 3. Update ONLY the photo URL
+        targetAnalysis.pesosBrutos[pesoBrutoIndex].fotoUrl = photoUrl;
+
+        // Sanitize analyses array to remove undefined values
+        const sanitizeForFirestore = (obj: any): any => {
+          if (obj === undefined) return null;
+          if (obj === null) return null;
+          if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+          if (typeof obj === 'object') {
+            const newObj: any = {};
+            for (const key in obj) {
+              const val = sanitizeForFirestore(obj[key]);
+              if (val !== undefined) {
+                newObj[key] = val;
+              }
+            }
+            return newObj;
+          }
+          return obj;
+        };
+
+        const sanitizedAnalyses = sanitizeForFirestore(analyses);
+
+        // Update the document
+        transaction.update(analysisRef, {
+          analyses: sanitizedAnalyses,
+          updatedAt: Timestamp.now()
+        });
+      })
+    );
+
+    logger.log(`✅ Foto de peso bruto guardada transaccionalmente: ${pesoBrutoId}`);
+  } catch (error) {
+    logger.error('❌ Error guardando foto de peso bruto transaccionalmente:', error);
+    throw error;
+  }
+};
+
+/**
  * Guarda la URL de una foto GLOBAL (peso bruto global) de forma transaccional
  */
 export const saveGlobalPhotoUrl = async (
@@ -985,6 +1069,7 @@ export default {
   searchAnalyses,
   renewAnalysisPhotoPermissions,
   saveAnalysisPhotoUrl,
+  savePesoBrutoPhotoUrl,
   deleteAnalysisPhoto,
   saveGlobalPhotoUrl,
   subscribeToRecentAnalyses,
