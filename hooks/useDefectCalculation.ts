@@ -35,8 +35,8 @@ export function useDefectCalculation(
     const specs = getSpecs(productCode);
 
     return useMemo(() => {
-        // 1. Check Applicability (BLOCK FROZEN or BRINE)
-        if (!specs || (specs.freezingMethod !== 'BLOCK FROZEN' && specs.freezingMethod !== 'BRINE') || !netWeight || !count || !productType) {
+        // 1. Check Applicability (BLOCK FROZEN, BRINE, or IQF)
+        if (!specs || (specs.freezingMethod !== 'BLOCK FROZEN' && specs.freezingMethod !== 'BRINE' && specs.freezingMethod !== 'IQF') || !netWeight || !count || !productType) {
             return {
                 totalPieces: 0,
                 defectResults: {},
@@ -84,7 +84,7 @@ export function useDefectCalculation(
         // Auto-detect Brine for KG products with "Und" packing (fixes "1 Und * 12 Kg" labeled as Block Frozen)
         const isHiddenBrine = isKg && packingMatch !== null;
 
-        const isBrine = specs.freezingMethod === 'BRINE' || isHiddenBrine;
+        const isBrine = specs.freezingMethod === 'BRINE' || specs.freezingMethod === 'IQF' || isHiddenBrine;
 
         if (isBrine) {
             // Calculate Unit Weight
