@@ -643,6 +643,20 @@ export const generateDailyReport = async (
     if (analysesByType.VALOR_AGREGADO.length > 0) {
         createStandardProductSheet(workbook, analysesByType.VALOR_AGREGADO, 'VALOR_AGREGADO', date);
     }
+
+    if (analysesByType.CONTROL_PESOS.length > 0) {
+        createControlPesosSheet(workbook, analysesByType.CONTROL_PESOS, date);
+    }
+
+    // Validations sheet (only created if there are validation issues)
+    // Validations are now calculated in flattenAnalyses(), no need for separate step
+    createValidationsSheet(workbook, flattenedAnalyses, date);
+
+    // 5. Generar buffer y blob
+    const buffer = await workbook.xlsx.writeBuffer();
+    return new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
 };
 
 // ============================================
