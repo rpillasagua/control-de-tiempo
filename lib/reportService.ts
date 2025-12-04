@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { QualityAnalysis, WorkShift, PRODUCT_TYPE_LABELS, ProductType, DEFECTOS_ENTERO, DEFECTOS_COLA, DEFECTOS_VALOR_AGREGADO, DEFECTO_LABELS, ANALYST_COLOR_LABELS, Analysis } from '@/lib/types';
+import { validateGrossWeight, validateNetWeight } from './validations/weightValidations';
 
 // Tipos auxiliares
 type ReportShift = 'ALL' | WorkShift;
@@ -31,6 +32,12 @@ interface FlattenedAnalysis {
     defectos: { [key: string]: number };
     totalDefectos: number;
     pesosBrutos: number[];
+
+    // Validaciones (added for validation report)
+    validationPesoBruto?: string; // e.g., "✓ OK" or "⚠️ PESO BRUTO alto (12.5 Kg)"
+    validationPesoNeto?: string;  // e.g., "✓ OK" or "⚠️ PESO NETO bajo (11.8 Kg)"
+    validationConteo?: string;    // e.g., "✓ OK" or "⚠️ Fuera de rango (17-19)"
+    hasValidationIssues?: boolean; // true if any validation failed
 }
 
 // ============================================
@@ -99,6 +106,19 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
         // Si tiene array de análisis (nueva estructura)
         if (doc.analyses && doc.analyses.length > 0) {
             doc.analyses.forEach(analysis => {
+                // Calculate weight validations
+                const pesoBrutoVal = validateGrossWeight(
+                    doc.codigo,
+                    (analysis.pesoBruto?.valor || 0),
+                    doc.productType
+                );
+
+                const pesoNetoVal = validateNetWeight(
+                    doc.codigo,
+                    (analysis.pesoNeto?.valor || 0),
+                    doc.productType
+                );
+
                 flattened.push({
                     docId: doc.id,
                     createdAt: doc.createdAt,
@@ -122,12 +142,31 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     uniformidadPequenos: analysis.uniformidad?.pequenos?.valor,
                     defectos: analysis.defectos || {},
                     totalDefectos: Object.values(analysis.defectos || {}).reduce((sum, val) => sum + (Number(val) || 0), 0),
-                    pesosBrutos: analysis.pesosBrutos?.map(p => p.peso) || []
+                    pesosBrutos: analysis.pesosBrutos?.map(p => p.peso) || [],
+
+                    // Validation results
+                    validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
+                    validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
+                    hasValidationIssues: !pesoBrutoVal.isValid || !pesoNetoVal.isValid
                 });
             });
         } else {
             // Soporte Legacy (estructura plana antigua)
             const legacy = doc as any;
+
+            // Calculate weight validations for legacy structure
+            const pesoBrutoVal = validateGrossWeight(
+                doc.codigo,
+                (legacy.pesoBruto?.valor || 0),
+                doc.productType
+            );
+
+            const pesoNetoVal = validateNetWeight(
+                doc.codigo,
+                (legacy.pesoNeto?.valor || 0),
+                doc.productType
+            );
+
             flattened.push({
                 docId: doc.id,
                 createdAt: doc.createdAt,
@@ -149,7 +188,12 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                 uniformidadPequenos: legacy.uniformidad?.pequenos?.valor,
                 defectos: legacy.defectos || {},
                 totalDefectos: Object.values(legacy.defectos || {}).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0),
-                pesosBrutos: legacy.pesosBrutos?.map((p: any) => p.peso) || []
+                pesosBrutos: legacy.pesosBrutos?.map((p: any) => p.peso) || [],
+
+                // Validation results
+                validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
+                validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
+                hasValidationIssues: !pesoBrutoVal.isValid || !pesoNetoVal.isValid
             });
         }
     });
@@ -599,14 +643,148 @@ export const generateDailyReport = async (
     if (analysesByType.VALOR_AGREGADO.length > 0) {
         createStandardProductSheet(workbook, analysesByType.VALOR_AGREGADO, 'VALOR_AGREGADO', date);
     }
+};
 
-    if (analysesByType.CONTROL_PESOS.length > 0) {
-        createControlPesosSheet(workbook, analysesByType.CONTROL_PESOS, date);
-    }
+// ============================================
+// NUEVA FUNCIÓN: AGREGAR VALIDACIONES
+// ============================================
 
-    // 5. Generar buffer y blob
-    const buffer = await workbook.xlsx.writeBuffer();
-    return new Blob([buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+/**
+ * Enriquece los análisis aplanados con validaciones de peso bruto, neto y conteo
+ * NO modifica los datos originales, solo agrega campos de validación
+ */
+const addValidationsToAnalyses = (analyses: FlattenedAnalysis[]): FlattenedAnalysis[] => {
+    return analyses.map(analysis => {
+        // Convert kg to grams (peso bruto and neto are stored in kg)
+        const pesoBrutoGrams = (analysis.pesoBruto || 0) * 1000;
+        const pesoNetoGrams = (analysis.pesoNeto || 0) * 1000;
+
+        // Run validations
+        const validPesoBruto = validateGrossWeight(analysis.codigo, pesoBrutoGrams, analysis.productType);
+        const validPesoNeto = validateNetWeight(analysis.codigo, pesoNetoGrams, analysis.productType);
+
+        // Build validation strings
+        const validationPesoBruto = validPesoBruto.isValid
+            ? '✓ OK'
+            : `⚠️ ${validPesoBruto.message || 'Error'}`;
+
+        const validationPesoNeto = validPesoNeto.isValid
+            ? '✓ OK'
+            : `⚠️ ${validPesoNeto.message || 'Error'}`;
+
+        // TODO: Add count validation when useTechnicalSpecs is available in server-side context
+        const validationConteo = '✓ OK';
+
+        const hasValidationIssues = !validPesoBruto.isValid || !validPesoNeto.isValid;
+
+        return {
+            ...analysis,
+            validationPesoBruto,
+            validationPesoNeto,
+            validationConteo,
+            hasValidationIssues
+        };
     });
 };
+
+// ============================================
+// NUEVA FUNCIÓN: CREAR HOJA DE VALIDACIONES
+// ============================================
+
+/**
+ * Crea una hoja de "Validaciones" que muestra SOLO los lotes con problemas
+ * Similar al reporte de Python: "Lotes con Novedades en Descongelado"
+ */
+const createValidationsSheet = (
+    workbook: ExcelJS.Workbook,
+    analyses: FlattenedAnalysis[],
+    date: string
+) => {
+    // Filtrar solo análisis con problemas
+    const analysesWithIssues = analyses.filter(a => a.hasValidationIssues);
+
+    if (analysesWithIssues.length === 0) {
+        // No hay problemas, no crear la hoja
+        return;
+    }
+
+    const worksheet = workbook.addWorksheet('Validaciones');
+
+    // Título
+    worksheet.mergeCells('A1:J1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = `Lotes con Novedades en Validación - ${date}`;
+    titleCell.font = { ...STYLES.whiteFont, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFDC143C' } // Rojo carmesí para alertas
+    };
+    titleCell.alignment = STYLES.centerAlign;
+
+    worksheet.addRow([]);
+
+    // Encabezados
+    const headers = [
+        'Hora',
+        'Turno',
+        'Lote',
+        'Código',
+        'Talla',
+        'Tipo Producto',
+        'Peso Bruto (Kg)',
+        'Validación P. Bruto',
+        'Peso Neto (Kg)',
+        'Validación P. Neto'
+    ];
+
+    const headerRow = worksheet.addRow(headers);
+    headerRow.font = { bold: true };
+    headerRow.fill = STYLES.subHeaderFill;
+    headerRow.alignment = STYLES.centerAlign;
+
+    // Datos
+    analysesWithIssues.forEach(d => {
+        const row = worksheet.addRow([
+            new Date(d.createdAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
+            d.shift === 'DIA' ? 'Día' : 'Noche',
+            d.lote,
+            d.codigo,
+            d.talla,
+            PRODUCT_TYPE_LABELS[d.productType],
+            d.pesoBruto || '-',
+            d.validationPesoBruto || '-',
+            d.pesoNeto || '-',
+            d.validationPesoNeto || '-'
+        ]);
+        row.alignment = { vertical: 'middle' };
+
+        // Resaltar celdas con problemas en rojo
+        if (d.validationPesoBruto && d.validationPesoBruto.includes('⚠️')) {
+            row.getCell(8).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationPesoNeto && d.validationPesoNeto.includes('⚠️')) {
+            row.getCell(10).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+    });
+
+    // Ajustar anchos
+    worksheet.columns = [
+        { width: 10 },  // Hora
+        { width: 10 },  // Turno
+        { width: 15 },  // Lote
+        { width: 12 },  // Código
+        { width: 10 },  // Talla
+        { width: 18 },  // Tipo Producto
+        { width: 14 },  // Peso Bruto
+        { width: 35 },  // Validación P. Bruto
+        { width: 14 },  // Peso Neto
+        { width: 35 }   // Validación P. Neto
+    ];
+
+    // Congelar primera fila
+    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 3 }];
+
+    return worksheet;
+};
+
