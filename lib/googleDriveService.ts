@@ -800,16 +800,182 @@ class GoogleDriveService {
           logger.warn(`⚠️ Archivo ${fileId} no encontrado al intentar borrar (ya eliminado).`);
           return;
         }
-
-        const errorData = await response.json().catch(() => ({}));
-        logger.error(`❌ Error eliminando archivo ${fileId}:`, response.status, errorData);
-        throw new Error(`Delete failed: ${response.status} - ${JSON.stringify(errorData)}`);
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
       }
 
-      logger.log(`✅ Archivo eliminado correctamente: ${fileId}`);
+      logger.log(`✅ Archivo eliminado: ${fileId}`);
     } catch (error) {
-      logger.error('Error deleting file:', error);
+      logger.error('❌ Error deleting file:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Renombra un archivo o carpeta
+   * @param fileId ID del archivo/carpeta
+   * @param newName Nuevo nombre
+   */
+  async renameFile(fileId: string, newName: string): Promise<void> {
+    try {
+      logger.log(`✏️ Renombrando archivo ${fileId} a "${newName}"`);
+      await this.ensureToken();
+
+      const body = {
+        name: newName
+      };
+
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+      }
+
+      logger.log(`✅ Archivo renombrado exitosamente`);
+    } catch (error) {
+      logger.error('❌ Error renaming file:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mueve un archivo o carpeta a una nueva ubicación
+   * @param fileId ID del archivo/carpeta a mover
+   * @param newParentId ID de la nueva carpeta padre
+   */
+  async moveFile(fileId: string, newParentId: string): Promise<void> {
+    try {
+      logger.log(`🚚 Moviendo archivo ${fileId} a carpeta ${newParentId}`);
+      await this.ensureToken();
+
+      // 1. Obtener los padres actuales para removerlos
+      const file = await this.getFile(fileId);
+      // Nota: getFile actual no devuelve 'parents', necesitamos pedirlo o asumir
+      // Para ser seguros, usamos ?fields=parents
+      const parentsResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?fields=parents`,
+        { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+      );
+      const parentsData = await parentsResponse.json();
+      const previousParents = parentsData.parents ? parentsData.parents.join(',') : '';
+
+      // 2. Actualizar padres (addParents, removeParents)
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${newParentId}&removeParents=${previousParents}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+      }
+
+      logger.log(`✅ Archivo movido exitosamente`);
+    } catch (error) {
+      logger.error('❌ Error moving file:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sincroniza las carpetas cuando cambia el código o lote
+   */
+  async syncAnalysisFolders(
+    oldCode: string,
+    oldBatch: string,
+    newCode: string,
+    newBatch: string,
+    analysisId: string
+  ): Promise<void> {
+    logger.log(`🔄 Sincronizando carpetas: ${oldCode}/${oldBatch} -> ${newCode}/${newBatch}`);
+
+    if (oldCode === newCode && oldBatch === newBatch) {
+      logger.log('ℹ️ No hay cambios en código ni lote. Nada que sincronizar.');
+      return;
+    }
+
+    try {
+      await this.ensureToken();
+      await this.initialize();
+
+      if (!this.rootFolderId) {
+        throw new Error('Root folder ID not found');
+      }
+
+      // 1. Buscar carpeta del código anterior
+      const oldCodeFolderId = await this.findFolder(oldCode, this.rootFolderId);
+      if (!oldCodeFolderId) {
+        logger.warn(`⚠️ Carpeta del código anterior "${oldCode}" no encontrada. No se puede sincronizar.`);
+        return;
+      }
+
+      // 2. Buscar carpeta del lote anterior
+      const oldBatchFolderId = await this.findFolder(oldBatch, oldCodeFolderId);
+      if (!oldBatchFolderId) {
+        logger.warn(`⚠️ Carpeta del lote anterior "${oldBatch}" no encontrada. No se puede sincronizar.`);
+        return;
+      }
+
+      // CASO 1: Solo cambió el LOTE (mismo código)
+      if (oldCode === newCode && oldBatch !== newBatch) {
+        logger.log(`📝 Solo cambió el lote. Renombrando carpeta ${oldBatchFolderId}...`);
+        await this.renameFile(oldBatchFolderId, newBatch);
+        logger.log('✅ Carpeta de lote renombrada exitosamente.');
+        return;
+      }
+
+      // CASO 2: Cambió el CÓDIGO (y posiblemente el lote)
+      if (oldCode !== newCode) {
+        logger.log(`🚚 Cambió el código. Moviendo carpeta de lote...`);
+
+        // a. Asegurar que existe la carpeta del NUEVO código
+        const newCodeFolderId = await this.getOrCreateFolder(newCode, this.rootFolderId);
+
+        // b. Mover la carpeta del lote a la carpeta del nuevo código
+        await this.moveFile(oldBatchFolderId, newCodeFolderId);
+
+        // c. Si también cambió el nombre del lote, renombrarla
+        if (oldBatch !== newBatch) {
+          logger.log(`📝 También cambió el nombre del lote. Renombrando...`);
+          await this.renameFile(oldBatchFolderId, newBatch);
+        }
+
+        logger.log('✅ Carpeta de lote movida (y renombrada si era necesario) exitosamente.');
+
+        // d. Limpieza: Verificar si la carpeta del código anterior quedó vacía
+        try {
+          const query = `'${oldCodeFolderId}' in parents and trashed=false`;
+          const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&pageSize=1`,
+            { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+          );
+          const data = await response.json();
+          if (!data.files || data.files.length === 0) {
+            logger.log(`🗑️ Carpeta del código anterior vacía. Eliminando...`);
+            await this.deleteFile(oldCodeFolderId);
+          }
+        } catch (cleanupError) {
+          logger.warn('⚠️ Error en limpieza de carpeta vacía (no crítico):', cleanupError);
+        }
+      }
+
+    } catch (error) {
+      logger.error('❌ Error en syncAnalysisFolders:', error);
+      // No lanzamos error para no romper el flujo de guardado en UI, pero logueamos fuerte
+      // throw error; 
     }
   }
 

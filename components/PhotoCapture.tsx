@@ -14,9 +14,10 @@ interface PhotoCaptureProps {
     field: string;
   };
   compact?: boolean;
+  forceGalleryMode?: boolean;
 }
 
-export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false, context }: PhotoCaptureProps) {
+export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false, context, forceGalleryMode = false }: PhotoCaptureProps) {
   const [showModal, setShowModal] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [errorType, setErrorType] = useState<'blob' | 'drive_auth' | 'drive_permissions' | 'unknown'>('unknown');
@@ -30,6 +31,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const [offlinePhotoStatus, setOfflinePhotoStatus] = useState<'pending' | 'error' | null>(null);
   const [offlineFile, setOfflineFile] = useState<Blob | null>(null); // Store the file for retry
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // Función para generar URLs alternativas de Google Drive
   const getAlternativeDriveUrl = (currentUrl: string): string | null => {
@@ -95,6 +97,13 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
     if (photoUrl) {
       const separator = photoUrl.includes('?') ? '&' : '?';
       setCacheBuster(`${separator}t=${Date.now()}`);
+    }
+
+    // 🛡️ RACE CONDITION FIX: Check if image is already loaded (cached)
+    // If useEffect runs after onLoad, we might be stuck in loading state
+    if (imgRef.current && imgRef.current.complete && imgRef.current.src !== '') {
+      console.log('⚡ Image already loaded (cached), turning off loading');
+      setIsLoading(false);
     }
   }, [photoUrl]);
 
@@ -204,7 +213,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
+        capture={forceGalleryMode ? undefined : "environment"}
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -213,6 +222,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
         <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${compact ? 'py-1' : ''}`}>
           <div className={`relative ${compact ? 'w-20 h-20' : 'w-full sm:w-32 h-48 sm:h-24'} flex-shrink-0 group`}>
             <img
+              ref={imgRef}
               src={localPreviewUrl || photoUrl}
               alt={label}
               referrerPolicy="no-referrer"

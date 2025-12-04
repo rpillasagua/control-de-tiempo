@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, CheckCircle2, Hash, Package, Ruler, Building2, Tag, Box } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2, Hash, Package, Ruler, Building2, Tag, Box, Edit, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
@@ -31,6 +31,7 @@ const DeleteConfirmationModal = dynamic(() => import('@/components/DeleteConfirm
 });
 
 import ViewModeSelector, { ViewMode, useViewMode } from '@/components/ViewModeSelector';
+import EditMetadataModal from '@/components/EditMetadataModal';
 
 // Types and Utils
 import {
@@ -91,6 +92,13 @@ export default function NewMultiAnalysisPageContent() {
     const [originalDate, setOriginalDate] = useState<string | null>(null);
     const [originalShift, setOriginalShift] = useState<'DIA' | 'NOCHE' | null>(null);
     const [originalAnalystColor, setOriginalAnalystColor] = useState<AnalystColor | null>(null);
+
+    // New UI State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isGalleryMode, setIsGalleryMode] = useState(false);
+
+    // Ref to track uploading state for race condition prevention
+    const isUploadingRef = React.useRef(false);
 
     // Derived State
     const currentAnalysis = analyses[activeAnalysisIndex] || {};
@@ -341,6 +349,34 @@ export default function NewMultiAnalysisPageContent() {
         setShowDeleteModal(true);
     };
 
+    const handleEditMetadata = async (data: { lote: string; codigo: string; talla: string }) => {
+        if (!analysisId) return;
+
+        try {
+            const { updateAnalysis } = await import('@/lib/analysisService');
+            await updateAnalysis(analysisId, {
+                lote: data.lote,
+                codigo: data.codigo,
+                talla: data.talla
+            });
+
+            // Update local state
+            setLote(data.lote);
+            setCodigo(data.codigo);
+            setTalla(data.talla);
+
+            toast.success('Metadatos actualizados y carpetas sincronizadas');
+        } catch (error) {
+            console.error('Error updating metadata:', error);
+            toast.error('Error al actualizar metadatos');
+        }
+    };
+
+    // Sync uploading ref
+    useEffect(() => {
+        isUploadingRef.current = uploadingPhotos.size > 0;
+    }, [uploadingPhotos.size]);
+
     // Load initial data effect with real-time subscription
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
@@ -353,6 +389,14 @@ export default function NewMultiAnalysisPageContent() {
 
                     unsubscribe = subscribeToAnalysis(id, (data) => {
                         if (data) {
+                            // 🛡️ RACE CONDITION FIX: Ignore updates while uploading photos
+                            // This prevents the server (which has old text + new photo) from overwriting
+                            // the local state (which has new text + new photo).
+                            if (isUploadingRef.current) {
+                                console.log('🛡️ Skipping snapshot update during photo upload to prevent data loss');
+                                return;
+                            }
+
                             // Mark this as a remote update to prevent auto-save
                             markAsRemoteUpdate();
 
@@ -661,8 +705,28 @@ export default function NewMultiAnalysisPageContent() {
 
                 {/* Current Analysis Form */}
                 <div className="space-y-6">
-                    {/* Appearance Selector */}
-                    <div className="flex justify-end">
+                    {/* Appearance Selector & Actions */}
+                    <div className="flex justify-end gap-2">
+                        <button
+                            onClick={() => setIsGalleryMode(!isGalleryMode)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${isGalleryMode
+                                ? 'bg-purple-100 text-purple-700 border-purple-200'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                }`}
+                            title={isGalleryMode ? "Modo Galería Activo" : "Activar Modo Galería"}
+                        >
+                            <ImageIcon size={16} />
+                            <span className="hidden sm:inline">{isGalleryMode ? 'Galería' : 'Cámara'}</span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="flex items-center gap-2 px-3 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium transition-all"
+                        >
+                            <Edit size={16} />
+                            <span className="hidden sm:inline">Editar Info</span>
+                        </button>
+
                         <ViewModeSelector viewMode={viewMode} onModeChange={setViewMode} />
                     </div>
 
@@ -787,6 +851,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 onPhotoCapture={handleGlobalPesoBrutoPhoto}
                                                 isUploading={uploadingPhotos.has('global-pesoBruto')}
                                                 context={{ analysisId: analysisId || '', field: 'global-pesoBruto' }}
+                                                forceGalleryMode={isGalleryMode}
                                             />
                                         </div>
                                     </div>
@@ -806,6 +871,7 @@ export default function NewMultiAnalysisPageContent() {
                                 isPhotoUploading={isPesoBrutoUploading}
                                 viewMode={viewMode}
                                 analysisId={analysisId || ''}
+                                forceGalleryMode={isGalleryMode}
                             />
                         )
                     }
@@ -846,6 +912,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
                                                         isUploading={isFieldUploading('pesoBruto')}
                                                         context={{ analysisId: analysisId || '', field: 'pesoBruto' }}
+                                                        forceGalleryMode={isGalleryMode}
                                                     />
                                                 </div>
                                             )}
@@ -875,6 +942,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
                                                     isUploading={isFieldUploading('pesoCongelado')}
                                                     context={{ analysisId: analysisId || '', field: 'pesoCongelado' }}
+                                                    forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>
 
@@ -905,6 +973,7 @@ export default function NewMultiAnalysisPageContent() {
                                                             onPhotoCapture={(file) => handlePhotoCapture('pesoSubmuestra', file)}
                                                             isUploading={isFieldUploading('pesoSubmuestra')}
                                                             context={{ analysisId: analysisId || '', field: 'pesoSubmuestra' }}
+                                                            forceGalleryMode={isGalleryMode}
                                                         />
                                                     </div>
 
@@ -932,6 +1001,7 @@ export default function NewMultiAnalysisPageContent() {
                                                             onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
                                                             isUploading={isFieldUploading('pesoSinGlaseo')}
                                                             context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo' }}
+                                                            forceGalleryMode={isGalleryMode}
                                                         />
                                                     </div>
                                                 </>
@@ -961,6 +1031,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
                                                     isUploading={isFieldUploading('pesoNeto')}
                                                     context={{ analysisId: analysisId || '', field: 'pesoNeto' }}
+                                                    forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>
                                         </div>
@@ -1009,6 +1080,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
                                                     isUploading={isFieldUploading('uniformidad_grandes')}
                                                     context={{ analysisId: analysisId || '', field: 'uniformidad_grandes' }}
+                                                    forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>
 
@@ -1043,6 +1115,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
                                                     isUploading={isFieldUploading('uniformidad_pequenos')}
                                                     context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos' }}
+                                                    forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>
                                         </div>
@@ -1144,6 +1217,7 @@ export default function NewMultiAnalysisPageContent() {
                                             onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
                                             isUploading={isFieldUploading('fotoCalidad')}
                                             context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
+                                            forceGalleryMode={isGalleryMode}
                                         />
                                     </div>
                                 </div>
@@ -1239,6 +1313,18 @@ export default function NewMultiAnalysisPageContent() {
                 onClose={() => setShowPendingUploads(false)}
                 onRetryPhoto={retryPhotoUpload}
                 onRetryAll={retryAllFailedPhotos}
+            />
+
+            <EditMetadataModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={handleEditMetadata}
+                initialData={{
+                    lote,
+                    codigo,
+                    talla,
+                    productType: productType || undefined
+                }}
             />
         </div >
     );

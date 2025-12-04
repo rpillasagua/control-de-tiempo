@@ -62,6 +62,7 @@ export const DEFECT_NORMALIZATION_MAP: Record<string, string> = {
     'OJAL': 'OJAL', // Not found
     'LOMO_DANADO': 'LOMO_DANADO', // Not found
     'PEGADOS_Y_AGRUPADOS': 'PEGADOS_Y_AGRUPADOS', // Not found
+    'CURVATURA': 'CURVATURA', // Match
 };
 
 export function getNormalizedDefectKey(systemKey: string): string {

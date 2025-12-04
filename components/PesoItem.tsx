@@ -16,6 +16,7 @@ interface PesoItemProps {
     onPhotoCapture: (id: string, file: File) => void;
     isDeleting?: boolean;
     analysisId: string;
+    forceGalleryMode?: boolean;
 }
 
 // Usamos memo para que solo se renderice si sus props cambian
@@ -29,7 +30,8 @@ export const PesoItem = memo(({
     onDelete,
     onPhotoCapture,
     isDeleting,
-    analysisId
+    analysisId,
+    forceGalleryMode = false
 }: PesoItemProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
@@ -101,7 +103,7 @@ export const PesoItem = memo(({
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
-                capture="environment"
+                capture={forceGalleryMode ? undefined : "environment"}
                 className="hidden"
                 onChange={handleFileChange}
             />

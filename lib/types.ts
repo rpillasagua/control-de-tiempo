@@ -134,7 +134,12 @@ export const DEFECTOS_VALOR_AGREGADO = [
   'ROJOS',
   'MALTRATADO',
   'QUEBRADOS',
-  'DESHIDRATADO'
+  'DESHIDRATADO',
+  'FLACIDO',
+  'MUDADO',
+  'MANCHAS_NEGRAS_LEVES',
+  'MANCHAS_NEGRAS_FUERTES',
+  'CURVATURA'
 ] as const;
 
 export const DEFECTO_LABELS: Record<string, string> = {
@@ -181,7 +186,8 @@ export const DEFECTO_LABELS: Record<string, string> = {
   LOMO_DANADO: 'Lomo Dañado',
   PEGADOS_Y_AGRUPADOS: 'Pegados y Agrupados',
   MALTRATADO: 'Maltratado',
-  DESHIDRATADO: 'Deshidratado'
+  DESHIDRATADO: 'Deshidratado',
+  CURVATURA: 'Curvatura'
 };
 
 // ============================================

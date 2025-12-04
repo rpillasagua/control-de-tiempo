@@ -164,6 +164,34 @@ export const updateAnalysis = async (
   }
 
   try {
+    // 1. Verificar si hay cambios que requieran mover carpetas (codigo o lote)
+    if (updates.codigo || updates.lote) {
+      const currentAnalysis = await getAnalysisById(analysisId);
+
+      if (currentAnalysis && currentAnalysis.codigo && currentAnalysis.lote) {
+        const oldCode = currentAnalysis.codigo;
+        const oldBatch = currentAnalysis.lote;
+        const newCode = updates.codigo || oldCode;
+        const newBatch = updates.lote || oldBatch;
+
+        // Si hubo cambios reales, sincronizar carpetas en Drive
+        if (oldCode !== newCode || oldBatch !== newBatch) {
+          console.log(`🔄 Detectado cambio de metadatos. Iniciando sincronización de carpetas...`);
+
+          // Ejecutar en background para no bloquear la UI demasiado tiempo
+          // (Aunque idealmente debería ser await si queremos garantizar consistencia antes de guardar)
+          // Dado que es crítico, lo haremos await pero con catch para no impedir el guardado si falla Drive
+          try {
+            const { googleDriveService } = await import('./googleDriveService');
+            await googleDriveService.syncAnalysisFolders(oldCode, oldBatch, newCode, newBatch, analysisId);
+          } catch (driveError) {
+            console.error('❌ Error sincronizando carpetas de Drive (no crítico):', driveError);
+            // Continuamos con el guardado de Firestore
+          }
+        }
+      }
+    }
+
     const analysisRef = getAnalysisRef(analysisId);
     const cleanedUpdates = cleanDataForFirestore({
       ...updates,
