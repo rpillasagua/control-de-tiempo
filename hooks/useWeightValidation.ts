@@ -38,8 +38,9 @@ export function useWeightValidation(
         }
 
         // Validate Peso Bruto
+        // NOTE: Input values are already in GRAMS, no conversion needed
         if (pesoBrutoKg && pesoBrutoKg > 0) {
-            const pesoBrutoGrams = pesoBrutoKg * 1000;
+            const pesoBrutoGrams = pesoBrutoKg; // Already in grams
             const validationResult = validateGrossWeight(codigo, pesoBrutoGrams, productType);
 
             if (validationResult.isValid) {
@@ -60,8 +61,9 @@ export function useWeightValidation(
         }
 
         // Validate Peso Neto
+        // NOTE: Input values are already in GRAMS, no conversion needed
         if (pesoNetoKg && pesoNetoKg > 0) {
-            const pesoNetoGrams = pesoNetoKg * 1000;
+            const pesoNetoGrams = pesoNetoKg; // Already in grams
             const validationResult = validateNetWeight(codigo, pesoNetoGrams, productType);
 
             if (validationResult.isValid) {

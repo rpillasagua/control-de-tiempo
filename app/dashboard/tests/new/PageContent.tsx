@@ -470,17 +470,13 @@ export default function NewMultiAnalysisPageContent() {
         currentAnalysis.defectos || {}
     );
 
-    // Weight Validation Hook - DESHABILITADO POR SOLICITUD DEL USUARIO
-    // const weightValidationResults = useWeightValidation(
-    //     codigo,
-    //     currentAnalysis.pesoBruto?.valor,
-    //     currentAnalysis.pesoNeto?.valor,
-    //     productType
-    // );
-    const weightValidationResults = {
-        pesoBruto: { isValid: true, message: '' },
-        pesoNeto: { isValid: true, message: '' }
-    };
+    // Weight Validation Hook - CORREGIDO para usar gramos directamente
+    const weightValidationResults = useWeightValidation(
+        codigo,
+        currentAnalysis.pesoBruto?.valor,
+        currentAnalysis.pesoNeto?.valor,
+        productType
+    );
 
     // Use the new hook for weight inputs
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
