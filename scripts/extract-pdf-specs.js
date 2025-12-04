@@ -390,32 +390,34 @@ function extractDefects(text) {
 
     const section = text.substring(startIndex + startMarker.length, endIndex);
 
-    // Known defects list
+    // Known defects list (using underscores to match TypeScript types)
     const KNOWN_DEFECTS = [
-        'RESIDUOS DE HEPATOPANCREAS', 'BRANQUIAS AMARILLAS FUERTES', 'BRANQUIAS AMARILLAS LEVES',
-        'BRANQUIAS OSCURAS FUERTES', 'BRANQUIAS OSCURAS LEVES', 'SABOR GALLINAZA FUERTE',
-        'SABOR GALLINAZA LEVE', 'MANCHAS NEGRAS FUERTES', 'HONGO BUCAL FUERTE',
-        'SABOR TIERRA FUERTE', 'MANCHAS NEGRAS LEVES', 'HONGO BUCAL LEVE',
-        'SABOR TIERRA LEVE', 'RESIDUAL DE SULFITO', 'VARIACION DE COLOR',
-        'CABEZA DESCOLGADA', 'MAL DESCABEZADO', 'DEFORMES FUERTES',
-        'HEMOLINFAS LEVES', 'HEPATO REVENTADO', 'MATERIAL EXTRAÑO', 'CASCARA APARTE',
-        'CORTE IRREGULAR', 'HEMOLINFAS FUERTES', 'DEFORMES LEVES', 'DESHIDRATADO',
-        'HEPATO REGADO', 'RESTOS DE VENAS', 'CABEZA FUERTE', 'CABEZA NARANJA',
-        'CORTE PROFUNDO', 'FALTA DE CORTE', 'DEFECTOS TOTALES', 'CABEZA FLOJA',
-        'CORTE LARGO', 'MALTRATADO', 'SEMIROSADO', 'SIN TELSON', 'CABEZA ROJA',
-        'SABOR CHOCLO', 'SABOR COMBUSTIBLE', 'QUEBRADO', 'MELANOSIS', 'FLACIDO',
+        'RESIDUOS_DE_HEPATOPANCREAS', 'BRANQUIAS_AMARILLAS_FUERTES', 'BRANQUIAS_AMARILLAS_LEVES',
+        'BRANQUIAS_OSCURAS_FUERTES', 'BRANQUIAS_OSCURAS_LEVES', 'SABOR_GALLINAZA_FUERTE',
+        'SABOR_GALLINAZA_LEVE', 'MANCHAS_NEGRAS_FUERTES', 'HONGO_BUCAL_FUERTE',
+        'SABOR_TIERRA_FUERTE', 'MANCHAS_NEGRAS_LEVES', 'HONGO_BUCAL_LEVE',
+        'SABOR_TIERRA_LEVE', 'RESIDUAL_DE_SULFITO', 'VARIACION_DE_COLOR',
+        'CABEZA_DESCOLGADA', 'MAL_DESCABEZADO', 'DEFORMES_FUERTES',
+        'HEMOLINFAS_LEVES', 'HEPATO_REVENTADO', 'MATERIAL_EXTRAÑO', 'CASCARA_APARTE',
+        'CORTE_IRREGULAR', 'HEMOLINFAS_FUERTES', 'DEFORMES_LEVES', 'DESHIDRATADO',
+        'HEPATO_REGADO', 'RESTOS_DE_VENAS', 'CABEZA_FUERTE', 'CABEZA_NARANJA',
+        'CORTE_PROFUNDO', 'FALTA_DE_CORTE', 'DEFECTOS_TOTALES', 'CABEZA_FLOJA',
+        'CORTE_LARGO', 'MALTRATADO', 'SEMIROSADO', 'SIN_TELSON', 'CABEZA_ROJA',
+        'SABOR_CHOCLO', 'SABOR_COMBUSTIBLE', 'QUEBRADO', 'MELANOSIS', 'FLACIDO',
         'MUDADO', 'ROSADO', 'COLOR', 'SABOR'
     ];
 
     const cleanSection = section.replace(/\s+/g, ' ');
 
     for (const defect of KNOWN_DEFECTS) {
-        const regex = new RegExp(`${defect}\\s*([\\w%\\d.,-]+)`, 'i');
+        // Replace underscores with spaces for regex matching against PDF text
+        const defectWithSpaces = defect.replace(/_/g, ' ');
+        const regex = new RegExp(`${defectWithSpaces}\\s*([\\w%\\d.,-]+)`, 'i');
         const match = cleanSection.match(regex);
         if (match) {
             let limit = match[1].trim();
             defects.push({
-                defect: defect,
+                defect: defect, // Store with underscores
                 limit: limit
             });
         }
