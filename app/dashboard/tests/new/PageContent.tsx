@@ -49,6 +49,7 @@ import { usePhotoUpload } from '@/hooks/usePhotoUpload';
 import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { useTechnicalSpecs } from '@/hooks/useTechnicalSpecs';
 import { useDefectCalculation } from '@/hooks/useDefectCalculation';
+import { useWeightValidation } from '@/hooks/useWeightValidation';
 import { TechnicalSpecsViewer } from '@/components/TechnicalSpecsViewer';
 
 export default function NewMultiAnalysisPageContent() {
@@ -469,6 +470,14 @@ export default function NewMultiAnalysisPageContent() {
         currentAnalysis.defectos || {}
     );
 
+    // Weight Validation Hook
+    const weightValidationResults = useWeightValidation(
+        codigo,
+        currentAnalysis.pesoBruto?.valor,
+        currentAnalysis.pesoNeto?.valor,
+        productType
+    );
+
     // Use the new hook for weight inputs
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { handleWeightChange } = useWeightInput(currentAnalysis, updateCurrentAnalysis);
@@ -886,12 +895,14 @@ export default function NewMultiAnalysisPageContent() {
                                         <CardTitle>⚖️ Control de Pesos</CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-5' : 'space-y-6 md:space-y-4'}>
+                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-3' : 'space-y-6 md:space-y-4'}>
                                             {/* Peso Bruto */}
                                             {!isDualBag && (
                                                 <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label>Peso Bruto ({weightUnit})</Label>
+                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                        <Label className="text-sm">
+                                                            {viewMode === 'COMPACTA' ? `P. BRUTO (${weightUnit})` : `Peso Bruto (${weightUnit})`}
+                                                        </Label>
                                                         {currentAnalysis.pesoBruto?.valor && (
                                                             <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                                 <CheckCircle2 className="w-3 h-3 text-white" />
@@ -905,6 +916,15 @@ export default function NewMultiAnalysisPageContent() {
                                                         value={currentAnalysis.pesoBruto?.valor || ''}
                                                         onChange={(e) => handleWeightChange('pesoBruto', parseFloat(e.target.value))}
                                                     />
+                                                    {/* Validation Message */}
+                                                    {weightValidationResults.pesoBruto.message && currentAnalysis.pesoBruto?.valor && (
+                                                        <div className={`text-xs font-medium ${weightValidationResults.pesoBruto.isValid
+                                                            ? 'text-green-600'
+                                                            : 'text-red-600'
+                                                            }`}>
+                                                            {weightValidationResults.pesoBruto.message}
+                                                        </div>
+                                                    )}
                                                     <PhotoCapture
                                                         key={`pesoBruto-${activeAnalysisIndex}`}
                                                         label="Foto Peso Bruto"
@@ -920,8 +940,10 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Peso Congelado */}
                                             <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label>Peso Congelado ({weightUnit})</Label>
+                                                <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                    <Label className="text-sm">
+                                                        {viewMode === 'COMPACTA' ? `P. CONG. (${weightUnit})` : `Peso Congelado (${weightUnit})`}
+                                                    </Label>
                                                     {currentAnalysis.pesoCongelado?.valor && (
                                                         <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                             <CheckCircle2 className="w-3 h-3 text-white" />
@@ -951,8 +973,10 @@ export default function NewMultiAnalysisPageContent() {
                                                 <>
                                                     {/* Peso Submuestra */}
                                                     <div className="space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label>Peso Submuestra ({weightUnit})</Label>
+                                                        <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                            <Label className="text-sm">
+                                                                {viewMode === 'COMPACTA' ? `P. SUBMUES. (${weightUnit})` : `Peso Submuestra (${weightUnit})`}
+                                                            </Label>
                                                             {currentAnalysis.pesoSubmuestra?.valor && (
                                                                 <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                                     <CheckCircle2 className="w-3 h-3 text-white" />
@@ -979,8 +1003,10 @@ export default function NewMultiAnalysisPageContent() {
 
                                                     {/* Peso Sin Glaseo */}
                                                     <div className="space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label>Peso Sin Glaseo ({weightUnit})</Label>
+                                                        <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                            <Label className="text-sm">
+                                                                {viewMode === 'COMPACTA' ? `SIN GLASEO (${weightUnit})` : `Peso Sin Glaseo (${weightUnit})`}
+                                                            </Label>
                                                             {currentAnalysis.pesoSinGlaseo?.valor && (
                                                                 <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                                     <CheckCircle2 className="w-3 h-3 text-white" />
@@ -1009,8 +1035,10 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Peso Neto */}
                                             <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label>Peso Neto ({weightUnit})</Label>
+                                                <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                    <Label className="text-sm">
+                                                        {viewMode === 'COMPACTA' ? `P. NETO (${weightUnit})` : `Peso Neto (${weightUnit})`}
+                                                    </Label>
                                                     {currentAnalysis.pesoNeto?.valor && (
                                                         <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                             <CheckCircle2 className="w-3 h-3 text-white" />
@@ -1024,6 +1052,15 @@ export default function NewMultiAnalysisPageContent() {
                                                     value={currentAnalysis.pesoNeto?.valor || ''}
                                                     onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
                                                 />
+                                                {/* Validation Message */}
+                                                {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
+                                                    <div className={`text-xs font-medium ${weightValidationResults.pesoNeto.isValid
+                                                        ? 'text-green-600'
+                                                        : 'text-red-600'
+                                                        }`}>
+                                                        {weightValidationResults.pesoNeto.message}
+                                                    </div>
+                                                )}
                                                 <PhotoCapture
                                                     key={`pesoNeto-${activeAnalysisIndex}`}
                                                     label="Foto Peso Neto"
