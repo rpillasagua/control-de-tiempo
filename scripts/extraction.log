@@ -1,0 +1,24 @@
+Starting extraction...
+🚀 Starting PDF Extraction...
+Found 432 PDF files.
+[WARNING] Duplicate code found: 00038 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128201026.pdf
+[WARNING] Duplicate code found: 00068 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215150.pdf
+[WARNING] Duplicate code found: 00069 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215154.pdf
+[WARNING] Duplicate code found: 00282 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215225.pdf
+[WARNING] Duplicate code found: 00283 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215230.pdf
+[WARNING] Duplicate code found: 00287 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215233.pdf
+[WARNING] Duplicate code found: 00288 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215238.pdf
+[WARNING] Duplicate code found: 00290 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215243.pdf
+[WARNING] Duplicate code found: 00291 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215247.pdf
+[WARNING] Duplicate code found: 00292 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215252.pdf
+[WARNING] Duplicate code found: 00293 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215256.pdf
+[WARNING] Duplicate code found: 00294 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215300.pdf
+[WARNING] Duplicate code found: 00295 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215305.pdf
+[WARNING] Duplicate code found: 00296 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215309.pdf
+[WARNING] Duplicate code found: 00297 in file FT_PROD_TERM.XDO_RT_PROD_TERM_V_2_ANFIQU04_20251128215313.pdf
+
+
+✅ Extraction Complete.
+Extracted specs for 417 products.
+
+💾 Saved to C:\Users\ROGER\.gemini\antigravity\scratch\Analisis_Descongelado\lib\technical-specs.ts

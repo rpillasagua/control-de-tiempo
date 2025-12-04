@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { QualityAnalysis, WorkShift, PRODUCT_TYPE_LABELS, ProductType, DEFECTOS_ENTERO, DEFECTOS_COLA, DEFECTOS_VALOR_AGREGADO, DEFECTO_LABELS, ANALYST_COLOR_LABELS, Analysis } from '@/lib/types';
 import { validateGrossWeight, validateNetWeight } from './validations/weightValidations';
+import { validateCount, validateUniformity, validateDefects } from './validations/reportValidations';
 
 // Tipos auxiliares
 type ReportShift = 'ALL' | WorkShift;
@@ -34,15 +35,14 @@ interface FlattenedAnalysis {
     pesosBrutos: number[];
 
     // Validaciones (added for validation report)
-    validationPesoBruto?: string; // e.g., "✓ OK" or "⚠️ PESO BRUTO alto (12.5 Kg)"
-    validationPesoNeto?: string;  // e.g., "✓ OK" or "⚠️ PESO NETO bajo (11.8 Kg)"
-    validationConteo?: string;    // e.g., "✓ OK" or "⚠️ Fuera de rango (17-19)"
-    hasValidationIssues?: boolean; // true if any validation failed
+    validationPesoBruto?: string;
+    validationPesoNeto?: string;
+    validationConteo?: string;
+    validationUniformidad?: string;
+    validationDefectosIndividuales?: string[];
+    validationDefectosTotales?: string;
+    hasValidationIssues?: boolean;
 }
-
-// ============================================
-// ESTILOS REUTILIZABLES
-// ============================================
 
 const STYLES = {
     headerFill: {
@@ -119,6 +119,21 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     doc.productType
                 );
 
+                // Additional Validations using helper functions
+                const conteoVal = validateCount(doc.codigo, doc.talla, analysis.conteo);
+                const uniformidadVal = validateUniformity(
+                    doc.codigo,
+                    doc.talla,
+                    analysis.uniformidad?.grandes?.valor || analysis.uniformidad?.pequenos?.valor
+                );
+                const defectosVal = validateDefects(
+                    doc.codigo,
+                    doc.productType,
+                    analysis.pesoNeto?.valor,
+                    analysis.conteo,
+                    analysis.defectos || {}
+                );
+
                 flattened.push({
                     docId: doc.id,
                     createdAt: doc.createdAt,
@@ -147,7 +162,13 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     // Validation results
                     validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
                     validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
-                    hasValidationIssues: !pesoBrutoVal.isValid || !pesoNetoVal.isValid
+                    validationConteo: conteoVal.isValid ? '✓ OK' : conteoVal.message,
+                    validationUniformidad: uniformidadVal.isValid ? '✓ OK' : uniformidadVal.message,
+                    validationDefectosIndividuales: defectosVal.individual,
+                    validationDefectosTotales: defectosVal.total,
+                    hasValidationIssues: !pesoBrutoVal.isValid || !pesoNetoVal.isValid ||
+                        !conteoVal.isValid || !uniformidadVal.isValid ||
+                        defectosVal.hasIssues
                 });
             });
         } else {
@@ -749,7 +770,14 @@ const createValidationsSheet = (
         'Peso Bruto (Kg)',
         'Validación P. Bruto',
         'Peso Neto (Kg)',
-        'Validación P. Neto'
+        'Validación P. Neto',
+        'Conteo',
+        'Validación Conteo',
+        'Uniformidad',
+        'Validación Uniformidad',
+        'Defectos Individuales',
+        'Total Defectos %',
+        'Validación Total'
     ];
 
     const headerRow = worksheet.addRow(headers);
@@ -759,6 +787,11 @@ const createValidationsSheet = (
 
     // Datos
     analysesWithIssues.forEach(d => {
+        // Formatear defectos individuales como texto multilínea
+        const defectosText = d.validationDefectosIndividuales && d.validationDefectosIndividuales.length > 0
+            ? d.validationDefectosIndividuales.join('\n')
+            : '-';
+
         const row = worksheet.addRow([
             new Date(d.createdAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
             d.shift === 'DIA' ? 'Día' : 'Noche',
@@ -769,9 +802,16 @@ const createValidationsSheet = (
             d.pesoBruto || '-',
             d.validationPesoBruto || '-',
             d.pesoNeto || '-',
-            d.validationPesoNeto || '-'
+            d.validationPesoNeto || '-',
+            d.conteo || '-',
+            d.validationConteo || '-',
+            d.uniformidadGrandes || d.uniformidadPequenos || '-',
+            d.validationUniformidad || '-',
+            defectosText,
+            d.totalDefectos ? `${d.totalDefectos.toFixed(2)}%` : '-',
+            d.validationDefectosTotales || '-'
         ]);
-        row.alignment = { vertical: 'middle' };
+        row.alignment = { vertical: 'middle', wrapText: true };
 
         // Resaltar celdas con problemas en rojo
         if (d.validationPesoBruto && d.validationPesoBruto.includes('⚠️')) {
@@ -779,6 +819,18 @@ const createValidationsSheet = (
         }
         if (d.validationPesoNeto && d.validationPesoNeto.includes('⚠️')) {
             row.getCell(10).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationConteo && d.validationConteo.includes('⚠️')) {
+            row.getCell(12).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationUniformidad && d.validationUniformidad.includes('⚠️')) {
+            row.getCell(14).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationDefectosIndividuales && d.validationDefectosIndividuales.length > 0) {
+            row.getCell(15).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationDefectosTotales && d.validationDefectosTotales.includes('⚠️')) {
+            row.getCell(17).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
     });
 
@@ -793,7 +845,14 @@ const createValidationsSheet = (
         { width: 14 },  // Peso Bruto
         { width: 35 },  // Validación P. Bruto
         { width: 14 },  // Peso Neto
-        { width: 35 }   // Validación P. Neto
+        { width: 35 },  // Validación P. Neto
+        { width: 10 },  // Conteo
+        { width: 30 },  // Validación Conteo
+        { width: 12 },  // Uniformidad
+        { width: 30 },  // Validación Uniformidad
+        { width: 40 },  // Defectos Individuales
+        { width: 15 },  // Total Defectos
+        { width: 30 }   // Validación Total
     ];
 
     // Congelar primera fila

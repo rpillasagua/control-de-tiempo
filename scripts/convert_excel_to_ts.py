@@ -45,6 +45,8 @@ try:
             'netWeightUnit': clean_value(row.get('PESO_NETO_UNIDAD')),
             'grossWeight': clean_value(row.get('PESO_BRUTO_PRODUCCION')),
             'grossWeightUnit': clean_value(row.get('PESO_BRUTO_PRODUCCION_UNIDAD')),
+            'grossWeightMasters': clean_value(row.get('PESO_BRUTO_MASTERS')),
+            'grossWeightMastersUnit': clean_value(row.get('PESO_BRUTO_MASTERS_UNIDAD')),
             'overweightPct': clean_value(row.get('SOBREPESO_PORCENTAJE')),
             'productType': clean_value(row.get('TIPO_PRODUCTO')),
             'freezingMethod': clean_value(row.get('METODO_CONGELACION')),
@@ -138,7 +140,9 @@ export interface ProductSpec {{
     netWeightUnit: string;
     grossWeight: number;
     grossWeightUnit: string;
-    overweightPct: string;
+    grossWeightMasters: number | null;
+    grossWeightMastersUnit: string | null;
+    overweightPct: string | null;
     productType: string;
     freezingMethod: string;
     destination: string;
@@ -146,7 +150,7 @@ export interface ProductSpec {{
     certification: string;
     color: string;
     packing: string;
-    preservative: string;
+    preservative: string | null;
     sizes: SizeSpec[];
     defects: DefectSpec[];
 }}
