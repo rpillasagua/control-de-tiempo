@@ -470,13 +470,17 @@ export default function NewMultiAnalysisPageContent() {
         currentAnalysis.defectos || {}
     );
 
-    // Weight Validation Hook
-    const weightValidationResults = useWeightValidation(
-        codigo,
-        currentAnalysis.pesoBruto?.valor,
-        currentAnalysis.pesoNeto?.valor,
-        productType
-    );
+    // Weight Validation Hook - DESHABILITADO POR SOLICITUD DEL USUARIO
+    // const weightValidationResults = useWeightValidation(
+    //     codigo,
+    //     currentAnalysis.pesoBruto?.valor,
+    //     currentAnalysis.pesoNeto?.valor,
+    //     productType
+    // );
+    const weightValidationResults = {
+        pesoBruto: { isValid: true, message: '' },
+        pesoNeto: { isValid: true, message: '' }
+    };
 
     // Use the new hook for weight inputs
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -911,8 +915,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     </div>
                                                     <Input
                                                         type="number"
-                                                        step="0.01"
-                                                        placeholder="0.00"
+                                                        placeholder="0"
                                                         value={currentAnalysis.pesoBruto?.valor || ''}
                                                         onChange={(e) => handleWeightChange('pesoBruto', parseFloat(e.target.value))}
                                                     />
@@ -952,8 +955,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 </div>
                                                 <Input
                                                     type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
+                                                    placeholder="0"
                                                     value={currentAnalysis.pesoCongelado?.valor || ''}
                                                     onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
                                                 />
@@ -985,8 +987,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         </div>
                                                         <Input
                                                             type="number"
-                                                            step="0.01"
-                                                            placeholder="0.00"
+                                                            placeholder="0"
                                                             value={currentAnalysis.pesoSubmuestra?.valor || ''}
                                                             onChange={(e) => handleWeightChange('pesoSubmuestra', parseFloat(e.target.value))}
                                                         />
@@ -1015,8 +1016,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         </div>
                                                         <Input
                                                             type="number"
-                                                            step="0.01"
-                                                            placeholder="0.00"
+                                                            placeholder="0"
                                                             value={currentAnalysis.pesoSinGlaseo?.valor || ''}
                                                             onChange={(e) => handleWeightChange('pesoSinGlaseo', parseFloat(e.target.value))}
                                                         />
@@ -1047,8 +1047,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 </div>
                                                 <Input
                                                     type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
+                                                    placeholder="0"
                                                     value={currentAnalysis.pesoNeto?.valor || ''}
                                                     onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
                                                 />
