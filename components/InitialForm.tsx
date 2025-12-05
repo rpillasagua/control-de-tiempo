@@ -153,7 +153,12 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
 
                 if (!product) {
                     error = 'Código no encontrado en la base de datos';
-                } else if (initialData?.productType && initialData.productType !== 'CONTROL_PESOS' && product.type !== initialData.productType) {
+                } else if (
+                    initialData?.productType &&
+                    initialData.productType !== 'CONTROL_PESOS' &&
+                    initialData.productType !== 'REMUESTREO' && // ✅ Allow any code for REMUESTREO
+                    product.type !== initialData.productType
+                ) {
                     error = `El código es de tipo ${product.type} pero seleccionaste ${initialData.productType}`;
                 }
             }

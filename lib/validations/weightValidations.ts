@@ -136,7 +136,7 @@ export function validateGrossWeight(
     if (pesoBrutoGrams > upperLimitGrams) {
         return {
             isValid: false,
-            message: `PESO BRUTO alto (${actualKg.toFixed(2)} Kg)`,
+            message: `PESO BRUTO alto (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
             limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
             actual: actualKg
         };
@@ -145,7 +145,7 @@ export function validateGrossWeight(
     if (pesoBrutoGrams < lowerLimitGrams) {
         return {
             isValid: false,
-            message: `PESO BRUTO bajo (${actualKg.toFixed(2)} Kg)`,
+            message: `PESO BRUTO bajo (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
             limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
             actual: actualKg
         };
@@ -202,7 +202,7 @@ export function validateNetWeight(
     if (pesoNetoGrams > upperLimitGrams) {
         return {
             isValid: false,
-            message: `PESO NETO alto (${actualKg.toFixed(2)} Kg)`,
+            message: `PESO NETO alto (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
             limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
             actual: actualKg
         };
@@ -211,7 +211,7 @@ export function validateNetWeight(
     if (pesoNetoGrams < baseNetWeightGrams) {
         return {
             isValid: false,
-            message: `PESO NETO bajo (${actualKg.toFixed(2)} Kg)`,
+            message: `PESO NETO bajo (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
             limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
             actual: actualKg
         };

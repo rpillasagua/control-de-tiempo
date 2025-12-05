@@ -33,7 +33,7 @@ export const validateSize = (
     );
 
     if (!sizeSpec) {
-        return { isValid: false, message: `⚠️ TALLA NO EXISTE EN FT` };
+        return { isValid: false, message: `⚠️ TALLA NO EXISTE EN FT (Esperada: ${specs.sizes.map(s => s.sizeMp).join(', ')})` };
     }
 
     return { isValid: true, message: '✓ OK' };
@@ -64,9 +64,9 @@ export const validateCount = (
         if (parts.length === 2) {
             const [min, max] = parts;
             if (conteo > max) {
-                return { isValid: false, message: `⚠️ CONTEO alto (${conteo})` };
+                return { isValid: false, message: `⚠️ CONTEO alto (${conteo}) (Límite: ${min}-${max})` };
             } else if (conteo < min) {
-                return { isValid: false, message: `⚠️ CONTEO bajo (${conteo})` };
+                return { isValid: false, message: `⚠️ CONTEO bajo (${conteo}) (Límite: ${min}-${max})` };
             }
         }
     }
@@ -98,7 +98,7 @@ export const validateUniformity = (
     const ratio = Number((grandes / pequenos).toFixed(2));
 
     if (sizeSpec && sizeSpec.uniformity && ratio > sizeSpec.uniformity) {
-        return { isValid: false, message: `⚠️ UNIFORMIDAD alta (${ratio})` };
+        return { isValid: false, message: `⚠️ UNIFORMIDAD alta (${ratio}) (Límite: ${sizeSpec.uniformity.toFixed(2)})` };
     }
 
     return { isValid: true, message: '✓ OK' };
@@ -172,7 +172,7 @@ export const validateDefects = (
                 const limitVal = parseFloat(limitStr.replace('%', ''));
                 if (!isNaN(limitVal) && percentage > limitVal) {
                     const defectLabel = DEFECTO_LABELS[defectKey] || defectKey;
-                    result.individual.push(`⚠️ ${defectLabel} alto (${percentage.toFixed(2)}%)`);
+                    result.individual.push(`⚠️ ${defectLabel} alto (${percentage.toFixed(2)}%) (Límite: ${limitVal}%)`);
                     result.hasIssues = true;
                 }
                 totalDefectsPercentage += percentage;
@@ -187,7 +187,7 @@ export const validateDefects = (
         if (limitStr.includes('%')) {
             const limitVal = parseFloat(limitStr.replace('%', ''));
             if (!isNaN(limitVal) && totalDefectsPercentage > limitVal) {
-                result.total = `⚠️ TOTAL DEFECTOS alto (${totalDefectsPercentage.toFixed(2)}%)`;
+                result.total = `⚠️ TOTAL DEFECTOS alto (${totalDefectsPercentage.toFixed(2)}%) (Límite: ${limitVal}%)`;
                 result.hasIssues = true;
             }
         }
