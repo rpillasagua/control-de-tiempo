@@ -20,6 +20,11 @@ interface UseAnalysisSaveProps {
     isCompleted: boolean;
     setIsCompleted: (completed: boolean) => void;
     isDeleting?: boolean;
+    sections?: {
+        weights: boolean;
+        uniformity: boolean;
+        defects: boolean;
+    };
 }
 
 export const useAnalysisSave = ({
@@ -39,7 +44,8 @@ export const useAnalysisSave = ({
     globalPesoBruto,
     isCompleted,
     setIsCompleted,
-    isDeleting = false
+    isDeleting = false,
+    sections
 }: UseAnalysisSaveProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -109,6 +115,7 @@ export const useAnalysisSave = ({
                 status: finalStatus,
                 completedAt: completedAtValue,
                 analystColor: originalAnalystColor || analystColor!,
+                sections, // Add sections to document
                 analyses: analyses.map(a => {
                     // Limpiar uniformidad: solo guardar si tiene valores o fotos
                     const hasUniformidadData = a.uniformidad && (
@@ -213,7 +220,7 @@ export const useAnalysisSave = ({
             setIsSaving(false);
             saveInProgressRef.current = false;
         }
-    }, [analysisId, basicsCompleted, isCompleted, codigo, lote, talla, productType, originalAnalystColor, analystColor, analyses, originalCreatedAt, originalCreatedBy, originalDate, originalShift, globalPesoBruto, setIsCompleted]);
+    }, [analysisId, basicsCompleted, isCompleted, codigo, lote, talla, productType, originalAnalystColor, analystColor, analyses, originalCreatedAt, originalCreatedBy, originalDate, originalShift, globalPesoBruto, setIsCompleted, sections]);
 
     // 🔧 FIX #2: Force save before page unload
     useEffect(() => {
@@ -254,7 +261,8 @@ export const useAnalysisSave = ({
             lote,
             talla,
             analystColor,
-            productType
+            productType,
+            sections // Add sections to check
         };
 
         // Use deterministic serialization to avoid false positives from property order changes
@@ -326,7 +334,8 @@ export const useAnalysisSave = ({
         basicsCompleted,
         analysisId,
         isCompleted,
-        isDeleting
+        isDeleting,
+        sections
         // 🔧 deterministicStringify and saveDocument excluded to prevent infinite loops
     ]);
 

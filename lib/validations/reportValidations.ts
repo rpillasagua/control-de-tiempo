@@ -80,9 +80,10 @@ export const validateCount = (
 export const validateUniformity = (
     codigo: string,
     talla: string | undefined,
-    uniformidad: number | undefined
+    grandes: number | undefined,
+    pequenos: number | undefined
 ): ValidationResult => {
-    if (!uniformidad || !talla) return { isValid: true, message: '✓ OK' };
+    if (!grandes || !pequenos || pequenos === 0 || !talla) return { isValid: true, message: '✓ OK' };
 
     const normalizedCode = codigo.padStart(5, '0');
     const specs = TECHNICAL_SPECS[normalizedCode];
@@ -94,8 +95,10 @@ export const validateUniformity = (
         (s.sizeMarked && s.sizeMarked.toLowerCase() === talla.toLowerCase())
     );
 
-    if (sizeSpec && sizeSpec.uniformity && uniformidad > sizeSpec.uniformity) {
-        return { isValid: false, message: `⚠️ UNIFORMIDAD alta (${uniformidad})` };
+    const ratio = Number((grandes / pequenos).toFixed(2));
+
+    if (sizeSpec && sizeSpec.uniformity && ratio > sizeSpec.uniformity) {
+        return { isValid: false, message: `⚠️ UNIFORMIDAD alta (${ratio})` };
     }
 
     return { isValid: true, message: '✓ OK' };

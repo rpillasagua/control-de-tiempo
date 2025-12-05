@@ -12,7 +12,7 @@ interface ProductTypeSelectorProps {
 export default function ProductTypeSelector({ selectedType, onSelect }: ProductTypeSelectorProps) {
   const [isEditing, setIsEditing] = useState(!selectedType);
 
-  const productTypes: ProductType[] = ['ENTERO', 'COLA', 'VALOR_AGREGADO', 'CONTROL_PESOS'];
+  const productTypes: ProductType[] = ['ENTERO', 'COLA', 'VALOR_AGREGADO', 'CONTROL_PESOS', 'REMUESTREO'];
 
   if (selectedType && !isEditing) {
     return (
@@ -23,6 +23,7 @@ export default function ProductTypeSelector({ selectedType, onSelect }: ProductT
             {selectedType === 'COLA' && '🍤'}
             {selectedType === 'VALOR_AGREGADO' && '📦'}
             {selectedType === 'CONTROL_PESOS' && '⚖️'}
+            {selectedType === 'REMUESTREO' && '🔄'}
           </div>
           <div>
             <p className="text-sm text-blue-600 font-medium mb-0.5">Tipo de Producto Seleccionado</p>
@@ -110,6 +111,7 @@ export default function ProductTypeSelector({ selectedType, onSelect }: ProductT
                   {type === 'COLA' && '🍤'}
                   {type === 'VALOR_AGREGADO' && '📦'}
                   {type === 'CONTROL_PESOS' && '⚖️'}
+                  {type === 'REMUESTREO' && '🔄'}
                 </div>
                 <span
                   className="text-[14px] font-[700] leading-tight"

@@ -13,6 +13,11 @@ interface AnalysisData {
     talla: string;
     color: AnalystColor | null;
     productType?: ProductType;
+    sections?: {
+        weights: boolean;
+        uniformity: boolean;
+        defects: boolean;
+    };
 }
 
 interface InitialFormProps {
@@ -64,6 +69,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         codigo: initialData?.codigo || '',
         talla: initialData?.talla || '',
         color: initialData?.color || null,
+        sections: { weights: true, uniformity: true, defects: true }
     });
 
     const [errors, setErrors] = useState<Partial<Record<keyof AnalysisData, string>>>({});
@@ -215,6 +221,9 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         }
     };
 
+    // Helper to check if current type is REMUESTREO
+    const isRemuestreo = initialData?.productType === 'REMUESTREO';
+
     return (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in">
             <style jsx global>{`
@@ -233,10 +242,10 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
             >
                 {/* Título */}
                 <h2 className="m-0 text-[22px] font-[800] text-[#111827]">
-                    Nuevo Análisis de Calidad
+                    {isRemuestreo ? 'Configurar Remuestreo' : 'Nuevo Análisis de Calidad'}
                 </h2>
                 <p className="mt-[5px] mb-[25px] text-[14px] text-[#6B7280]">
-                    Ingresa los datos de identificación del lote para comenzar.
+                    {isRemuestreo ? 'Selecciona las secciones a analizar e ingresa los datos.' : 'Ingresa los datos de identificación del lote para comenzar.'}
                 </p>
 
                 <form onSubmit={handleSubmit}>
@@ -277,6 +286,53 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                         error={touched.talla ? errors.talla : undefined}
                         required
                     />
+
+                    {/* SECCIÓN DE REMUESTREO: Checkboxes */}
+                    {isRemuestreo && (
+                        <div className="mb-[20px] p-[16px] bg-blue-50 border-2 border-blue-100 rounded-[14px]">
+                            <label className="block text-[13px] font-[700] text-blue-900 mb-[12px]">
+                                Secciones a Analizar <span className="text-red-500">*</span>
+                            </label>
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.sections?.weights}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            sections: { ...prev.sections!, weights: e.target.checked }
+                                        }))}
+                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">⚖️ Pesos y Glaseo</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.sections?.uniformity}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            sections: { ...prev.sections!, uniformity: e.target.checked }
+                                        }))}
+                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">📏 Uniformidad</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.sections?.defects}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            sections: { ...prev.sections!, defects: e.target.checked }
+                                        }))}
+                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">🔍 Defectos y Calidad</span>
+                                </label>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Error Summary */}
                     {Object.keys(errors).some(key => errors[key as keyof AnalysisData]) && Object.keys(touched).length > 0 && (

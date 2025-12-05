@@ -40,7 +40,7 @@ export interface ResistanceTest {
 /**
  * Tipo de producto a analizar
  */
-export type ProductType = 'ENTERO' | 'COLA' | 'VALOR_AGREGADO' | 'CONTROL_PESOS';
+export type ProductType = 'ENTERO' | 'COLA' | 'VALOR_AGREGADO' | 'CONTROL_PESOS' | 'REMUESTREO';
 
 /**
  * Etiquetas para mostrar en UI
@@ -49,7 +49,8 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   ENTERO: 'Entero',
   COLA: 'Cola',
   VALOR_AGREGADO: 'Valor Agregado',
-  CONTROL_PESOS: 'Control de Pesos Brutos'
+  CONTROL_PESOS: 'Control de Pesos Brutos',
+  REMUESTREO: 'Remuestreo'
 };
 
 /**
@@ -289,6 +290,13 @@ export interface Analysis {
 export interface QualityAnalysis {
   id: string;
   productType: ProductType;
+
+  // Secciones habilitadas (para REMUESTREO)
+  sections?: {
+    weights: boolean;
+    uniformity: boolean;
+    defects: boolean;
+  };
 
   // CAMPOS OBLIGATORIOS (se llenan primero)
   lote: string;         // REQUIRED

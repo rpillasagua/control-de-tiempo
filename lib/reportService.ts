@@ -112,7 +112,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                 const pesoNetoVal = validateNetWeight(doc.codigo, (analysis.pesoNeto?.valor || 0), doc.productType);
                 const tallaVal = validateSize(doc.codigo, doc.talla);
                 const conteoVal = validateCount(doc.codigo, doc.talla, analysis.conteo);
-                const uniformidadVal = validateUniformity(doc.codigo, doc.talla, analysis.uniformidad?.grandes?.valor || analysis.uniformidad?.pequenos?.valor);
+                const uniformidadVal = validateUniformity(doc.codigo, doc.talla, analysis.uniformidad?.grandes?.valor, analysis.uniformidad?.pequenos?.valor);
                 const defectosVal = validateDefects(doc.codigo, doc.productType, analysis.pesoNeto?.valor, analysis.conteo, analysis.defectos || {});
 
                 flattened.push({
@@ -162,7 +162,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
             const pesoNetoVal = validateNetWeight(doc.codigo, (legacy.pesoNeto?.valor || 0), doc.productType);
             const tallaVal = validateSize(doc.codigo, doc.talla);
             const conteoVal = validateCount(doc.codigo, doc.talla, legacy.conteo);
-            const uniformidadVal = validateUniformity(doc.codigo, doc.talla, legacy.uniformidad?.grandes?.valor || legacy.uniformidad?.pequenos?.valor);
+            const uniformidadVal = validateUniformity(doc.codigo, doc.talla, legacy.uniformidad?.grandes?.valor, legacy.uniformidad?.pequenos?.valor);
             const defectosVal = validateDefects(doc.codigo, doc.productType, legacy.pesoNeto?.valor, legacy.conteo, legacy.defectos || {});
 
             flattened.push({
@@ -627,7 +627,8 @@ export const generateDailyReport = async (
         ENTERO: [],
         COLA: [],
         VALOR_AGREGADO: [],
-        CONTROL_PESOS: []
+        CONTROL_PESOS: [],
+        REMUESTREO: []
     };
 
     flattenedAnalyses.forEach(analysis => {

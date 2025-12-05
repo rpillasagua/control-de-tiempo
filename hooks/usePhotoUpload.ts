@@ -15,6 +15,7 @@ interface UsePhotoUploadProps {
     saveDocument: () => Promise<void>;
     globalPesoBruto: PesoConFoto;
     setGlobalPesoBruto: React.Dispatch<React.SetStateAction<PesoConFoto>>;
+    ignoreNextSnapshotRef: React.MutableRefObject<boolean>;
 }
 
 export const usePhotoUpload = ({
@@ -26,7 +27,8 @@ export const usePhotoUpload = ({
     lote,
     saveDocument,
     globalPesoBruto,
-    setGlobalPesoBruto
+    setGlobalPesoBruto,
+    ignoreNextSnapshotRef
 }: UsePhotoUploadProps) => {
     const [isUploadingGlobal, setIsUploadingGlobal] = useState(false);
     const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
@@ -136,6 +138,7 @@ export const usePhotoUpload = ({
                     // Use ID instead of index for safety
                     const analysisItemId = analyses[targetIndex].id;
                     // Pass targetIndex as hint for legacy migration
+                    ignoreNextSnapshotRef.current = true;
                     await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
                     console.log(`✅ Firestore confirmed (attempt ${attempt}/3)`);
                     firestoreSaved = true;
@@ -287,6 +290,7 @@ export const usePhotoUpload = ({
                 try {
                     // Use ID for safe deletion
                     const analysisItemId = analyses[targetIndex].id;
+                    ignoreNextSnapshotRef.current = true;
                     await savePesoBrutoPhotoUrl(analysisId, analysisItemId, registroId, url);
                     console.log(`✅ Firestore confirmed - Peso bruto saved (attempt ${attempt}/3)`);
                     firestoreSaved = true;
@@ -420,6 +424,7 @@ export const usePhotoUpload = ({
             let firestoreSaved = false;
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
+                    ignoreNextSnapshotRef.current = true;
                     await saveGlobalPhotoUrl(analysisId, url);
                     console.log(`✅ Firestore confirmed - Global peso bruto saved (attempt ${attempt}/3)`);
                     firestoreSaved = true;
@@ -638,6 +643,7 @@ export const usePhotoUpload = ({
                 // Save to Firestore
                 const { savePesoBrutoPhotoUrl } = await import('@/lib/analysisService');
                 const analysisItemId = analysisDoc.analyses[targetIndex].id;
+                ignoreNextSnapshotRef.current = true;
                 await savePesoBrutoPhotoUrl(photo.analysisId, analysisItemId, registroId, url);
 
             } else if (photo.field === 'global-pesoBruto') {
@@ -645,6 +651,7 @@ export const usePhotoUpload = ({
                 setGlobalPesoBruto(prev => ({ ...prev, fotoUrl: url }));
                 // Save to Firestore
                 const { saveGlobalPhotoUrl } = await import('@/lib/analysisService');
+                ignoreNextSnapshotRef.current = true;
                 await saveGlobalPhotoUrl(analysisId, url);
 
             } else {
@@ -664,6 +671,7 @@ export const usePhotoUpload = ({
                 // Use ID from the fetched analysis document
                 const analysisItemId = analysisDoc.analyses[targetIndex].id;
                 // Pass targetIndex as hint for legacy migration
+                ignoreNextSnapshotRef.current = true;
                 await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
             }
 

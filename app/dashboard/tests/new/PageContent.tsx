@@ -69,6 +69,11 @@ export default function NewMultiAnalysisPageContent() {
     const [lote, setLote] = useState('');
     const [talla, setTalla] = useState('');
     const [analystColor, setAnalystColor] = useState<AnalystColor | null>(null);
+    const [sections, setSections] = useState<{
+        weights: boolean;
+        uniformity: boolean;
+        defects: boolean;
+    } | undefined>(undefined);
 
     // UI State
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -100,6 +105,8 @@ export default function NewMultiAnalysisPageContent() {
 
     // Ref to track uploading state for race condition prevention
     const isUploadingRef = React.useRef(false);
+    // Ref to ignore self-triggered snapshots (prevent overwriting local state)
+    const ignoreNextSnapshotRef = React.useRef(false);
 
     // Derived State
     const currentAnalysis = analyses[activeAnalysisIndex] || {};
@@ -137,7 +144,8 @@ export default function NewMultiAnalysisPageContent() {
         globalPesoBruto,
         isCompleted,
         setIsCompleted,
-        isDeleting
+        isDeleting,
+        sections
     });
 
     const {
@@ -161,7 +169,8 @@ export default function NewMultiAnalysisPageContent() {
         lote,
         saveDocument,
         globalPesoBruto,
-        setGlobalPesoBruto
+        setGlobalPesoBruto,
+        ignoreNextSnapshotRef
     });
 
     // Technical Specs Hook - Para obtener límites
@@ -243,6 +252,7 @@ export default function NewMultiAnalysisPageContent() {
         setLote(data.lote);
         setTalla(data.talla);
         setAnalystColor(data.color);
+        setSections(data.sections);
         setBasicsCompleted(true);
         setAnalyses([{ id: generateId(), numero: 1 }]);
         setAnalysisId(generateId());
@@ -398,11 +408,22 @@ export default function NewMultiAnalysisPageContent() {
                                 return;
                             }
 
+                            // 🛡️ IGNORE SELF-TRIGGERED SNAPSHOTS
+                            // If we just uploaded a photo, we updated Firestore but the text fields might be pending auto-save.
+                            // The snapshot will come back with the new photo URL but OLD text.
+                            // We must ignore this specific snapshot to avoid overwriting local text changes.
+                            if (ignoreNextSnapshotRef.current) {
+                                console.log('🛡️ Ignoring snapshot triggered by local photo upload');
+                                ignoreNextSnapshotRef.current = false;
+                                return;
+                            }
+
                             // Mark this as a remote update to prevent auto-save
                             markAsRemoteUpdate();
 
                             setAnalysisId(data.id);
                             setProductType(data.productType);
+                            setSections(data.sections);
                             setCodigo(data.codigo);
                             setLote(data.lote);
                             setTalla(data.talla || '');
@@ -534,29 +555,37 @@ export default function NewMultiAnalysisPageContent() {
 
         const missing: string[] = [];
 
+        const checkWeights = productType !== 'REMUESTREO' || sections?.weights;
+        const checkUniformity = productType !== 'REMUESTREO' || sections?.uniformity;
+        const checkDefects = productType !== 'REMUESTREO' || sections?.defects;
+
         // 1. Validar Pesos
-        if (!isDualBag) {
+        if (checkWeights && !isDualBag) {
             if (!currentAnalysis.pesoBruto?.valor) missing.push('Peso Bruto (Valor)');
             if (!currentAnalysis.pesoBruto?.fotoUrl) missing.push('Peso Bruto (Foto)');
         }
 
-        if (!currentAnalysis.pesoNeto?.valor) missing.push('Peso Neto (Valor)');
-        if (!currentAnalysis.pesoNeto?.fotoUrl) missing.push('Peso Neto (Foto)');
+        if (checkWeights) {
+            if (!currentAnalysis.pesoNeto?.valor) missing.push('Peso Neto (Valor)');
+            if (!currentAnalysis.pesoNeto?.fotoUrl) missing.push('Peso Neto (Foto)');
+        }
 
-
-
-        // 2. Validar Conteo
-        if (!currentAnalysis.conteo) missing.push('Conteo');
+        // 2. Validar Conteo (Linked to Uniformity)
+        if (checkUniformity && !currentAnalysis.conteo) missing.push('Conteo');
 
         // 3. Validar Uniformidad
-        if (!currentAnalysis.uniformidad?.grandes?.valor) missing.push('Uniformidad Grandes (Valor)');
-        if (!currentAnalysis.uniformidad?.grandes?.fotoUrl) missing.push('Uniformidad Grandes (Foto)');
-        if (!currentAnalysis.uniformidad?.pequenos?.valor) missing.push('Uniformidad Pequeños (Valor)');
-        if (!currentAnalysis.uniformidad?.pequenos?.fotoUrl) missing.push('Uniformidad Pequeños (Foto)');
+        if (checkUniformity) {
+            if (!currentAnalysis.uniformidad?.grandes?.valor) missing.push('Uniformidad Grandes (Valor)');
+            if (!currentAnalysis.uniformidad?.grandes?.fotoUrl) missing.push('Uniformidad Grandes (Foto)');
+            if (!currentAnalysis.uniformidad?.pequenos?.valor) missing.push('Uniformidad Pequeños (Valor)');
+            if (!currentAnalysis.uniformidad?.pequenos?.fotoUrl) missing.push('Uniformidad Pequeños (Foto)');
+        }
 
         // 4. Validar Defectos (Al menos uno > 0)
-        const hasDefects = currentAnalysis.defectos && Object.values(currentAnalysis.defectos as Record<string, number>).some((val: number) => val > 0);
-        if (!hasDefects) missing.push('Defectos (Al menos uno)');
+        if (checkDefects) {
+            const hasDefects = currentAnalysis.defectos && Object.values(currentAnalysis.defectos as Record<string, number>).some((val: number) => val > 0);
+            if (!hasDefects) missing.push('Defectos (Al menos uno)');
+        }
 
         return {
             isValid: missing.length === 0,
@@ -889,7 +918,7 @@ export default function NewMultiAnalysisPageContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                         {/* Pesos Section */}
                         {
-                            (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
+                            ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (productType === 'REMUESTREO' && sections?.weights)) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>⚖️ Control de Pesos</CardTitle>
@@ -1074,7 +1103,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Uniformidad */}
                         {
-                            productType !== 'CONTROL_PESOS' && (
+                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>📏 Uniformidad</CardTitle>
@@ -1177,7 +1206,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Conteo Section */}
                         {
-                            productType !== 'CONTROL_PESOS' && (
+                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>🔢 Conteo</CardTitle>
@@ -1222,7 +1251,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Defectos de Calidad */}
                         {
-                            productType !== 'CONTROL_PESOS' && (
+                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.defects) && (
                                 <Card>
                                     <CardContent className="pt-6">
                                         <DefectSelector
@@ -1279,7 +1308,7 @@ export default function NewMultiAnalysisPageContent() {
 
                     {/* Complete Analysis Button */}
                     {
-                        !isCompleted && (
+                        !isCompleted ? (
                             <div className="pt-8 flex justify-center">
                                 <button
                                     onClick={handleCompleteAnalysis}
@@ -1290,6 +1319,26 @@ export default function NewMultiAnalysisPageContent() {
                                 >
                                     <CheckCircle2 className="w-4 h-4" />
                                     <span>Completar Análisis</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="pt-8 flex justify-center">
+                                <button
+                                    onClick={async () => {
+                                        if (!analysisId) return;
+                                        try {
+                                            setIsCompleted(false);
+                                            await saveDocument('EN_PROGRESO');
+                                            toast.success('Edición habilitada');
+                                        } catch (error) {
+                                            console.error('Error enabling editing:', error);
+                                            toast.error('Error al habilitar edición');
+                                        }
+                                    }}
+                                    className="w-full max-w-[280px] bg-white text-slate-600 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                    <span>Habilitar Edición</span>
                                 </button>
                             </div>
                         )
