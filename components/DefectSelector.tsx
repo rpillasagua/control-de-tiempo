@@ -60,11 +60,35 @@ export default function DefectSelector({
 
   // Sincronizar cambios del padre hacia local (ej. cambiar de análisis)
   useEffect(() => {
-    const newItems: DefectItem[] = Object.entries(selectedDefects).map(([key, quantity]) => ({
-      key,
-      label: DEFECTO_LABELS[key] || key,
-      quantity: quantity === 0 ? '' : quantity
-    }));
+    // Obtener el orden canónico de los defectos
+    const canonicalDefects = getDefectosForProductType();
+
+    // Crear un mapa de los defectos seleccionados para acceso rápido
+    const selectedMap = new Map(Object.entries(selectedDefects));
+
+    const newItems: DefectItem[] = [];
+
+    // 1. Agregar defectos en el orden canónico
+    canonicalDefects.forEach(key => {
+      if (selectedMap.has(key)) {
+        const quantity = selectedMap.get(key);
+        newItems.push({
+          key,
+          label: DEFECTO_LABELS[key] || key,
+          quantity: quantity === 0 ? '' : quantity
+        });
+        selectedMap.delete(key); // Remover para saber cuáles sobran
+      }
+    });
+
+    // 2. Agregar cualquier defecto extra que no esté en la lista canónica (legacy/custom)
+    selectedMap.forEach((quantity, key) => {
+      newItems.push({
+        key,
+        label: DEFECTO_LABELS[key] || key,
+        quantity: quantity === 0 ? '' : quantity
+      });
+    });
 
     // Verificar si hay cambios reales para evitar re-renders infinitos
     const isDifferent =

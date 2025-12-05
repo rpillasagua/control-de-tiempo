@@ -352,6 +352,10 @@ const createStandardProductSheet = (
         defectosList = DEFECTOS_COLA;
     } else if (productType === 'VALOR_AGREGADO') {
         defectosList = DEFECTOS_VALOR_AGREGADO;
+    } else if (productType === 'REMUESTREO') {
+        // Combinar defectos de Entero y Cola para Remuestreo
+        const combinedDefects = Array.from(new Set([...DEFECTOS_ENTERO, ...DEFECTOS_COLA]));
+        defectosList = combinedDefects;
     }
 
     // Título
@@ -652,6 +656,10 @@ export const generateDailyReport = async (
 
     if (analysesByType.CONTROL_PESOS.length > 0) {
         createControlPesosSheet(workbook, analysesByType.CONTROL_PESOS, date);
+    }
+
+    if (analysesByType.REMUESTREO.length > 0) {
+        createStandardProductSheet(workbook, analysesByType.REMUESTREO, 'REMUESTREO', date);
     }
 
     // Validations sheet (only created if there are validation issues)
