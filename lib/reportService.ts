@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { QualityAnalysis, WorkShift, PRODUCT_TYPE_LABELS, ProductType, DEFECTOS_ENTERO, DEFECTOS_COLA, DEFECTOS_VALOR_AGREGADO, DEFECTO_LABELS, ANALYST_COLOR_LABELS, Analysis } from '@/lib/types';
 import { validateGrossWeight, validateNetWeight } from './validations/weightValidations';
-import { validateCount, validateUniformity, validateDefects } from './validations/reportValidations';
+import { validateCount, validateUniformity, validateDefects, validateSize } from './validations/reportValidations';
 
 // Tipos auxiliares
 type ReportShift = 'ALL' | WorkShift;
@@ -35,6 +35,7 @@ interface FlattenedAnalysis {
     pesosBrutos: number[];
 
     // Validaciones (added for validation report)
+    validationTalla?: string;
     validationPesoBruto?: string;
     validationPesoNeto?: string;
     validationConteo?: string;
@@ -106,33 +107,13 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
         // Si tiene array de análisis (nueva estructura)
         if (doc.analyses && doc.analyses.length > 0) {
             doc.analyses.forEach(analysis => {
-                // Calculate weight validations
-                const pesoBrutoVal = validateGrossWeight(
-                    doc.codigo,
-                    (analysis.pesoBruto?.valor || 0),
-                    doc.productType
-                );
-
-                const pesoNetoVal = validateNetWeight(
-                    doc.codigo,
-                    (analysis.pesoNeto?.valor || 0),
-                    doc.productType
-                );
-
-                // Additional Validations using helper functions
+                // Validaciones
+                const pesoBrutoVal = validateGrossWeight(doc.codigo, (analysis.pesoBruto?.valor || 0), doc.productType);
+                const pesoNetoVal = validateNetWeight(doc.codigo, (analysis.pesoNeto?.valor || 0), doc.productType);
+                const tallaVal = validateSize(doc.codigo, doc.talla);
                 const conteoVal = validateCount(doc.codigo, doc.talla, analysis.conteo);
-                const uniformidadVal = validateUniformity(
-                    doc.codigo,
-                    doc.talla,
-                    analysis.uniformidad?.grandes?.valor || analysis.uniformidad?.pequenos?.valor
-                );
-                const defectosVal = validateDefects(
-                    doc.codigo,
-                    doc.productType,
-                    analysis.pesoNeto?.valor,
-                    analysis.conteo,
-                    analysis.defectos || {}
-                );
+                const uniformidadVal = validateUniformity(doc.codigo, doc.talla, analysis.uniformidad?.grandes?.valor || analysis.uniformidad?.pequenos?.valor);
+                const defectosVal = validateDefects(doc.codigo, doc.productType, analysis.pesoNeto?.valor, analysis.conteo, analysis.defectos || {});
 
                 flattened.push({
                     docId: doc.id,
@@ -160,13 +141,14 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     pesosBrutos: analysis.pesosBrutos?.map(p => p.peso) || [],
 
                     // Validation results
+                    validationTalla: tallaVal.isValid ? '✓ OK' : tallaVal.message,
                     validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
                     validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
                     validationConteo: conteoVal.isValid ? '✓ OK' : conteoVal.message,
                     validationUniformidad: uniformidadVal.isValid ? '✓ OK' : uniformidadVal.message,
                     validationDefectosIndividuales: defectosVal.individual,
                     validationDefectosTotales: defectosVal.total,
-                    hasValidationIssues: !pesoBrutoVal.isValid || !pesoNetoVal.isValid ||
+                    hasValidationIssues: !tallaVal.isValid || !pesoBrutoVal.isValid || !pesoNetoVal.isValid ||
                         !conteoVal.isValid || !uniformidadVal.isValid ||
                         defectosVal.hasIssues
                 });
@@ -175,18 +157,13 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
             // Soporte Legacy (estructura plana antigua)
             const legacy = doc as any;
 
-            // Calculate weight validations for legacy structure
-            const pesoBrutoVal = validateGrossWeight(
-                doc.codigo,
-                (legacy.pesoBruto?.valor || 0),
-                doc.productType
-            );
-
-            const pesoNetoVal = validateNetWeight(
-                doc.codigo,
-                (legacy.pesoNeto?.valor || 0),
-                doc.productType
-            );
+            // Validaciones Legacy
+            const pesoBrutoVal = validateGrossWeight(doc.codigo, (legacy.pesoBruto?.valor || 0), doc.productType);
+            const pesoNetoVal = validateNetWeight(doc.codigo, (legacy.pesoNeto?.valor || 0), doc.productType);
+            const tallaVal = validateSize(doc.codigo, doc.talla);
+            const conteoVal = validateCount(doc.codigo, doc.talla, legacy.conteo);
+            const uniformidadVal = validateUniformity(doc.codigo, doc.talla, legacy.uniformidad?.grandes?.valor || legacy.uniformidad?.pequenos?.valor);
+            const defectosVal = validateDefects(doc.codigo, doc.productType, legacy.pesoNeto?.valor, legacy.conteo, legacy.defectos || {});
 
             flattened.push({
                 docId: doc.id,
@@ -212,9 +189,16 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                 pesosBrutos: legacy.pesosBrutos?.map((p: any) => p.peso) || [],
 
                 // Validation results
+                validationTalla: tallaVal.isValid ? '✓ OK' : tallaVal.message,
                 validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
                 validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
-                hasValidationIssues: !pesoBrutoVal.isValid || !pesoNetoVal.isValid
+                validationConteo: conteoVal.isValid ? '✓ OK' : conteoVal.message,
+                validationUniformidad: uniformidadVal.isValid ? '✓ OK' : uniformidadVal.message,
+                validationDefectosIndividuales: defectosVal.individual,
+                validationDefectosTotales: defectosVal.total,
+                hasValidationIssues: !tallaVal.isValid || !pesoBrutoVal.isValid || !pesoNetoVal.isValid ||
+                    !conteoVal.isValid || !uniformidadVal.isValid ||
+                    defectosVal.hasIssues
             });
         }
     });
@@ -766,6 +750,7 @@ const createValidationsSheet = (
         'Lote',
         'Código',
         'Talla',
+        'Validación Talla',
         'Tipo Producto',
         'Peso Bruto (Kg)',
         'Validación P. Bruto',
@@ -798,6 +783,7 @@ const createValidationsSheet = (
             d.lote,
             d.codigo,
             d.talla,
+            d.validationTalla || '-',
             PRODUCT_TYPE_LABELS[d.productType],
             d.pesoBruto || '-',
             d.validationPesoBruto || '-',
@@ -814,23 +800,26 @@ const createValidationsSheet = (
         row.alignment = { vertical: 'middle', wrapText: true };
 
         // Resaltar celdas con problemas en rojo
+        if (d.validationTalla && d.validationTalla.includes('⚠️')) {
+            row.getCell(6).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
         if (d.validationPesoBruto && d.validationPesoBruto.includes('⚠️')) {
-            row.getCell(8).font = { color: { argb: 'FFFF0000' }, bold: true };
+            row.getCell(9).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
         if (d.validationPesoNeto && d.validationPesoNeto.includes('⚠️')) {
-            row.getCell(10).font = { color: { argb: 'FFFF0000' }, bold: true };
+            row.getCell(11).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
         if (d.validationConteo && d.validationConteo.includes('⚠️')) {
-            row.getCell(12).font = { color: { argb: 'FFFF0000' }, bold: true };
+            row.getCell(13).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
         if (d.validationUniformidad && d.validationUniformidad.includes('⚠️')) {
-            row.getCell(14).font = { color: { argb: 'FFFF0000' }, bold: true };
-        }
-        if (d.validationDefectosIndividuales && d.validationDefectosIndividuales.length > 0) {
             row.getCell(15).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
+        if (d.validationDefectosIndividuales && d.validationDefectosIndividuales.length > 0) {
+            row.getCell(16).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
         if (d.validationDefectosTotales && d.validationDefectosTotales.includes('⚠️')) {
-            row.getCell(17).font = { color: { argb: 'FFFF0000' }, bold: true };
+            row.getCell(18).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
     });
 
@@ -841,6 +830,7 @@ const createValidationsSheet = (
         { width: 15 },  // Lote
         { width: 12 },  // Código
         { width: 10 },  // Talla
+        { width: 25 },  // Validación Talla
         { width: 18 },  // Tipo Producto
         { width: 14 },  // Peso Bruto
         { width: 35 },  // Validación P. Bruto

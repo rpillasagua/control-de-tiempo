@@ -14,6 +14,32 @@ export interface DefectValidationResult {
 }
 
 /**
+ * Valida si la talla existe en la ficha técnica
+ */
+export const validateSize = (
+    codigo: string,
+    talla: string | undefined
+): ValidationResult => {
+    if (!talla) return { isValid: true, message: '✓ OK' };
+
+    const normalizedCode = codigo.padStart(5, '0');
+    const specs = TECHNICAL_SPECS[normalizedCode];
+
+    if (!specs) return { isValid: true, message: '✓ OK' };
+
+    const sizeSpec = specs.sizes.find(s =>
+        (s.sizeMp && s.sizeMp.toLowerCase() === talla.toLowerCase()) ||
+        (s.sizeMarked && s.sizeMarked.toLowerCase() === talla.toLowerCase())
+    );
+
+    if (!sizeSpec) {
+        return { isValid: false, message: `⚠️ TALLA NO EXISTE EN FT` };
+    }
+
+    return { isValid: true, message: '✓ OK' };
+};
+
+/**
  * Valida el conteo contra las especificaciones técnicas
  */
 export const validateCount = (
