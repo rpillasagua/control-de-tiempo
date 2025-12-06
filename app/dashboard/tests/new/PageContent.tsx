@@ -1021,7 +1021,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 </div>
                                             )}
 
-                                            {/* Campos específicos para VALOR_AGREGADO o REMUESTREO */}
+
                                             {(productType === 'VALOR_AGREGADO' || productType === 'REMUESTREO') && (
                                                 <>
                                                     {/* Peso Submuestra */}
