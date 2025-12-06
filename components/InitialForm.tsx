@@ -29,7 +29,6 @@ interface AnalysisData {
             pesoNeto?: boolean;
             pesoCongelado?: boolean;
             peseoSubmuestra?: boolean;
-            pesoGlaseo?: boolean;
             conteo?: boolean;
             uniformidad?: boolean;
             defectos?: boolean;
@@ -93,7 +92,6 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 pesoNeto: true,
                 pesoCongelado: true,
                 peseoSubmuestra: true,
-                pesoGlaseo: true,
                 conteo: true,
                 uniformidad: true,
                 defectos: true
@@ -464,7 +462,6 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                                         { key: 'pesoBruto', label: '⚖️ Peso Bruto' },
                                         { key: 'pesoNeto', label: '⚖️ Peso Neto' },
                                         { key: 'pesoCongelado', label: '❄️ Peso Congelado' },
-                                        { key: 'pesoGlaseo', label: '💧 Glaseo' },
                                         { key: 'conteo', label: '🔢 Conteo' },
                                         { key: 'uniformidad', label: '📏 Uniformidad' },
                                         { key: 'defectos', label: '🔍 Defectos' },

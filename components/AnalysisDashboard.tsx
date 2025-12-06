@@ -406,7 +406,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                       <Ruler className="w-2 h-2" /> Talla
                     </div>
                     <div className="text-sm font-bold text-gray-900 truncate" style={{ margin: 0, padding: 0, lineHeight: 1 }}>
-                      <span className="text-base">{getTallaEmoji(analysis.talla)}</span> {analysis.talla || '-'}
+                      <span className="text-base"></span> {analysis.talla || '-'}
                     </div>
                   </div>
 
