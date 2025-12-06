@@ -439,4 +439,5 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = {
     '00547': { client: 'AQUAGOLD S.A.', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
     '00548': { client: 'AQUAGOLD S.A.', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
     '00549': { client: 'AQUAGOLD S.A.', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
+    '00555': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 1.5 Kg', brand: 'JIN PAI', unit: deriveUnit('6 Und * 1.5 Kg') },
 };
