@@ -185,3 +185,18 @@ export const uploadWithRetry = async (uploadFn: () => Promise<string>, retries =
   }
   throw new Error('Max retries reached');
 };
+
+/**
+ * Debounce function to limit execution frequency
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return function (this: any, ...args: Parameters<T>) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}

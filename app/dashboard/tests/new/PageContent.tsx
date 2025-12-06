@@ -99,6 +99,22 @@ export default function NewMultiAnalysisPageContent() {
     const [originalShift, setOriginalShift] = useState<'DIA' | 'NOCHE' | null>(null);
     const [originalAnalystColor, setOriginalAnalystColor] = useState<AnalystColor | null>(null);
 
+    // Configuración para Remuestreo
+    const [remuestreoConfig, setRemuestreoConfig] = useState<{
+        reason?: string;
+        linkedAnalysisId?: string;
+        activeFields: {
+            pesoBruto?: boolean;
+            pesoNeto?: boolean;
+            pesoCongelado?: boolean;
+            peseoSubmuestra?: boolean;
+            pesoGlaseo?: boolean;
+            conteo?: boolean;
+            uniformidad?: boolean;
+            defectos?: boolean;
+        };
+    } | undefined>();
+
     // New UI State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isGalleryMode, setIsGalleryMode] = useState(false);
@@ -145,7 +161,8 @@ export default function NewMultiAnalysisPageContent() {
         isCompleted,
         setIsCompleted,
         isDeleting,
-        sections
+        sections,
+        remuestreoConfig
     });
 
     const {
@@ -253,6 +270,7 @@ export default function NewMultiAnalysisPageContent() {
         setTalla(data.talla);
         setAnalystColor(data.color);
         setSections(data.sections);
+        setRemuestreoConfig(data.remuestreoConfig);
         setBasicsCompleted(true);
         setAnalyses([{ id: generateId(), numero: 1 }]);
         setAnalysisId(generateId());
@@ -424,6 +442,7 @@ export default function NewMultiAnalysisPageContent() {
                             setAnalysisId(data.id);
                             setProductType(data.productType);
                             setSections(data.sections);
+                            setRemuestreoConfig(data.remuestreoConfig);
                             setCodigo(data.codigo);
                             setLote(data.lote);
                             setTalla(data.talla || '');
@@ -555,9 +574,9 @@ export default function NewMultiAnalysisPageContent() {
 
         const missing: string[] = [];
 
-        const checkWeights = productType !== 'REMUESTREO' || sections?.weights;
-        const checkUniformity = productType !== 'REMUESTREO' || sections?.uniformity;
-        const checkDefects = productType !== 'REMUESTREO' || sections?.defects;
+        const checkWeights = productType !== 'REMUESTREO' || (currentAnalysis as any).remuestreoConfig?.activeFields?.pesoNeto || sections?.weights;
+        const checkUniformity = productType !== 'REMUESTREO' || (currentAnalysis as any).remuestreoConfig?.activeFields?.uniformidad || sections?.uniformity;
+        const checkDefects = productType !== 'REMUESTREO' || (currentAnalysis as any).remuestreoConfig?.activeFields?.defectos || sections?.defects;
 
         // 1. Validar Pesos
         if (checkWeights && !isDualBag) {
@@ -918,7 +937,7 @@ export default function NewMultiAnalysisPageContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                         {/* Pesos Section */}
                         {
-                            ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (productType === 'REMUESTREO' && sections?.weights)) && (
+                            ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (productType === 'REMUESTREO' && (sections?.weights || (analyses[0] as any).remuestreoConfig?.activeFields?.pesoNeto))) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>⚖️ Control de Pesos</CardTitle>
@@ -1103,7 +1122,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Uniformidad */}
                         {
-                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity) && (
+                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity || (analyses[0] as any).remuestreoConfig?.activeFields?.uniformidad) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>📏 Uniformidad</CardTitle>
@@ -1206,7 +1225,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Conteo Section */}
                         {
-                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity) && (
+                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity || (analyses[0] as any).remuestreoConfig?.activeFields?.uniformidad) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>🔢 Conteo</CardTitle>
@@ -1251,7 +1270,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Defectos de Calidad */}
                         {
-                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.defects) && (
+                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.defects || (analyses[0] as any).remuestreoConfig?.activeFields?.defectos) && (
                                 <Card>
                                     <CardContent className="pt-6">
                                         <DefectSelector

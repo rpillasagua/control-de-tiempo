@@ -25,6 +25,20 @@ interface UseAnalysisSaveProps {
         uniformity: boolean;
         defects: boolean;
     };
+    remuestreoConfig?: {
+        reason?: string;
+        linkedAnalysisId?: string;
+        activeFields: {
+            pesoBruto?: boolean;
+            pesoNeto?: boolean;
+            pesoCongelado?: boolean;
+            peseoSubmuestra?: boolean;
+            pesoGlaseo?: boolean;
+            conteo?: boolean;
+            uniformidad?: boolean;
+            defectos?: boolean;
+        };
+    };
 }
 
 export const useAnalysisSave = ({
@@ -45,7 +59,8 @@ export const useAnalysisSave = ({
     isCompleted,
     setIsCompleted,
     isDeleting = false,
-    sections
+    sections,
+    remuestreoConfig
 }: UseAnalysisSaveProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -116,6 +131,7 @@ export const useAnalysisSave = ({
                 completedAt: completedAtValue,
                 analystColor: originalAnalystColor || analystColor!,
                 sections, // Add sections to document
+                remuestreoConfig, // Add Remuestreo config
                 analyses: analyses.map(a => {
                     // Limpiar uniformidad: solo guardar si tiene valores o fotos
                     const hasUniformidadData = a.uniformidad && (
@@ -262,7 +278,9 @@ export const useAnalysisSave = ({
             talla,
             analystColor,
             productType,
-            sections // Add sections to check
+
+            sections, // Add sections to check
+            remuestreoConfig // Add config to check
         };
 
         // Use deterministic serialization to avoid false positives from property order changes
