@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore: No types available for pdf-parse
-import pdf from 'pdf-parse';
+// import pdf from 'pdf-parse'; // Removed static import to fix build error
 
 // Define simplified interface for pdf-parse result since types might be missing
 interface PdfParseData {
@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
 
         // Parse PDF
+        // Dynamically import pdf-parse to avoid build-time "No such file" errors
+        const pdfModule = await import('pdf-parse');
+        const pdf = pdfModule.default || pdfModule;
+
         // Note: pdf-parse is a CommonJS module, sometimes requires default import behavior handling
         // We cast to any to avoid strict type checks if defs are missing
         const data: PdfParseData = await (pdf as any)(buffer);
