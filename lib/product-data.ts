@@ -1,15 +1,8 @@
-import { ProductType } from './types';
+import { ProductType, ProductInfo } from './types';
 
 /**
- * Información de producto
+ * Helper para derivar unidad de peso desde el campo Máster
  */
-export interface ProductInfo {
-    client: string;
-    type: ProductType;
-    master: string;
-    brand: string;
-    unit: 'KG' | 'LB';
-}
 
 /**
  * Helper para derivar unidad de peso desde el campo Máster

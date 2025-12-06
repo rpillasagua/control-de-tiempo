@@ -38,6 +38,17 @@ export interface ResistanceTest {
 // ============================================
 
 /**
+ * Información detallada del producto (Ficha Técnica)
+ */
+export interface ProductInfo {
+  client: string;
+  type: ProductType;
+  master: string;
+  brand: string;
+  unit: 'KG' | 'LB';
+}
+
+/**
  * Tipo de producto a analizar
  */
 export type ProductType = 'ENTERO' | 'COLA' | 'VALOR_AGREGADO' | 'CONTROL_PESOS' | 'REMUESTREO';
@@ -345,6 +356,9 @@ export interface QualityAnalysis {
 
   // Observaciones generales (Legacy support)
   observations?: string;
+
+  // Información personalizada para productos no registrados
+  customProductInfo?: ProductInfo;
 }
 
 // ============================================

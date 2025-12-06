@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { AnalystColor, ProductType, QualityAnalysis } from '@/lib/types';
+import { AnalystColor, ProductType, QualityAnalysis, ProductInfo } from '@/lib/types';
 import { PRODUCT_DATA } from '@/lib/product-data';
 import AnalystColorSelector from './AnalystColorSelector';
+import NewProductModal from './NewProductModal'; // NEW
 import { Loader2, ArrowRight } from 'lucide-react';
 import { searchAnalyses } from '@/lib/analysisService';
 import { debounce } from '@/lib/utils';
@@ -34,6 +35,7 @@ interface AnalysisData {
             defectos?: boolean;
         };
     };
+    customProductInfo?: ProductInfo;
 }
 
 interface InitialFormProps {
@@ -143,6 +145,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
     };
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showNewProductModal, setShowNewProductModal] = useState(false); // NEW
 
     const { validateSize } = useTechnicalSpecs();
 
@@ -220,7 +223,8 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 const product = PRODUCT_DATA[normalizedCode];
 
                 if (!product) {
-                    error = 'Código no encontrado en la base de datos';
+                    // error = 'Código no encontrado en la base de datos'; 
+                    // ALLOW UNKNOWN CODES -> Will trigger Modal on submit
                 } else if (
                     initialData?.productType &&
                     initialData.productType !== 'CONTROL_PESOS' &&
@@ -269,10 +273,16 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
             return;
         }
 
+        const normalizedCode = getNormalizedCode(formData.codigo);
+
+        // CHECK IF CODE EXISTS
+        if (!PRODUCT_DATA[normalizedCode]) {
+            setShowNewProductModal(true);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
-            const normalizedCode = getNormalizedCode(formData.codigo);
-
             let pType = initialData?.productType;
             if (!pType && normalizedCode) {
                 const product = PRODUCT_DATA[normalizedCode];
@@ -290,6 +300,26 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         } catch (error) {
             console.error("Error submitting form:", error);
         } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleNewProductSubmit = async (info: ProductInfo) => {
+        setIsSubmitting(true);
+        setShowNewProductModal(false);
+        try {
+            const normalizedCode = await getNormalizedCode(formData.codigo); // await not needed but safe
+            const normalizedLote = getNormalizedLote(formData.lote, info.type); // Use new type
+
+            await onComplete({
+                ...formData,
+                lote: normalizedLote,
+                talla: formData.talla.trim(),
+                codigo: normalizedCode,
+                customProductInfo: info
+            });
+        } catch (error) {
+            console.error("Error submitting new product:", error);
             setIsSubmitting(false);
         }
     };
@@ -581,5 +611,13 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 </form>
             </div>
         </div>
+        </div >
+        <NewProductModal
+            isOpen={showNewProductModal}
+            onClose={() => setShowNewProductModal(false)}
+            onSubmit={handleNewProductSubmit}
+            initialCode={formData.codigo}
+        />
+        </>
     );
 }
