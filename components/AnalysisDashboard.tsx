@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Search, FileText, CheckCircle, Plus, Ruler, QrCode, Loader2, Calendar } from 'lucide-react';
 import { QualityAnalysis, PRODUCT_TYPE_LABELS, ANALYST_COLOR_HEX } from '@/lib/types';
 import DailyReportCard from './DailyReportCard';
+import { searchAnalyses } from '@/lib/analysisService';
+import { debounce } from '@/lib/utils';
 import FailedUploadsBanner from './FailedUploadsBanner';
 import { logger } from '@/lib/logger';
 import { PendingUploadsPanel } from './PendingUploadsPanel';
@@ -15,6 +17,15 @@ interface AnalysisDashboardProps {
   initialAnalyses: QualityAnalysis[];
   initialLastDoc?: any;
 }
+
+
+const PRODUCT_EMOJIS: Record<string, string> = {
+  ENTERO: '🐟',
+  COLA: '🦐',
+  VALOR_AGREGADO: '🥘',
+  REMUESTREO: '🔬',
+  CONTROL_PESOS: '⚖️'
+};
 
 export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: AnalysisDashboardProps) {
   const router = useRouter();
@@ -30,12 +41,63 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
 
+  // Search state
+  const [isSearching, setIsSearching] = useState(false);
+
   useEffect(() => {
     setAnalyses(initialAnalyses);
     setLastDoc(initialLastDoc);
     // Solo mostrar "Cargar más" si hay al menos 30 análisis iniciales
     setHasMore(!!initialLastDoc && initialAnalyses.length >= 30);
   }, [initialAnalyses, initialLastDoc]);
+
+  // Debounced Search Effect
+  useEffect(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    // Si el término es vacío, resetear
+    if (!term) {
+      if (isSearching) {
+        setAnalyses(initialAnalyses);
+        setLastDoc(initialLastDoc);
+        setHasMore(!!initialLastDoc && initialAnalyses.length >= 30);
+        setIsSearching(false);
+      }
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+
+      // 1. Busqueda Local Primero
+      // Filtrar de lo que ya tenemos en memoria (cache + recientes)
+      const localMatches = initialAnalyses.filter(analysis =>
+        analysis.lote.toLowerCase().includes(term) ||
+        analysis.codigo.toLowerCase().includes(term)
+      );
+
+      if (localMatches.length > 0) {
+        console.log(`✅ Found ${localMatches.length} matches locally. Skipping server search.`);
+        setAnalyses(localMatches);
+        setHasMore(false);
+        setIsSearching(false);
+        return; // Detener aquí si hay resultados locales
+      }
+
+      // 2. Busqueda en Servidor (solo si no hay local)
+      try {
+        const results = await searchAnalyses(searchTerm);
+        setAnalyses(results);
+        setHasMore(false);
+      } catch (error) {
+        logger.error('Search failed:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, initialAnalyses, initialLastDoc]);
 
   const handleRetryPhoto = async (photo: PendingPhoto) => {
     await retryPhotoUploadStandalone(photo);
@@ -179,7 +241,13 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                 backgroundColor: '#F3F4F6',
               }}
             >
-              <span className="mr-[10px] text-[18px]">🔍</span>
+              {isSearching ? (
+                <div className="mr-[10px] w-[24px] flex justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                </div>
+              ) : (
+                <span className="mr-[10px] text-[18px]">🔍</span>
+              )}
               <input
                 type="text"
                 placeholder="Buscar por lote o código..."
@@ -295,7 +363,8 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                   {/* Producto */}
                   <div style={{ margin: 0, padding: 0, width: 'calc(50% - 0.375rem)' }}>
                     <div className="text-xs font-medium text-gray-500" style={{ margin: 0, padding: 0, lineHeight: 1 }}>Producto</div>
-                    <div className="text-sm font-bold text-gray-900 truncate" style={{ margin: 0, padding: 0, lineHeight: 1 }}>
+                    <div className="text-sm font-[800] text-gray-900 truncate flex items-center gap-1" style={{ margin: 0, padding: 0, lineHeight: 1.2 }}>
+                      <span className="text-base">{PRODUCT_EMOJIS[analysis.productType] || '📦'}</span>
                       {PRODUCT_TYPE_LABELS[analysis.productType as keyof typeof PRODUCT_TYPE_LABELS]}
                     </div>
                   </div>
