@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
 
         // Parse PDF
         // Dynamically import pdf-parse to avoid build-time "No such file" errors
+        // @ts-ignore
         const pdfModule = await import('pdf-parse');
         const pdf = pdfModule.default || pdfModule;
 
