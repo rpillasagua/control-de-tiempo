@@ -1052,6 +1052,7 @@ export default function NewMultiAnalysisPageContent() {
                                                                 forceGalleryMode={isGalleryMode}
                                                             />
                                                         </div>
+                                                    )}
 
                                                     {/* Peso Sin Glaseo */}
                                                     {(productType === 'VALOR_AGREGADO') && (
@@ -1082,6 +1083,7 @@ export default function NewMultiAnalysisPageContent() {
                                                                 forceGalleryMode={isGalleryMode}
                                                             />
                                                         </div>
+                                                    )}
                                                 </>
                                             )}
 
