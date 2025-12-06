@@ -574,9 +574,15 @@ export default function NewMultiAnalysisPageContent() {
 
         const missing: string[] = [];
 
-        const checkWeights = productType !== 'REMUESTREO' || (currentAnalysis as any).remuestreoConfig?.activeFields?.pesoNeto || sections?.weights;
-        const checkUniformity = productType !== 'REMUESTREO' || (currentAnalysis as any).remuestreoConfig?.activeFields?.uniformidad || sections?.uniformity;
-        const checkDefects = productType !== 'REMUESTREO' || (currentAnalysis as any).remuestreoConfig?.activeFields?.defectos || sections?.defects;
+        const checkWeights = productType === 'REMUESTREO'
+            ? (currentAnalysis as any).remuestreoConfig?.activeFields?.pesoNeto
+            : sections?.weights;
+        const checkUniformity = productType === 'REMUESTREO'
+            ? (currentAnalysis as any).remuestreoConfig?.activeFields?.uniformidad
+            : sections?.uniformity;
+        const checkDefects = productType === 'REMUESTREO'
+            ? (currentAnalysis as any).remuestreoConfig?.activeFields?.defectos
+            : sections?.defects;
 
         // 1. Validar Pesos
         if (checkWeights && !isDualBag) {
