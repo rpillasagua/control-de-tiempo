@@ -381,12 +381,22 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
 
                 {/* Flexbox ultra compacto 2x2 */}
                 <div className="flex flex-wrap gap-x-1.5" style={{ margin: 0, padding: 0, rowGap: 0 }}>
-                  {/* Producto */}
+                  {/* Producto + Motivo (si existe) */}
                   <div style={{ margin: 0, padding: 0, width: 'calc(50% - 0.375rem)' }}>
-                    <div className="text-xs font-medium text-gray-500" style={{ margin: 0, padding: 0, lineHeight: 1 }}>Producto</div>
+                    <div className="text-xs font-medium text-gray-500" style={{ margin: 0, padding: 0, lineHeight: 1 }}>
+                      {analysis.productType === 'REMUESTREO' ? 'Motivo' : 'Producto'}
+                    </div>
                     <div className="text-sm font-[800] text-gray-900 truncate flex items-center gap-1" style={{ margin: 0, padding: 0, lineHeight: 1.2 }}>
-                      <span className="text-base">{PRODUCT_EMOJIS[analysis.productType] || '📦'}</span>
-                      {PRODUCT_TYPE_LABELS[analysis.productType as keyof typeof PRODUCT_TYPE_LABELS]}
+                      {analysis.productType === 'REMUESTREO' && analysis.remuestreoConfig?.reason ? (
+                        <span className="truncate" title={analysis.remuestreoConfig.reason}>
+                          {analysis.remuestreoConfig.reason}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-base">{PRODUCT_EMOJIS[analysis.productType] || '📦'}</span>
+                          {PRODUCT_TYPE_LABELS[analysis.productType as keyof typeof PRODUCT_TYPE_LABELS] || analysis.productType}
+                        </>
+                      )}
                     </div>
                   </div>
 
