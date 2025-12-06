@@ -76,6 +76,10 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
+  experimental: {
+    serverComponentsExternalPackages: ['pdf-parse'],
+  },
+
   // Configuración para SPA + PWA
   // output: 'export', // Exportar como SPA estática
 
