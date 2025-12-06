@@ -75,7 +75,7 @@ export default function DefectSelector({
         newItems.push({
           key,
           label: DEFECTO_LABELS[key] || key,
-          quantity: quantity === 0 ? '' : quantity
+          quantity: quantity || ''
         });
         selectedMap.delete(key); // Remover para saber cuáles sobran
       }
