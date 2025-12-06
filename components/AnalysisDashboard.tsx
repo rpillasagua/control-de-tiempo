@@ -20,11 +20,32 @@ interface AnalysisDashboardProps {
 
 
 const PRODUCT_EMOJIS: Record<string, string> = {
-  ENTERO: '🐟',
-  COLA: '🦐',
+  ENTERO: '🦐',
+  COLA: '🍤',
   VALOR_AGREGADO: '🥘',
   REMUESTREO: '🔬',
   CONTROL_PESOS: '⚖️'
+};
+
+const getTallaEmoji = (talla: string | null | undefined): string => {
+  if (!talla) return '📏';
+
+  // Try to parse the size
+  // Formats: "10/20", "U-15", "40-50", "60 / 70"
+
+  // Check for "U-" (Under) sizes - usually large
+  if (talla.toUpperCase().includes('U')) return '🔵';
+
+  // Extract numbers
+  const match = talla.match(/(\d+)/);
+  if (match) {
+    const size = parseInt(match[0], 10);
+    if (size < 26) return '🔵'; // Large
+    if (size <= 50) return '🟡'; // Medium
+    return '🟠'; // Small
+  }
+
+  return '📏';
 };
 
 export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: AnalysisDashboardProps) {
@@ -385,7 +406,7 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                       <Ruler className="w-2 h-2" /> Talla
                     </div>
                     <div className="text-sm font-bold text-gray-900 truncate" style={{ margin: 0, padding: 0, lineHeight: 1 }}>
-                      {analysis.talla || '-'}
+                      <span className="text-base">{getTallaEmoji(analysis.talla)}</span> {analysis.talla || '-'}
                     </div>
                   </div>
 

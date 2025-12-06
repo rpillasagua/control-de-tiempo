@@ -147,6 +147,11 @@ export default function DefectSelector({
           <span className="text-2xl">🐛</span>
           Defectos de Calidad
         </h3>
+        {(!validationResults?.isApplicable || (validationResults?.totalPieces === 0 && selectedItems.length > 0)) && (
+          <div className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            ⚠️ Ingrese Peso Neto y Conteo para calcular %
+          </div>
+        )}
         {selectedItems.length > 0 && (
           <button
             type="button"
@@ -245,7 +250,7 @@ export default function DefectSelector({
               <div className="flex-1 min-w-0 mr-2">
                 <div className="text-[14px] font-[600] text-[#374151] break-words leading-tight" title={item.label}>
                   {item.label}
-                  {result && (
+                  {result ? (
                     <div className="text-[11px] font-normal mt-0.5 flex items-center gap-1">
                       <span className={isValid ? 'text-green-600' : 'text-red-600'}>
                         {result.percentage.toFixed(2)}%
@@ -259,7 +264,11 @@ export default function DefectSelector({
                         ({result.limitDisplay})
                       </span>
                     </div>
-                  )}
+                  ) : (item.quantity !== '' && validationResults?.isApplicable) ? (
+                    <div className="text-[11px] font-normal mt-0.5 text-gray-400">
+                      -
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
