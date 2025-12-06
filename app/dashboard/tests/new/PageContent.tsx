@@ -1019,6 +1019,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         forceGalleryMode={isGalleryMode}
                                                     />
                                                 </div>
+                                            )}
 
                                             {/* Campos específicos para VALOR_AGREGADO o REMUESTREO */}
                                             {(productType === 'VALOR_AGREGADO' || productType === 'REMUESTREO') && (
