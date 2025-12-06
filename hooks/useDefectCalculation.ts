@@ -46,6 +46,27 @@ export function useDefectCalculation(
             };
         }
 
+        // Helper to detect if product should be treated as Cola (using lbs) based on sizes
+        // User Rule:
+        // Cola: 16-20, 21-25, 26-30, 31-35... (Start is NOT multiple of 10)
+        // Entero: 10-20, 20-30, 30-40... (Start IS multiple of 10)
+        const isColaBased = (s: any, pType: ProductType | null) => {
+            if (pType === 'COLA') return true;
+            if (pType === 'VALOR_AGREGADO' && s?.sizes?.length > 0) {
+                const firstSize = s.sizes[0].sizeMarked || s.sizes[0].sizeMp || '';
+                const match = firstSize.match(/^(\d+)-/);
+                if (match) {
+                    const startVal = parseInt(match[1]);
+                    // If start value is multiple of 10 (10, 20, 30...), it's likely Entero
+                    if (startVal % 10 === 0) return false;
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const treatAsCola = isColaBased(specs, productType);
+
         // 2. Unit Conversion & Total Pieces Calculation
         let convertedWeight = netWeight;
 
@@ -55,12 +76,12 @@ export function useDefectCalculation(
             convertedWeight = convertedWeight / 1000;
         }
 
-        if (productType === 'COLA') {
+        if (treatAsCola) {
             // Target: LB
             if (specs.netWeightUnit === 'KG') {
                 convertedWeight = convertedWeight * 2.20462; // KG to LB
             }
-        } else if (productType === 'ENTERO') {
+        } else if (productType === 'ENTERO' || (productType === 'VALOR_AGREGADO' && !treatAsCola)) {
             // Target: KG
             if (specs.netWeightUnit === 'LB') {
                 convertedWeight = convertedWeight / 2.20462; // LB to KG
@@ -102,9 +123,9 @@ export function useDefectCalculation(
             // If convertedWeight is KG, threshold is 3. If LB, threshold is 7.
             // We can infer the unit of convertedWeight from productType logic above.
             let threshold = 3; // Default KG
-            if (productType === 'COLA') {
+            if (treatAsCola) {
                 threshold = 7; // LB
-            } else if (productType === 'ENTERO') {
+            } else if (productType === 'ENTERO' || !treatAsCola) {
                 threshold = 3; // KG
             }
 
@@ -113,7 +134,7 @@ export function useDefectCalculation(
                 let baseWeightKg = 3;
 
                 // Convert to appropriate unit if necessary
-                if (productType === 'COLA') {
+                if (treatAsCola) {
                     convertedWeight = baseWeightKg * 2.20462; // KG to LB
                 } else {
                     convertedWeight = baseWeightKg; // KG

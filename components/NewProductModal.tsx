@@ -93,7 +93,7 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
 
                 {/* Header */}
@@ -112,8 +112,8 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
                     <button
                         onClick={() => setActiveTab('pdf')}
                         className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'pdf'
-                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                                : 'text-slate-500 hover:bg-slate-50'
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                            : 'text-slate-500 hover:bg-slate-50'
                             }`}
                     >
                         <FileText className="w-4 h-4" />
@@ -122,8 +122,8 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
                     <button
                         onClick={() => setActiveTab('manual')}
                         className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'manual'
-                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                                : 'text-slate-500 hover:bg-slate-50'
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                            : 'text-slate-500 hover:bg-slate-50'
                             }`}
                     >
                         <Check className="w-4 h-4" />
