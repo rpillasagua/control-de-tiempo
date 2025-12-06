@@ -91,7 +91,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 pesoBruto: true,
                 pesoNeto: true,
                 pesoCongelado: true,
-                peseoSubmuestra: true,
+                peseoSubmuestra: false,
                 conteo: true,
                 uniformidad: true,
                 defectos: true
