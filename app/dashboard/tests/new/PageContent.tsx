@@ -1126,6 +1126,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         forceGalleryMode={isGalleryMode}
                                                     />
                                                 </div>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
