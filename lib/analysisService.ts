@@ -587,43 +587,56 @@ export const searchAnalyses = async (searchTerm: string): Promise<QualityAnalysi
     throw new Error('Firestore no está configurado');
   }
 
+  const term = searchTerm.trim();
+  if (!term) return [];
+
   try {
-    // Buscar por código
-    const qCodigo = query(
+    const queries = [];
+
+    // 1. Prefix search for String Code
+    queries.push(getDocs(query(
       collection(db, ANALYSES_COLLECTION),
-      where('codigo', '>=', searchTerm),
-      where('codigo', '<=', searchTerm + '\uf8ff')
-    );
+      where('codigo', '>=', term),
+      where('codigo', '<=', term + '\uf8ff'),
+      limit(20)
+    )));
 
-    // Buscar por lote
-    const qLote = query(
+    // 2. Prefix search for String Batch (Lote)
+    queries.push(getDocs(query(
       collection(db, ANALYSES_COLLECTION),
-      where('lote', '>=', searchTerm),
-      where('lote', '<=', searchTerm + '\uf8ff')
-    );
+      where('lote', '>=', term),
+      where('lote', '<=', term + '\uf8ff'),
+      limit(20)
+    )));
 
-    const [codigoSnapshot, loteSnapshot] = await Promise.all([
-      getDocs(qCodigo),
-      getDocs(qLote)
-    ]);
+    // 3. Exact match for Numeric Code/Batch (if input is number)
+    // This handles legacy data where code/lote might be stored as numbers
+    const numValue = Number(term);
+    if (!isNaN(numValue)) {
+      queries.push(getDocs(query(
+        collection(db, ANALYSES_COLLECTION),
+        where('codigo', '==', numValue),
+        limit(5)
+      )));
+      queries.push(getDocs(query(
+        collection(db, ANALYSES_COLLECTION),
+        where('lote', '==', numValue),
+        limit(5)
+      )));
+    }
 
+    const snapshots = await Promise.all(queries);
     const analyses: QualityAnalysis[] = [];
     const seenIds = new Set<string>();
 
-    codigoSnapshot.forEach((doc) => {
-      const data = doc.data() as QualityAnalysis;
-      if (!seenIds.has(data.id)) {
-        analyses.push(data);
-        seenIds.add(data.id);
-      }
-    });
-
-    loteSnapshot.forEach((doc) => {
-      const data = doc.data() as QualityAnalysis;
-      if (!seenIds.has(data.id)) {
-        analyses.push(data);
-        seenIds.add(data.id);
-      }
+    snapshots.forEach(snap => {
+      snap.forEach(doc => {
+        const data = doc.data() as QualityAnalysis;
+        if (!seenIds.has(data.id)) {
+          analyses.push(data);
+          seenIds.add(data.id);
+        }
+      });
     });
 
     return analyses;
@@ -632,6 +645,7 @@ export const searchAnalyses = async (searchTerm: string): Promise<QualityAnalysi
     throw error;
   }
 };
+
 
 /**
  * Renueva permisos de fotos en un análisis existente
