@@ -572,9 +572,9 @@ export default function NewMultiAnalysisPageContent() {
         const needPesoNeto = !isRemuestreo || activeFields?.pesoNeto;
         const needPesoCongelado = !isRemuestreo && !isDualBag; // Standard usually needs this? Or maybe optional. Keeping standard logic conservative.
 
-        const needConteo = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && activeFields?.conteo);
-        const needUniformidad = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && activeFields?.uniformidad);
-        const needDefectos = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && activeFields?.defectos);
+        const needConteo = !isRemuestreo || (isRemuestreo && activeFields?.conteo);
+        const needUniformidad = !isRemuestreo || (isRemuestreo && activeFields?.uniformidad);
+        const needDefectos = !isRemuestreo || (isRemuestreo && activeFields?.defectos);
 
         // 1. Validar Pesos
         // Standard logic for 'weights' section being enabled
