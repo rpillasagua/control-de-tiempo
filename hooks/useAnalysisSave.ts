@@ -190,7 +190,7 @@ export const useAnalysisSave = ({
             completedAt: completedAtValue,
             analystColor: originalAnalystColor || analystColor!,
             sections,
-            remuestreoConfig, // Now included - matches QualityAnalysis type
+            remuestreoConfig: remuestreoConfig || undefined, // Convert null to undefined for Zod validation
             analyses: analyses.map(a => {
                 const hasUniformidadData = a.uniformidad && (
                     (a.uniformidad.grandes?.valor || a.uniformidad.grandes?.fotoUrl) ||

@@ -109,7 +109,8 @@ export const QualityAnalysisSchema = z.object({
             uniformidad: z.boolean().optional(),
             defectos: z.boolean().optional()
         })
-    }).optional()
+    })
+}).nullable().optional()
 });
 
 /**
