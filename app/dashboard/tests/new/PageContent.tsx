@@ -149,7 +149,7 @@ export default function NewMultiAnalysisPageContent() {
         originalShift,
         globalPesoBruto,
         isCompleted,
-        isCompleted,
+
         setIsCompleted,
         isDeleting,
         sections,
