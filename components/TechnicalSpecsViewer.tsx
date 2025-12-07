@@ -45,85 +45,85 @@ export function TechnicalSpecsViewer({ code }: TechnicalSpecsViewerProps) {
                     </div>
                 </div>
             </div>
-        </div>
 
-            {/* General Info Grid */ }
-    <Section title="Información General" icon={<Info className="w-4 h-4" />}>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <InfoItem label="Cliente" value={specs.client} />
-            <InfoItem label="Marca" value={specs.brand} />
-            <InfoItem label="Congelación" value={specs.freezingMethod} />
-            <InfoItem label="Certificación" value={specs.certification} />
-            <InfoItem label="Color" value={specs.color} />
-            <InfoItem label="Preservante" value={specs.preservative} />
-        </div>
-    </Section>
 
-    {/* Packaging & Weights */ }
-    <Section title="Empaque y Pesos" icon={<Package className="w-4 h-4" />}>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <InfoItem label="Empaque" value={specs.packing} className="col-span-2 md:col-span-3 font-medium" />
-            <InfoItem label="Peso Neto" value={`${specs.netWeight || '-'} ${specs.netWeightUnit || ''}`} />
-            <InfoItem label="Peso Bruto" value={`${specs.grossWeight || '-'} ${specs.grossWeightUnit || ''}`} />
-            <InfoItem label="Peso Máster" value={`${specs.grossWeightMasters || '-'} ${specs.grossWeightMastersUnit || ''}`} />
-            <InfoItem label="Sobrepeso" value={specs.overweightPct} highlight />
-            <InfoItem label="Glaseo" value={`${specs.glazingRatio || '-'} ${specs.glazingUnit || ''}`} highlight />
-        </div>
-    </Section>
+            {/* General Info Grid */}
+            <Section title="Información General" icon={<Info className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <InfoItem label="Cliente" value={specs.client} />
+                    <InfoItem label="Marca" value={specs.brand} />
+                    <InfoItem label="Congelación" value={specs.freezingMethod} />
+                    <InfoItem label="Certificación" value={specs.certification} />
+                    <InfoItem label="Color" value={specs.color} />
+                    <InfoItem label="Preservante" value={specs.preservative} />
+                </div>
+            </Section>
 
-    {/* Sizes Table */ }
-    <Section title="Tallas y Conteos" icon={<Ruler className="w-4 h-4" />}>
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                    <tr>
-                        <th className="px-3 py-2">Talla MP</th>
-                        <th className="px-3 py-2">Conteo MP</th>
-                        <th className="px-3 py-2">Talla Marcada</th>
-                        <th className="px-3 py-2">Conteo Final</th>
-                        <th className="px-3 py-2 text-right">Uniformidad</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {specs.sizes?.map((size, index) => (
-                        <tr key={index} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-2 font-medium">{size.sizeMp}</td>
-                            <td className="px-3 py-2 text-slate-600">{size.countMp}</td>
-                            <td className="px-3 py-2">{size.sizeMarked}</td>
-                            <td className="px-3 py-2 text-slate-600">{size.countFinal}</td>
-                            <td className="px-3 py-2 text-right font-mono">{size.uniformity}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    </Section>
+            {/* Packaging & Weights */}
+            <Section title="Empaque y Pesos" icon={<Package className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <InfoItem label="Empaque" value={specs.packing} className="col-span-2 md:col-span-3 font-medium" />
+                    <InfoItem label="Peso Neto" value={`${specs.netWeight || '-'} ${specs.netWeightUnit || ''}`} />
+                    <InfoItem label="Peso Bruto" value={`${specs.grossWeight || '-'} ${specs.grossWeightUnit || ''}`} />
+                    <InfoItem label="Peso Máster" value={`${specs.grossWeightMasters || '-'} ${specs.grossWeightMastersUnit || ''}`} />
+                    <InfoItem label="Sobrepeso" value={specs.overweightPct} highlight />
+                    <InfoItem label="Glaseo" value={`${specs.glazingRatio || '-'} ${specs.glazingUnit || ''}`} highlight />
+                </div>
+            </Section>
 
-    {/* Defects Table */ }
-    <Section title="Especificaciones de Defectos" icon={<AlertCircle className="w-4 h-4" />}>
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                    <tr>
-                        <th className="px-4 py-2">Defecto</th>
-                        <th className="px-4 py-2 text-right">Límite Permitido</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {specs.defects?.map((defect, index) => (
-                        <tr key={index} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-2 font-medium text-slate-700">
-                                {defect.defect.replace(/_/g, ' ')}
-                            </td>
-                            <td className="px-4 py-2 text-right font-bold text-slate-900">
-                                {renderLimit(defect.limit)}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    </Section>
+            {/* Sizes Table */}
+            <Section title="Tallas y Conteos" icon={<Ruler className="w-4 h-4" />}>
+                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                            <tr>
+                                <th className="px-3 py-2">Talla MP</th>
+                                <th className="px-3 py-2">Conteo MP</th>
+                                <th className="px-3 py-2">Talla Marcada</th>
+                                <th className="px-3 py-2">Conteo Final</th>
+                                <th className="px-3 py-2 text-right">Uniformidad</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {specs.sizes?.map((size, index) => (
+                                <tr key={index} className="hover:bg-slate-50/50">
+                                    <td className="px-3 py-2 font-medium">{size.sizeMp}</td>
+                                    <td className="px-3 py-2 text-slate-600">{size.countMp}</td>
+                                    <td className="px-3 py-2">{size.sizeMarked}</td>
+                                    <td className="px-3 py-2 text-slate-600">{size.countFinal}</td>
+                                    <td className="px-3 py-2 text-right font-mono">{size.uniformity}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Section>
+
+            {/* Defects Table */}
+            <Section title="Especificaciones de Defectos" icon={<AlertCircle className="w-4 h-4" />}>
+                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                            <tr>
+                                <th className="px-4 py-2">Defecto</th>
+                                <th className="px-4 py-2 text-right">Límite Permitido</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {specs.defects?.map((defect, index) => (
+                                <tr key={index} className="hover:bg-slate-50/50">
+                                    <td className="px-4 py-2 font-medium text-slate-700">
+                                        {defect.defect.replace(/_/g, ' ')}
+                                    </td>
+                                    <td className="px-4 py-2 text-right font-bold text-slate-900">
+                                        {renderLimit(defect.limit)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Section>
         </div >
     );
 }
