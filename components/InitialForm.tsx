@@ -92,14 +92,14 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         sections: { weights: true, uniformity: true, defects: true },
         remuestreoConfig: {
             activeFields: {
-                pesoBruto: true,
-                pesoNeto: true,
-                pesoCongelado: true,
-                peseoSubmuestra: true,
-                pesoGlaseo: true,
-                conteo: true,
-                uniformidad: true,
-                defectos: true
+                pesoBruto: false,
+                pesoNeto: false,
+                pesoCongelado: false,
+                peseoSubmuestra: false,
+                pesoGlaseo: false,
+                conteo: false,
+                uniformidad: false,
+                defectos: false
             }
         }
     });
