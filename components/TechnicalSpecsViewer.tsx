@@ -33,14 +33,16 @@ export function TechnicalSpecsViewer({ code }: TechnicalSpecsViewerProps) {
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h3 className="font-bold text-lg text-slate-900">{specs.description || 'Sin descripción'}</h3>
-                        <Badge label="Versión" value={specs.version?.toString() ?? undefined} color="slate" />
-                        <Badge label="Tipo" value={specs.productType ?? undefined} color="blue" />
-                        <Badge label="Destino" value={specs.destination ?? undefined} color="emerald" />
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge label="Versión" value={specs.version?.toString() ?? undefined} color="slate" />
+                            <Badge label="Tipo" value={specs.productType ?? undefined} color="blue" />
+                            <Badge label="Destino" value={specs.destination ?? undefined} color="emerald" />
+                        </div>
                     </div>
-                </div>
-                <div className="text-right">
-                    <div className="text-2xl font-mono font-bold text-slate-700">{specs.code}</div>
-                    <div className="text-xs text-slate-400">CÓDIGO</div>
+                    <div className="text-right">
+                        <div className="text-2xl font-mono font-bold text-slate-700">{specs.code}</div>
+                        <div className="text-xs text-slate-400">CÓDIGO</div>
+                    </div>
                 </div>
             </div>
         </div>
