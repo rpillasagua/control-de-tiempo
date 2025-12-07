@@ -57,11 +57,11 @@ export type ProductType = 'ENTERO' | 'COLA' | 'VALOR_AGREGADO' | 'CONTROL_PESOS'
  * Etiquetas para mostrar en UI
  */
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
-  ENTERO: 'Entero',
-  COLA: 'Cola',
-  VALOR_AGREGADO: 'Valor Agregado',
-  CONTROL_PESOS: 'Control de Pesos Brutos',
-  REMUESTREO: 'Remuestreo'
+  ENTERO: '🦐 Entero',
+  COLA: '🍤 Cola',
+  VALOR_AGREGADO: '🥘 Valor Agregado',
+  CONTROL_PESOS: '⚖️ Control de Pesos',
+  REMUESTREO: '🔄 Remuestreo'
 };
 
 /**
