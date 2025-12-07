@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { AnalystColor, ProductType } from '@/lib/types';
+import { useState, useCallback } from 'react';
+import { AnalystColor, ProductType, QualityAnalysis } from '@/lib/types';
 import { PRODUCT_DATA } from '@/lib/product-data';
 import AnalystColorSelector from './AnalystColorSelector';
 import { Loader2, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
-import ImportNewProductModal from './NewProductModal';
+import { searchAnalyses } from '@/lib/analysisService';
+import { debounce } from '@/lib/utils';
 
 // 1. Tipado estricto y reutilizable
 interface AnalysisData {
@@ -15,10 +15,25 @@ interface AnalysisData {
     talla: string;
     color: AnalystColor | null;
     productType?: ProductType;
+    // @deprecated
     sections?: {
         weights: boolean;
         uniformity: boolean;
         defects: boolean;
+    };
+    remuestreoConfig?: {
+        reason?: string;
+        linkedAnalysisId?: string;
+        activeFields: {
+            pesoBruto?: boolean;
+            pesoNeto?: boolean;
+            pesoCongelado?: boolean;
+            peseoSubmuestra?: boolean;
+            pesoGlaseo?: boolean;
+            conteo?: boolean;
+            uniformidad?: boolean;
+            defectos?: boolean;
+        };
     };
 }
 
@@ -71,10 +86,63 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         codigo: initialData?.codigo || '',
         talla: initialData?.talla || '',
         color: initialData?.color || null,
-        sections: { weights: true, uniformity: true, defects: true }
+        sections: { weights: true, uniformity: true, defects: true },
+        remuestreoConfig: {
+            activeFields: {
+                pesoBruto: true,
+                pesoNeto: true,
+                pesoCongelado: true,
+                peseoSubmuestra: true,
+                pesoGlaseo: true,
+                conteo: true,
+                uniformidad: true,
+                defectos: true
+            }
+        }
     });
 
     const [errors, setErrors] = useState<Partial<Record<keyof AnalysisData, string>>>({});
+
+    // Search State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<QualityAnalysis[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+
+    // Debounced search function
+    const handleSearch = useCallback(
+        debounce(async (term: string) => {
+            if (!term || term.length < 2) {
+                setSearchResults([]);
+                setIsSearching(false);
+                return;
+            }
+
+            setIsSearching(true);
+            try {
+                // Dynamically import to ensure client-side safety if needed, or just call directly
+                const results = await searchAnalyses(term);
+                setSearchResults(results);
+            } catch (error) {
+                console.error("Search failed", error);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500),
+        []
+    );
+
+    const selectAnalysis = (analysis: QualityAnalysis) => {
+        setFormData(prev => ({
+            ...prev,
+            remuestreoConfig: {
+                ...prev.remuestreoConfig!,
+                linkedAnalysisId: analysis.id
+            }
+        }));
+        setSearchTerm(`${analysis.lote} (${analysis.codigo})`);
+        setShowResults(false);
+    };
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -143,52 +211,26 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         return normalized;
     };
 
-    // 4. Custom Products Logic
-    const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
-    const [customProducts, setCustomProducts] = useState<Record<string, import('@/lib/types').ProductInfo>>({});
-    const [tempCodeForModal, setTempCodeForModal] = useState('');
-
-    const handleNewProductSubmit = (info: import('@/lib/types').ProductInfo) => {
-        // Use the code that was originally entered
-        const code = tempCodeForModal || formData.codigo.trim();
-        const normalizedCode = getNormalizedCode(code); // Or just use raw input if we want
-
-        // Update custom products
-        setCustomProducts(prev => ({
-            ...prev,
-            [normalizedCode]: info
-        }));
-
-        // Update form data with the Type
-        if (info.type) {
-            handleChange('productType', info.type);
-        }
-
-        setIsNewProductModalOpen(false);
-        setErrors(prev => ({ ...prev, codigo: undefined })); // Clear code error
-        toast.success(`Producto ${code} agregado temporalmente`);
-    };
-
     const validateField = (field: keyof AnalysisData) => {
         let error = '';
         if (field === 'lote' && !formData.lote.trim()) error = 'El lote es requerido';
         if (field === 'codigo') {
-            if (formData.codigo.trim()) {
+            if (!formData.codigo.trim()) {
+                error = 'El código es requerido';
+            } else {
                 const normalizedCode = getNormalizedCode(formData.codigo);
-                const product = PRODUCT_DATA[normalizedCode] || customProducts[normalizedCode];
+                const product = PRODUCT_DATA[normalizedCode];
 
                 if (!product) {
-                    error = 'NOT_FOUND'; // Special flag for UI
+                    error = 'Código no encontrado en la base de datos';
                 } else if (
                     initialData?.productType &&
                     initialData.productType !== 'CONTROL_PESOS' &&
-                    initialData.productType !== 'REMUESTREO' &&
+                    initialData.productType !== 'REMUESTREO' && // ✅ Allow any code for REMUESTREO
                     product.type !== initialData.productType
                 ) {
                     error = `El código es de tipo ${product.type} pero seleccionaste ${initialData.productType}`;
                 }
-            } else {
-                error = 'El código es requerido';
             }
         }
         if (field === 'talla') {
@@ -196,8 +238,9 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 error = 'La talla es requerida';
             } else {
                 const normalizedCode = getNormalizedCode(formData.codigo);
-                const product = PRODUCT_DATA[normalizedCode] || customProducts[normalizedCode];
+                const product = PRODUCT_DATA[normalizedCode];
                 // Validate size using technical specs if we have a product type
+                // We use the product type from PRODUCT_DATA or initialData if available
                 const pType = product?.type || initialData?.productType || '';
 
                 const sizeValidation = validateSize(normalizedCode, formData.talla, pType);
@@ -209,47 +252,32 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         if (field === 'color' && !formData.color) error = 'Selecciona un color';
 
         setErrors(prev => ({ ...prev, [field]: error || undefined }));
-        return !error || error === 'NOT_FOUND'; // NOT_FOUND is technically invalid for submit but handled in UI
+        return !error;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Validar todo antes de enviar
-        validateField('lote');
-        validateField('codigo');
-        validateField('talla');
-        validateField('color');
-
-        // Check if code is valid (exists in either DB or custom)
-        const normalizedCode = getNormalizedCode(formData.codigo);
-        const product = PRODUCT_DATA[normalizedCode] || customProducts[normalizedCode];
-
-        if (!product) {
-            // If not found, prevent submit and ensure error is shown
-            setErrors(prev => ({ ...prev, codigo: 'NOT_FOUND' }));
-            setTouched(prev => ({ ...prev, codigo: true }));
-            return;
-        }
+        const isLoteValid = validateField('lote');
+        const isCodigoValid = validateField('codigo');
+        const isTallaValid = validateField('talla');
+        const isColorValid = validateField('color');
 
         // Marcar todos los campos como tocados
         setTouched({ lote: true, codigo: true, talla: true, color: true });
 
-        // Re-check blocking errors
-        const currentErrors = { ...errors }; // Capture current state logic
-        // We know 'product' exists now, so 'codigo' error should be cleared if it was NOT_FOUND
-        if (currentErrors.codigo === 'NOT_FOUND') currentErrors.codigo = undefined;
-
-        if (Object.values(currentErrors).some(e => e && e !== 'NOT_FOUND')) {
+        if (!isLoteValid || !isCodigoValid || !isTallaValid || !isColorValid) {
             return;
         }
-        if (!formData.lote || !formData.talla || !formData.color) return;
-
 
         setIsSubmitting(true);
         try {
+            const normalizedCode = getNormalizedCode(formData.codigo);
+
             let pType = initialData?.productType;
             if (!pType && normalizedCode) {
+                const product = PRODUCT_DATA[normalizedCode];
                 if (product) pType = product.type;
             }
 
@@ -279,13 +307,6 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                     to { transform: translateY(0); opacity: 1; }
                 }
             `}</style>
-
-            <ImportNewProductModal
-                isOpen={isNewProductModalOpen}
-                onClose={() => setIsNewProductModalOpen(false)}
-                onSubmit={handleNewProductSubmit}
-                initialCode={tempCodeForModal}
-            />
 
             <div
                 className="bg-white w-[90%] max-w-[480px] p-[25px] rounded-[24px] relative text-left max-h-[90vh] overflow-y-auto"
@@ -317,38 +338,17 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                         autoFocus
                     />
 
-                    <div className="mb-[16px]">
-                        <ModernInput
-                            id="codigo"
-                            label="Código Referencia"
-                            placeholder="Ej: REF-882"
-                            icon="🔢"
-                            value={formData.codigo}
-                            onChange={(e) => handleChange('codigo', e.target.value)}
-                            onBlur={() => handleBlur('codigo')}
-                            error={touched.codigo && errors.codigo !== 'NOT_FOUND' ? errors.codigo : undefined}
-                            required
-                        />
-                        {/* Error Alternativo con Botón de Agregar */}
-                        {touched.codigo && errors.codigo === 'NOT_FOUND' && (
-                            <div className="mt-[-10px] mb-[16px] p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
-                                <div className="text-[13px] text-blue-700 font-medium flex items-center gap-2">
-                                    <span className="text-lg">🤔</span>
-                                    <span>¿Código nuevo?</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setTempCodeForModal(getNormalizedCode(formData.codigo));
-                                        setIsNewProductModalOpen(true);
-                                    }}
-                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold rounded-lg transition-colors shadow-sm"
-                                >
-                                    Agregar Ficha +
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <ModernInput
+                        id="codigo"
+                        label="Código Referencia"
+                        placeholder="Ej: REF-882"
+                        icon="🔢"
+                        value={formData.codigo}
+                        onChange={(e) => handleChange('codigo', e.target.value)}
+                        onBlur={() => handleBlur('codigo')}
+                        error={touched.codigo ? errors.codigo : undefined}
+                        required
+                    />
 
                     <ModernInput
                         id="talla"
@@ -362,55 +362,139 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                         required
                     />
 
-                    {/* SECCIÓN DE REMUESTREO: Checkboxes */}
+                    {/* SECCIÓN DE REMUESTREO: Configuración Granular */}
                     {isRemuestreo && (
-                        <div className="mb-[20px] p-[16px] bg-blue-50 border-2 border-blue-100 rounded-[14px]">
-                            <label className="block text-[13px] font-[700] text-blue-900 mb-[12px]">
-                                Secciones a Analizar <span className="text-red-500">*</span>
-                            </label>
-                            <div className="space-y-3">
-                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.sections?.weights}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            sections: { ...prev.sections!, weights: e.target.checked }
-                                        }))}
-                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm font-medium text-slate-700">⚖️ Pesos y Glaseo</span>
+                        <div className="mb-[20px] p-[16px] bg-blue-50 border-2 border-blue-100 rounded-[14px] space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="block text-[13px] font-[700] text-blue-900">
+                                    Configuración de Remuestreo
                                 </label>
-                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
+                            </div>
+
+                            {/* Motivo */}
+                            <div className="bg-white p-3 rounded-xl border border-blue-100">
+                                <label className="block text-[11px] font-[600] text-slate-500 mb-1">Motivo del Remuestreo</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: Auditoría Cliente, Rechazo, Verificación"
+                                    className="w-full text-sm outline-none text-slate-900 placeholder-slate-400"
+                                    value={formData.remuestreoConfig?.reason || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        remuestreoConfig: {
+                                            ...prev.remuestreoConfig!,
+                                            reason: e.target.value
+                                        }
+                                    }))}
+                                />
+                            </div>
+
+                            {/* Vinculación con Búsqueda */}
+                            <div className="bg-white p-3 rounded-xl border border-blue-100 relative">
+                                <label className="block text-[11px] font-[600] text-slate-500 mb-1">Vincular a Análisis (Buscar por Lote o Código)</label>
+                                <div className="relative">
                                     <input
-                                        type="checkbox"
-                                        checked={formData.sections?.uniformity}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            sections: { ...prev.sections!, uniformity: e.target.checked }
-                                        }))}
-                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        type="text"
+                                        placeholder="🔍 Escribe lote o código..."
+                                        className="w-full text-sm outline-none text-slate-900 placeholder-slate-400 border-b border-dashed border-blue-200 pb-1 focus:border-blue-500 transition-colors"
+                                        value={searchTerm}
+                                        onChange={(e) => {
+                                            setSearchTerm(e.target.value);
+                                            handleSearch(e.target.value);
+                                        }}
+                                        onFocus={() => setShowResults(true)}
                                     />
-                                    <span className="text-sm font-medium text-slate-700">📏 Uniformidad</span>
-                                </label>
-                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.sections?.defects}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            sections: { ...prev.sections!, defects: e.target.checked }
-                                        }))}
-                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm font-medium text-slate-700">🔍 Defectos y Calidad</span>
-                                </label>
+
+                                    {/* Spinner */}
+                                    {isSearching && (
+                                        <div className="absolute right-0 top-0">
+                                            <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Resultados de Búsqueda */}
+                                {showResults && searchResults.length > 0 && (
+                                    <div className="absolute z-10 left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-blue-100 max-h-48 overflow-y-auto">
+                                        {searchResults.map((result) => (
+                                            <div
+                                                key={result.id}
+                                                className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
+                                                onClick={() => selectAnalysis(result)}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-700">{result.lote}</p>
+                                                        <p className="text-[10px] text-slate-500">{result.codigo} • {new Date(result.date).toLocaleDateString()}</p>
+                                                    </div>
+                                                    {formData.remuestreoConfig?.linkedAnalysisId === result.id && (
+                                                        <span className="text-green-500 text-xs">✓</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Análisis Seleccionado (Preview) */}
+                                {formData.remuestreoConfig?.linkedAnalysisId && (
+                                    <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded flex justify-between items-center">
+                                        <span>🔗 Vinculado: <strong>{searchResults.find(r => r.id === formData.remuestreoConfig?.linkedAnalysisId)?.lote || formData.remuestreoConfig?.linkedAnalysisId}</strong></span>
+                                        <button
+                                            onClick={() => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    remuestreoConfig: { ...prev.remuestreoConfig!, linkedAnalysisId: undefined }
+                                                }));
+                                                setSearchTerm('');
+                                            }}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            ✖
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Campos a Analizar */}
+                            <div>
+                                <label className="block text-[11px] font-[600] text-slate-500 mb-2">Campos a Analizar:</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { key: 'pesoBruto', label: '⚖️ Peso Bruto' },
+                                        { key: 'pesoNeto', label: '⚖️ Peso Neto' },
+                                        { key: 'pesoCongelado', label: '❄️ Peso Congelado' },
+                                        { key: 'pesoGlaseo', label: '💧 Glaseo' },
+                                        { key: 'conteo', label: '🔢 Conteo' },
+                                        { key: 'uniformidad', label: '📏 Uniformidad' },
+                                        { key: 'defectos', label: '🔍 Defectos' },
+                                    ].map((field) => (
+                                        <label key={field.key} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-blue-100 cursor-pointer hover:border-blue-300">
+                                            <input
+                                                type="checkbox"
+                                                checked={!!formData.remuestreoConfig?.activeFields?.[field.key as keyof typeof formData.remuestreoConfig.activeFields]}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    remuestreoConfig: {
+                                                        ...prev.remuestreoConfig!,
+                                                        activeFields: {
+                                                            ...prev.remuestreoConfig!.activeFields,
+                                                            [field.key]: e.target.checked
+                                                        }
+                                                    }
+                                                }))}
+                                                className="w-4 h-4 rounded text-blue-600"
+                                            />
+                                            <span className="text-xs font-medium text-slate-700">{field.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* Error Summary */}
-                    {Object.keys(errors).some(key => errors[key as keyof AnalysisData] && errors[key as keyof AnalysisData] !== 'NOT_FOUND') && Object.keys(touched).length > 0 && (
+                    {Object.keys(errors).some(key => errors[key as keyof AnalysisData]) && Object.keys(touched).length > 0 && (
                         <div className="mb-[20px] p-[16px] bg-red-50 border-2 border-red-200 rounded-[14px]">
                             <div className="flex items-start gap-[12px]">
                                 <div
@@ -427,8 +511,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                                     <h4 className="font-[700] text-red-900 mb-[6px] text-[14px] m-0">No se puede continuar</h4>
                                     <ul className="space-y-[4px] text-[13px] text-red-700 m-0 p-0 list-none">
                                         {errors.lote && <li>• {errors.lote}</li>}
-                                        {errors.codigo && errors.codigo !== 'NOT_FOUND' && <li>• {errors.codigo}</li>}
-                                        {errors.codigo === 'NOT_FOUND' && <li>• Código no registrado (agrégalo arriba)</li>}
+                                        {errors.codigo && <li>• {errors.codigo}</li>}
                                         {errors.talla && <li>• {errors.talla}</li>}
                                         {errors.color && <li>• {errors.color}</li>}
                                     </ul>
