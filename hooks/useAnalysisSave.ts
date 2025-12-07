@@ -190,7 +190,7 @@ export const useAnalysisSave = ({
             completedAt: completedAtValue,
             analystColor: originalAnalystColor || analystColor!,
             sections,
-            // remuestreoConfig, // EXCLUDED to match QualityAnalysis type
+            remuestreoConfig, // Now included - matches QualityAnalysis type
             analyses: analyses.map(a => {
                 const hasUniformidadData = a.uniformidad && (
                     (a.uniformidad.grandes?.valor || a.uniformidad.grandes?.fotoUrl) ||

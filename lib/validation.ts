@@ -94,6 +94,21 @@ export const QualityAnalysisSchema = z.object({
         master: z.string(),
         type: z.enum(['ENTERO', 'COLA', 'VALOR_AGREGADO', 'CONTROL_PESOS', 'REMUESTREO']),
         unit: z.enum(['KG', 'LB'])
+    }).optional(),
+    // Configuración avanzada para REMUESTREO
+    remuestreoConfig: z.object({
+        reason: z.string().optional(),
+        linkedAnalysisId: z.string().optional(),
+        activeFields: z.object({
+            pesoBruto: z.boolean().optional(),
+            pesoNeto: z.boolean().optional(),
+            pesoCongelado: z.boolean().optional(),
+            pesoSubmuestra: z.boolean().optional(),
+            pesoGlaseo: z.boolean().optional(),
+            conteo: z.boolean().optional(),
+            uniformidad: z.boolean().optional(),
+            defectos: z.boolean().optional()
+        })
     }).optional()
 });
 
