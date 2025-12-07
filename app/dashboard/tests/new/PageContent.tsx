@@ -979,7 +979,7 @@ export default function NewMultiAnalysisPageContent() {
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
                                         <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-3' : 'space-y-6 md:space-y-4'}>
                                             {/* Peso Bruto */}
-                                            {!isDualBag && (
+                                            {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoBruto) && !isDualBag && (
                                                 <div className="space-y-3">
                                                     <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
                                                         <Label className="text-sm">
@@ -1020,33 +1020,35 @@ export default function NewMultiAnalysisPageContent() {
 
 
                                             {/* Peso Congelado */}
-                                            <div className="space-y-3">
-                                                <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
-                                                    <Label className="text-sm">
-                                                        {viewMode === 'COMPACTA' ? `P. CONG. (${weightUnit})` : `Peso Congelado (${weightUnit})`}
-                                                    </Label>
-                                                    {currentAnalysis.pesoCongelado?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
+                                            {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoCongelado) && (
+                                                <div className="space-y-3">
+                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                        <Label className="text-sm">
+                                                            {viewMode === 'COMPACTA' ? `P. CONG. (${weightUnit})` : `Peso Congelado (${weightUnit})`}
+                                                        </Label>
+                                                        {currentAnalysis.pesoCongelado?.valor && (
+                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="0"
+                                                        value={currentAnalysis.pesoCongelado?.valor || ''}
+                                                        onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
+                                                    />
+                                                    <PhotoCapture
+                                                        key={`pesoCongelado-${activeAnalysisIndex}`}
+                                                        label="Foto Peso Congelado"
+                                                        photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
+                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
+                                                        isUploading={isFieldUploading('pesoCongelado')}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoCongelado' }}
+                                                        forceGalleryMode={isGalleryMode}
+                                                    />
                                                 </div>
-                                                <Input
-                                                    type="number"
-                                                    placeholder="0"
-                                                    value={currentAnalysis.pesoCongelado?.valor || ''}
-                                                    onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
-                                                />
-                                                <PhotoCapture
-                                                    key={`pesoCongelado-${activeAnalysisIndex}`}
-                                                    label="Foto Peso Congelado"
-                                                    photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
-                                                    isUploading={isFieldUploading('pesoCongelado')}
-                                                    context={{ analysisId: analysisId || '', field: 'pesoCongelado' }}
-                                                    forceGalleryMode={isGalleryMode}
-                                                />
-                                            </div>
+                                            )}
 
                                             {/* Campos específicos para VALOR_AGREGADO */}
                                             {productType === 'VALOR_AGREGADO' && (
@@ -1112,42 +1114,44 @@ export default function NewMultiAnalysisPageContent() {
                                             )}
 
                                             {/* Peso Neto */}
-                                            <div className="space-y-3">
-                                                <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
-                                                    <Label className="text-sm">
-                                                        {viewMode === 'COMPACTA' ? `P. NETO (${weightUnit})` : `Peso Neto (${weightUnit})`}
-                                                    </Label>
-                                                    {currentAnalysis.pesoNeto?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                            {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoNeto) && (
+                                                <div className="space-y-3">
+                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
+                                                        <Label className="text-sm">
+                                                            {viewMode === 'COMPACTA' ? `P. NETO (${weightUnit})` : `Peso Neto (${weightUnit})`}
+                                                        </Label>
+                                                        {currentAnalysis.pesoNeto?.valor && (
+                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="0"
+                                                        value={currentAnalysis.pesoNeto?.valor || ''}
+                                                        onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
+                                                    />
+                                                    {/* Validation Message */}
+                                                    {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
+                                                        <div className={`text-xs font-medium ${weightValidationResults.pesoNeto.isValid
+                                                            ? 'text-green-600'
+                                                            : 'text-red-600'
+                                                            }`}>
+                                                            {weightValidationResults.pesoNeto.message}
                                                         </div>
                                                     )}
+                                                    <PhotoCapture
+                                                        key={`pesoNeto-${activeAnalysisIndex}`}
+                                                        label="Foto Peso Neto"
+                                                        photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
+                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
+                                                        isUploading={isFieldUploading('pesoNeto')}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoNeto' }}
+                                                        forceGalleryMode={isGalleryMode}
+                                                    />
                                                 </div>
-                                                <Input
-                                                    type="number"
-                                                    placeholder="0"
-                                                    value={currentAnalysis.pesoNeto?.valor || ''}
-                                                    onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
-                                                />
-                                                {/* Validation Message */}
-                                                {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
-                                                    <div className={`text-xs font-medium ${weightValidationResults.pesoNeto.isValid
-                                                        ? 'text-green-600'
-                                                        : 'text-red-600'
-                                                        }`}>
-                                                        {weightValidationResults.pesoNeto.message}
-                                                    </div>
-                                                )}
-                                                <PhotoCapture
-                                                    key={`pesoNeto-${activeAnalysisIndex}`}
-                                                    label="Foto Peso Neto"
-                                                    photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
-                                                    isUploading={isFieldUploading('pesoNeto')}
-                                                    context={{ analysisId: analysisId || '', field: 'pesoNeto' }}
-                                                    forceGalleryMode={isGalleryMode}
-                                                />
-                                            </div>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
