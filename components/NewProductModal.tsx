@@ -21,6 +21,8 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
     const [brand, setBrand] = useState('');
     const [master, setMaster] = useState('');
     const [type, setType] = useState<ProductType>('ENTERO');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [pdfExtractedData, setPdfExtractedData] = useState<any>(null);
 
     if (!isOpen) return null;
 
@@ -49,6 +51,9 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
 
             const data = await response.json();
 
+            // Store full PDF data for Firebase save
+            setPdfExtractedData(data);
+
             if (data.client) setClient(data.client);
             if (data.brand) setBrand(data.brand);
             if (data.master) setMaster(data.master);
@@ -68,7 +73,7 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!client || !brand || !master) {
@@ -77,6 +82,47 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
         }
 
         const unit = master.toLowerCase().includes('lb') ? 'LB' : 'KG';
+
+        // Save to Firebase
+        try {
+            const { saveCustomProductSpec } = await import('@/lib/customProductService');
+
+            await saveCustomProductSpec({
+                code: initialCode.padStart(5, '0'),
+                client: client.toUpperCase(),
+                brand: brand.toUpperCase(),
+                master,
+                type,
+                unit,
+                // Include full PDF extracted data if available
+                ...(pdfExtractedData && {
+                    description: pdfExtractedData.description,
+                    destination: pdfExtractedData.destination,
+                    version: pdfExtractedData.version,
+                    freezingMethod: pdfExtractedData.freezingMethod,
+                    certification: pdfExtractedData.certification,
+                    color: pdfExtractedData.color,
+                    preservative: pdfExtractedData.preservative,
+                    overweightPct: pdfExtractedData.overweightPct,
+                    glazingRatio: pdfExtractedData.glazingRatio,
+                    glazingUnit: pdfExtractedData.glazingUnit,
+                    netWeight: pdfExtractedData.netWeight,
+                    netWeightUnit: pdfExtractedData.netWeightUnit,
+                    grossWeight: pdfExtractedData.grossWeight,
+                    grossWeightUnit: pdfExtractedData.grossWeightUnit,
+                    packing: pdfExtractedData.packing,
+                    sizes: pdfExtractedData.sizes,
+                    defects: pdfExtractedData.defects,
+                }),
+                createdAt: new Date().toISOString(),
+                source: pdfExtractedData ? 'pdf' : 'manual'
+            });
+
+            toast.success('Ficha técnica guardada en Firebase');
+        } catch (error) {
+            console.error('Error saving to Firebase:', error);
+            toast.error('Error guardando en Firebase, pero continuando...');
+        }
 
         const info: ProductInfo = {
             client: client.toUpperCase(),
