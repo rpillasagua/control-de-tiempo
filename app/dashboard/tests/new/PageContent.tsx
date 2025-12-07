@@ -564,26 +564,47 @@ export default function NewMultiAnalysisPageContent() {
 
         const missing: string[] = [];
 
-        const checkWeights = productType !== 'REMUESTREO' || sections?.weights;
-        const checkUniformity = productType !== 'REMUESTREO' || sections?.uniformity;
-        const checkDefects = productType !== 'REMUESTREO' || sections?.defects;
+        // Determine which specific fields are active
+        const activeFields = isRemuestreo ? remuestreoConfig?.activeFields : null;
+
+        // Default to TRUE for standard analysis, or specific config for Remuestreo
+        const needPesoBruto = !isRemuestreo || activeFields?.pesoBruto;
+        const needPesoNeto = !isRemuestreo || activeFields?.pesoNeto;
+        const needPesoCongelado = !isRemuestreo && !isDualBag; // Standard usually needs this? Or maybe optional. Keeping standard logic conservative.
+
+        const needConteo = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && activeFields?.conteo);
+        const needUniformidad = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && activeFields?.uniformidad);
+        const needDefectos = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && activeFields?.defectos);
 
         // 1. Validar Pesos
-        if (checkWeights && !isDualBag) {
-            if (!currentAnalysis.pesoBruto?.valor) missing.push('Peso Bruto (Valor)');
-            if (!currentAnalysis.pesoBruto?.fotoUrl) missing.push('Peso Bruto (Foto)');
+        // Standard logic for 'weights' section being enabled
+        const sectionWeightsEnabled = !isRemuestreo || (activeFields?.pesoBruto || activeFields?.pesoNeto || activeFields?.pesoCongelado);
+
+        if (sectionWeightsEnabled) {
+            if (needPesoBruto && !isDualBag) {
+                if (!currentAnalysis.pesoBruto?.valor && currentAnalysis.pesoBruto?.valor !== 0) missing.push('Peso Bruto (Valor)');
+                if (!currentAnalysis.pesoBruto?.fotoUrl) missing.push('Peso Bruto (Foto)');
+            }
+
+            if (needPesoNeto) {
+                if (!currentAnalysis.pesoNeto?.valor && currentAnalysis.pesoNeto?.valor !== 0) missing.push('Peso Neto (Valor)');
+                if (!currentAnalysis.pesoNeto?.fotoUrl) missing.push('Peso Neto (Foto)');
+            }
+
+            // Remuestreo specific checks for other weights if selected
+            if (isRemuestreo && activeFields?.pesoCongelado) {
+                if (!currentAnalysis.pesoCongelado?.valor && currentAnalysis.pesoCongelado?.valor !== 0) missing.push('Peso Congelado (Valor)');
+            }
+            if (isRemuestreo && activeFields?.pesoGlaseo) {
+                if (!currentAnalysis.pesoConGlaseo?.valor && currentAnalysis.pesoConGlaseo?.valor !== 0) missing.push('Peso Glaseo');
+            }
         }
 
-        if (checkWeights) {
-            if (!currentAnalysis.pesoNeto?.valor) missing.push('Peso Neto (Valor)');
-            if (!currentAnalysis.pesoNeto?.fotoUrl) missing.push('Peso Neto (Foto)');
-        }
-
-        // 2. Validar Conteo (Linked to Uniformity)
-        if (checkUniformity && !currentAnalysis.conteo) missing.push('Conteo');
+        // 2. Validar Conteo
+        if (needConteo && !currentAnalysis.conteo) missing.push('Conteo');
 
         // 3. Validar Uniformidad
-        if (checkUniformity) {
+        if (needUniformidad) {
             if (!currentAnalysis.uniformidad?.grandes?.valor) missing.push('Uniformidad Grandes (Valor)');
             if (!currentAnalysis.uniformidad?.grandes?.fotoUrl) missing.push('Uniformidad Grandes (Foto)');
             if (!currentAnalysis.uniformidad?.pequenos?.valor) missing.push('Uniformidad Pequeños (Valor)');
@@ -591,7 +612,7 @@ export default function NewMultiAnalysisPageContent() {
         }
 
         // 4. Validar Defectos (Al menos uno > 0)
-        if (checkDefects) {
+        if (needDefectos) {
             const hasDefects = currentAnalysis.defectos && Object.values(currentAnalysis.defectos as Record<string, number>).some((val: number) => val > 0);
             if (!hasDefects) missing.push('Defectos (Al menos uno)');
         }
