@@ -1318,7 +1318,7 @@ export default function NewMultiAnalysisPageContent() {
                             )
                         }
                         {
-                            (!isRemuestreo || showDefects || showUniformity || showConteo) && (
+                            showDefects && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>📸 Foto de Calidad General</CardTitle>
