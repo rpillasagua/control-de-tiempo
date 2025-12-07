@@ -261,6 +261,7 @@ export default function NewMultiAnalysisPageContent() {
         setTalla(data.talla);
         setAnalystColor(data.color);
         setSections(data.sections);
+        setRemuestreoConfig(data.remuestreoConfig); // 🔥 FIX: Properly initialize Remuestreo Config state
         setBasicsCompleted(true);
         setAnalyses([{ id: generateId(), numero: 1 }]);
         setAnalysisId(generateId());
