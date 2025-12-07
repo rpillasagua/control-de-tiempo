@@ -411,6 +411,6 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
         onClose={handleCloseSpecsModal}
         code=""
       />
-    </div>{/* Fixed */ }
+    </div>
   );
 }
