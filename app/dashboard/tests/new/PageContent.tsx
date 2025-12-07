@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, CheckCircle2, Hash, Package, Ruler, Building2, Tag, Box, Edit, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2, Hash, Package, Ruler, Building2, Tag, Box, Edit, Image as ImageIcon, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
@@ -30,6 +30,10 @@ const DeleteConfirmationModal = dynamic(() => import('@/components/DeleteConfirm
     loading: () => null
 });
 
+const TechnicalSpecsModal = dynamic(() => import('@/components/TechnicalSpecsModal'), {
+    loading: () => null
+});
+
 import ViewModeSelector, { ViewMode, useViewMode } from '@/components/ViewModeSelector';
 import EditMetadataModal from '@/components/EditMetadataModal';
 
@@ -50,7 +54,7 @@ import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { useTechnicalSpecs } from '@/hooks/useTechnicalSpecs';
 import { useDefectCalculation } from '@/hooks/useDefectCalculation';
 import { useWeightValidation } from '@/hooks/useWeightValidation';
-import { TechnicalSpecsViewer } from '@/components/TechnicalSpecsViewer';
+// import { TechnicalSpecsViewer } from '@/components/TechnicalSpecsViewer';
 
 export default function NewMultiAnalysisPageContent() {
     const router = useRouter();
@@ -83,6 +87,7 @@ export default function NewMultiAnalysisPageContent() {
 
     // UI State
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showSpecsModal, setShowSpecsModal] = useState(false);
     const [showPendingUploads, setShowPendingUploads] = useState(false);
     const [deleteModalConfig, setDeleteModalConfig] = useState<{
         title: string;
@@ -746,8 +751,15 @@ export default function NewMultiAnalysisPageContent() {
                             </h1>
                         </div>
 
-                        {/* Sample number badge and analyst color */}
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowSpecsModal(true)}
+                                className="flex items-center gap-2 px-3 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-200 hover:text-indigo-100 rounded-lg border border-indigo-500/30 transition-all"
+                                title="Ver Ficha Técnica"
+                            >
+                                <FileText size={18} />
+                                <span className="hidden sm:inline font-medium">Ficha</span>
+                            </button>
                             <div
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
                                 style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
@@ -1455,6 +1467,12 @@ export default function NewMultiAnalysisPageContent() {
                 onClose={() => setShowPendingUploads(false)}
                 onRetryPhoto={retryPhotoUpload}
                 onRetryAll={retryAllFailedPhotos}
+            />
+
+            <TechnicalSpecsModal
+                isOpen={showSpecsModal}
+                onClose={() => setShowSpecsModal(false)}
+                code={codigo}
             />
 
             <EditMetadataModal
