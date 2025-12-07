@@ -5,6 +5,8 @@ import { AnalystColor, ProductType } from '@/lib/types';
 import { PRODUCT_DATA } from '@/lib/product-data';
 import AnalystColorSelector from './AnalystColorSelector';
 import { Loader2, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+import ImportNewProductModal from './NewProductModal';
 
 // 1. Tipado estricto y reutilizable
 interface AnalysisData {
@@ -141,26 +143,52 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         return normalized;
     };
 
+    // 4. Custom Products Logic
+    const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
+    const [customProducts, setCustomProducts] = useState<Record<string, import('@/lib/types').ProductInfo>>({});
+    const [tempCodeForModal, setTempCodeForModal] = useState('');
+
+    const handleNewProductSubmit = (info: import('@/lib/types').ProductInfo) => {
+        // Use the code that was originally entered
+        const code = tempCodeForModal || formData.codigo.trim();
+        const normalizedCode = getNormalizedCode(code); // Or just use raw input if we want
+
+        // Update custom products
+        setCustomProducts(prev => ({
+            ...prev,
+            [normalizedCode]: info
+        }));
+
+        // Update form data with the Type
+        if (info.type) {
+            handleChange('productType', info.type);
+        }
+
+        setIsNewProductModalOpen(false);
+        setErrors(prev => ({ ...prev, codigo: undefined })); // Clear code error
+        toast.success(`Producto ${code} agregado temporalmente`);
+    };
+
     const validateField = (field: keyof AnalysisData) => {
         let error = '';
         if (field === 'lote' && !formData.lote.trim()) error = 'El lote es requerido';
         if (field === 'codigo') {
-            if (!formData.codigo.trim()) {
-                error = 'El código es requerido';
-            } else {
+            if (formData.codigo.trim()) {
                 const normalizedCode = getNormalizedCode(formData.codigo);
-                const product = PRODUCT_DATA[normalizedCode];
+                const product = PRODUCT_DATA[normalizedCode] || customProducts[normalizedCode];
 
                 if (!product) {
-                    error = 'Código no encontrado en la base de datos';
+                    error = 'NOT_FOUND'; // Special flag for UI
                 } else if (
                     initialData?.productType &&
                     initialData.productType !== 'CONTROL_PESOS' &&
-                    initialData.productType !== 'REMUESTREO' && // ✅ Allow any code for REMUESTREO
+                    initialData.productType !== 'REMUESTREO' &&
                     product.type !== initialData.productType
                 ) {
                     error = `El código es de tipo ${product.type} pero seleccionaste ${initialData.productType}`;
                 }
+            } else {
+                error = 'El código es requerido';
             }
         }
         if (field === 'talla') {
@@ -168,9 +196,8 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 error = 'La talla es requerida';
             } else {
                 const normalizedCode = getNormalizedCode(formData.codigo);
-                const product = PRODUCT_DATA[normalizedCode];
+                const product = PRODUCT_DATA[normalizedCode] || customProducts[normalizedCode];
                 // Validate size using technical specs if we have a product type
-                // We use the product type from PRODUCT_DATA or initialData if available
                 const pType = product?.type || initialData?.productType || '';
 
                 const sizeValidation = validateSize(normalizedCode, formData.talla, pType);
@@ -182,32 +209,47 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         if (field === 'color' && !formData.color) error = 'Selecciona un color';
 
         setErrors(prev => ({ ...prev, [field]: error || undefined }));
-        return !error;
+        return !error || error === 'NOT_FOUND'; // NOT_FOUND is technically invalid for submit but handled in UI
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Validar todo antes de enviar
-        const isLoteValid = validateField('lote');
-        const isCodigoValid = validateField('codigo');
-        const isTallaValid = validateField('talla');
-        const isColorValid = validateField('color');
+        validateField('lote');
+        validateField('codigo');
+        validateField('talla');
+        validateField('color');
+
+        // Check if code is valid (exists in either DB or custom)
+        const normalizedCode = getNormalizedCode(formData.codigo);
+        const product = PRODUCT_DATA[normalizedCode] || customProducts[normalizedCode];
+
+        if (!product) {
+            // If not found, prevent submit and ensure error is shown
+            setErrors(prev => ({ ...prev, codigo: 'NOT_FOUND' }));
+            setTouched(prev => ({ ...prev, codigo: true }));
+            return;
+        }
 
         // Marcar todos los campos como tocados
         setTouched({ lote: true, codigo: true, talla: true, color: true });
 
-        if (!isLoteValid || !isCodigoValid || !isTallaValid || !isColorValid) {
+        // Re-check blocking errors
+        const currentErrors = { ...errors }; // Capture current state logic
+        // We know 'product' exists now, so 'codigo' error should be cleared if it was NOT_FOUND
+        if (currentErrors.codigo === 'NOT_FOUND') currentErrors.codigo = undefined;
+
+        if (Object.values(currentErrors).some(e => e && e !== 'NOT_FOUND')) {
             return;
         }
+        if (!formData.lote || !formData.talla || !formData.color) return;
+
 
         setIsSubmitting(true);
         try {
-            const normalizedCode = getNormalizedCode(formData.codigo);
-
             let pType = initialData?.productType;
             if (!pType && normalizedCode) {
-                const product = PRODUCT_DATA[normalizedCode];
                 if (product) pType = product.type;
             }
 
@@ -237,6 +279,13 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                     to { transform: translateY(0); opacity: 1; }
                 }
             `}</style>
+
+            <ImportNewProductModal
+                isOpen={isNewProductModalOpen}
+                onClose={() => setIsNewProductModalOpen(false)}
+                onSubmit={handleNewProductSubmit}
+                initialCode={tempCodeForModal}
+            />
 
             <div
                 className="bg-white w-[90%] max-w-[480px] p-[25px] rounded-[24px] relative text-left max-h-[90vh] overflow-y-auto"
@@ -268,17 +317,38 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                         autoFocus
                     />
 
-                    <ModernInput
-                        id="codigo"
-                        label="Código Referencia"
-                        placeholder="Ej: REF-882"
-                        icon="🔢"
-                        value={formData.codigo}
-                        onChange={(e) => handleChange('codigo', e.target.value)}
-                        onBlur={() => handleBlur('codigo')}
-                        error={touched.codigo ? errors.codigo : undefined}
-                        required
-                    />
+                    <div className="mb-[16px]">
+                        <ModernInput
+                            id="codigo"
+                            label="Código Referencia"
+                            placeholder="Ej: REF-882"
+                            icon="🔢"
+                            value={formData.codigo}
+                            onChange={(e) => handleChange('codigo', e.target.value)}
+                            onBlur={() => handleBlur('codigo')}
+                            error={touched.codigo && errors.codigo !== 'NOT_FOUND' ? errors.codigo : undefined}
+                            required
+                        />
+                        {/* Error Alternativo con Botón de Agregar */}
+                        {touched.codigo && errors.codigo === 'NOT_FOUND' && (
+                            <div className="mt-[-10px] mb-[16px] p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
+                                <div className="text-[13px] text-blue-700 font-medium flex items-center gap-2">
+                                    <span className="text-lg">🤔</span>
+                                    <span>¿Código nuevo?</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTempCodeForModal(getNormalizedCode(formData.codigo));
+                                        setIsNewProductModalOpen(true);
+                                    }}
+                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold rounded-lg transition-colors shadow-sm"
+                                >
+                                    Agregar Ficha +
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     <ModernInput
                         id="talla"
@@ -340,7 +410,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                     )}
 
                     {/* Error Summary */}
-                    {Object.keys(errors).some(key => errors[key as keyof AnalysisData]) && Object.keys(touched).length > 0 && (
+                    {Object.keys(errors).some(key => errors[key as keyof AnalysisData] && errors[key as keyof AnalysisData] !== 'NOT_FOUND') && Object.keys(touched).length > 0 && (
                         <div className="mb-[20px] p-[16px] bg-red-50 border-2 border-red-200 rounded-[14px]">
                             <div className="flex items-start gap-[12px]">
                                 <div
@@ -357,7 +427,8 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                                     <h4 className="font-[700] text-red-900 mb-[6px] text-[14px] m-0">No se puede continuar</h4>
                                     <ul className="space-y-[4px] text-[13px] text-red-700 m-0 p-0 list-none">
                                         {errors.lote && <li>• {errors.lote}</li>}
-                                        {errors.codigo && <li>• {errors.codigo}</li>}
+                                        {errors.codigo && errors.codigo !== 'NOT_FOUND' && <li>• {errors.codigo}</li>}
+                                        {errors.codigo === 'NOT_FOUND' && <li>• Código no registrado (agrégalo arriba)</li>}
                                         {errors.talla && <li>• {errors.talla}</li>}
                                         {errors.color && <li>• {errors.color}</li>}
                                     </ul>
