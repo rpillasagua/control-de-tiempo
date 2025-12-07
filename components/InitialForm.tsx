@@ -7,6 +7,9 @@ import AnalystColorSelector from './AnalystColorSelector';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { searchAnalyses } from '@/lib/analysisService';
 import { debounce } from '@/lib/utils';
+import NewProductModal from './NewProductModal';
+import { Plus } from 'lucide-react'; // Import Plus icon
+
 
 // 1. Tipado estricto y reutilizable
 interface AnalysisData {
@@ -108,6 +111,10 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
     const [searchResults, setSearchResults] = useState<QualityAnalysis[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
+
+    // New Product Modal State
+    const [showNewProductModal, setShowNewProductModal] = useState(false);
+    const [tempProductData, setTempProductData] = useState<any>(null); // To store locally created product info
 
     // Debounced search function
     const handleSearch = useCallback(
@@ -219,7 +226,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 error = 'El código es requerido';
             } else {
                 const normalizedCode = getNormalizedCode(formData.codigo);
-                const product = PRODUCT_DATA[normalizedCode];
+                const product = PRODUCT_DATA[normalizedCode] || tempProductData?.[normalizedCode];
 
                 if (!product) {
                     error = 'Código no encontrado en la base de datos';
@@ -241,7 +248,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 const product = PRODUCT_DATA[normalizedCode];
                 // Validate size using technical specs if we have a product type
                 // We use the product type from PRODUCT_DATA or initialData if available
-                const pType = product?.type || initialData?.productType || '';
+                const pType = product?.type || tempProductData?.[normalizedCode]?.type || initialData?.productType || '';
 
                 const sizeValidation = validateSize(normalizedCode, formData.talla, pType);
                 if (!sizeValidation.isValid) {
@@ -277,7 +284,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
 
             let pType = initialData?.productType;
             if (!pType && normalizedCode) {
-                const product = PRODUCT_DATA[normalizedCode];
+                const product = PRODUCT_DATA[normalizedCode] || tempProductData?.[normalizedCode];
                 if (product) pType = product.type;
             }
 
@@ -349,6 +356,20 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                         error={touched.codigo ? errors.codigo : undefined}
                         required
                     />
+
+                    {/* Botón para registrar nuevo producto si el código no existe */}
+                    {touched.codigo && errors.codigo === 'Código no encontrado en la base de datos' && (
+                        <div className="mt-[-10px] mb-[16px] animate-fade-in">
+                            <button
+                                type="button"
+                                onClick={() => setShowNewProductModal(true)}
+                                className="text-[12px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors w-full justify-center"
+                            >
+                                <Plus size={14} />
+                                Registrar Ficha Técnica (PDF/Manual)
+                            </button>
+                        </div>
+                    )}
 
                     <ModernInput
                         id="talla"
@@ -583,6 +604,29 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                     </button>
                 </form>
             </div>
+
+            <NewProductModal
+                isOpen={showNewProductModal}
+                onClose={() => setShowNewProductModal(false)}
+                initialCode={formData.codigo}
+                onSubmit={(info) => {
+                    // Update local temp data to bypass validation
+                    const normalized = getNormalizedCode(formData.codigo);
+                    setTempProductData((prev: any) => ({
+                        ...prev,
+                        [normalized]: info
+                    }));
+
+                    // Close modal
+                    setShowNewProductModal(false);
+
+                    // Clear error for 'codigo' immediately
+                    setErrors(prev => ({ ...prev, codigo: undefined }));
+
+                    // Optionally set Product Type if not set
+                    // But we let the validation logic pick it up from tempProductData
+                }}
+            />
         </div>
     );
 }

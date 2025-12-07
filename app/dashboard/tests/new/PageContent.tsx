@@ -58,10 +58,20 @@ export default function NewMultiAnalysisPageContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [productType, setProductType] = useState<ProductType | null>(null);
     const [basicsCompleted, setBasicsCompleted] = useState(false);
-
-    // Analysis State
     const [analysisId, setAnalysisId] = useState<string | null>(null);
     const [analyses, setAnalyses] = useState<Analysis[]>([]);
+
+    const [sections, setSections] = useState<{ weights: boolean; uniformity: boolean; defects: boolean } | undefined>(undefined);
+    const [remuestreoConfig, setRemuestreoConfig] = useState<any>(null);
+
+    // Derived state for Remuestreo Active Fields
+    const isRemuestreo = productType === 'REMUESTREO';
+    // Helper to check if a section should be active
+    const showWeights = !isRemuestreo || (remuestreoConfig?.activeFields?.pesoBruto || remuestreoConfig?.activeFields?.pesoNeto || remuestreoConfig?.activeFields?.pesoCongelado || remuestreoConfig?.activeFields?.pesoSubmuestra || remuestreoConfig?.activeFields?.pesoGlaseo);
+    const showUniformity = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && remuestreoConfig?.activeFields?.uniformidad);
+    const showConteo = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && remuestreoConfig?.activeFields?.conteo);
+    const showDefects = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && remuestreoConfig?.activeFields?.defectos);
+
     const [activeAnalysisIndex, setActiveAnalysisIndex] = useState(0);
 
     // Global Fields
@@ -69,11 +79,7 @@ export default function NewMultiAnalysisPageContent() {
     const [lote, setLote] = useState('');
     const [talla, setTalla] = useState('');
     const [analystColor, setAnalystColor] = useState<AnalystColor | null>(null);
-    const [sections, setSections] = useState<{
-        weights: boolean;
-        uniformity: boolean;
-        defects: boolean;
-    } | undefined>(undefined);
+
 
     // UI State
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -143,9 +149,11 @@ export default function NewMultiAnalysisPageContent() {
         originalShift,
         globalPesoBruto,
         isCompleted,
+        isCompleted,
         setIsCompleted,
         isDeleting,
-        sections
+        sections,
+        remuestreoConfig
     });
 
     const {
@@ -424,6 +432,7 @@ export default function NewMultiAnalysisPageContent() {
                             setAnalysisId(data.id);
                             setProductType(data.productType);
                             setSections(data.sections);
+                            setRemuestreoConfig(data.remuestreoConfig);
                             setCodigo(data.codigo);
                             setLote(data.lote);
                             setTalla(data.talla || '');
@@ -700,7 +709,9 @@ export default function NewMultiAnalysisPageContent() {
                             </button>
                             <div className="h-5 w-px bg-slate-800"></div>
                             <h1 className="text-sm font-semibold text-slate-100">
-                                {productType === 'CONTROL_PESOS' ? (
+                                {isRemuestreo ? (
+                                    <span className="text-lg font-bold text-yellow-300">REMUESTREO</span>
+                                ) : productType === 'CONTROL_PESOS' ? (
                                     <span className="text-lg font-bold">CONTROL DE PESOS</span>
                                 ) : (
                                     <>
@@ -740,6 +751,26 @@ export default function NewMultiAnalysisPageContent() {
                     onAddAnalysis={handleAddAnalysis}
                     analystColor={analystColor!}
                 />
+
+                {/* MOTIVO DEL REMUESTREO (Solo si es Remuestreo) */}
+                {isRemuestreo && (
+                    <Card className="mb-6 border-blue-200 bg-blue-50/50">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base text-blue-800 flex items-center gap-2">
+                                📋 Motivo del Remuestreo
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Input
+                                value={remuestreoConfig?.reason || ''}
+                                onChange={(e) => setRemuestreoConfig((prev: any) => ({ ...prev, reason: e.target.value }))}
+                                placeholder="Ingrese el motivo del remuestreo..."
+                                className="bg-white"
+                            // readOnly={isReadOnly} // TODO: Implement readOnly logic if needed
+                            />
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Current Analysis Form */}
                 <div className="space-y-6">
@@ -918,7 +949,7 @@ export default function NewMultiAnalysisPageContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                         {/* Pesos Section */}
                         {
-                            ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (productType === 'REMUESTREO' && sections?.weights)) && (
+                            ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (isRemuestreo && showWeights)) && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>⚖️ Control de Pesos</CardTitle>
@@ -1103,7 +1134,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Uniformidad */}
                         {
-                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity) && (
+                            productType !== 'CONTROL_PESOS' && showUniformity && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>📏 Uniformidad</CardTitle>
@@ -1206,7 +1237,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Conteo Section */}
                         {
-                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.uniformity) && (
+                            productType !== 'CONTROL_PESOS' && showConteo && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>🔢 Conteo</CardTitle>
@@ -1251,7 +1282,7 @@ export default function NewMultiAnalysisPageContent() {
 
                         {/* Defectos de Calidad */}
                         {
-                            productType !== 'CONTROL_PESOS' && (productType !== 'REMUESTREO' || sections?.defects) && (
+                            productType !== 'CONTROL_PESOS' && showDefects && (
                                 <Card>
                                     <CardContent className="pt-6">
                                         <DefectSelector
