@@ -185,3 +185,24 @@ export const uploadWithRetry = async (uploadFn: () => Promise<string>, retries =
   }
   throw new Error('Max retries reached');
 };
+
+/**
+ * Debounce function - delays execution until after wait milliseconds have elapsed
+ * since the last time the debounced function was invoked.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  return function (this: unknown, ...args: Parameters<T>) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, wait);
+  };
+}
