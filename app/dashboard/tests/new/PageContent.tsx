@@ -1317,26 +1317,30 @@ export default function NewMultiAnalysisPageContent() {
                                 </Card>
                             )
                         }
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>📸 Foto de Calidad General</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className={viewMode === 'COMPACTA' ? 'flex justify-center' : ''}>
-                                    <div style={{ width: viewMode === 'COMPACTA' ? '32%' : '100%' }}>
-                                        <PhotoCapture
-                                            key={`fotoCalidad-${activeAnalysisIndex}`}
-                                            label="Foto General"
-                                            photoUrl={currentAnalysis.fotoCalidad}
-                                            onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
-                                            isUploading={isFieldUploading('fotoCalidad')}
-                                            context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
-                                            forceGalleryMode={isGalleryMode}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {
+                            (!isRemuestreo || showDefects || showUniformity || showConteo) && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>📸 Foto de Calidad General</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className={viewMode === 'COMPACTA' ? 'flex justify-center' : ''}>
+                                            <div style={{ width: viewMode === 'COMPACTA' ? '32%' : '100%' }}>
+                                                <PhotoCapture
+                                                    key={`fotoCalidad-${activeAnalysisIndex}`}
+                                                    label="Foto General"
+                                                    photoUrl={currentAnalysis.fotoCalidad}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
+                                                    isUploading={isFieldUploading('fotoCalidad')}
+                                                    context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
+                                                    forceGalleryMode={isGalleryMode}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        }
 
 
 
