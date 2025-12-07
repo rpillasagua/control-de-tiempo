@@ -1375,7 +1375,7 @@ export default function NewMultiAnalysisPageContent() {
                         </Card>
 
                         {/* Ficha Técnica - Defectos */}
-                        <TechnicalSpecsViewer code={codigo} />
+
 
                     </div >
 
