@@ -67,7 +67,7 @@ export const AnalysisItemSchema = z.object({
 // Esquema completo de análisis de calidad (QualityAnalysis)
 export const QualityAnalysisSchema = z.object({
     id: z.string(),
-    productType: z.enum(['ENTERO', 'COLA', 'VALOR_AGREGADO', 'CONTROL_PESOS']),
+    productType: z.enum(['ENTERO', 'COLA', 'VALOR_AGREGADO', 'CONTROL_PESOS', 'REMUESTREO']),
     lote: z.string().min(1, 'El lote es obligatorio'),
     codigo: z.string().min(1, 'El código es obligatorio'),
     talla: z.string().optional(),
@@ -80,7 +80,21 @@ export const QualityAnalysisSchema = z.object({
     date: z.string(),
     status: z.enum(['EN_PROGRESO', 'COMPLETADO']).optional(),
     completedAt: z.string().optional(),
-    observations: z.string().optional()
+    observations: z.string().optional(),
+    // Campos adicionales para REMUESTREO y otros
+    sections: z.object({
+        weights: z.boolean(),
+        uniformity: z.boolean(),
+        defects: z.boolean()
+    }).optional(),
+    globalPesoBruto: PesoSchema.optional(),
+    customProductInfo: z.object({
+        client: z.string(),
+        brand: z.string(),
+        master: z.string(),
+        type: z.enum(['ENTERO', 'COLA', 'VALOR_AGREGADO', 'CONTROL_PESOS', 'REMUESTREO']),
+        unit: z.enum(['KG', 'LB'])
+    }).optional()
 });
 
 /**
