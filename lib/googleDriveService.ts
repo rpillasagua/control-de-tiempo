@@ -782,104 +782,6 @@ class GoogleDriveService {
   }
 
   /**
-   * Mueve una carpeta de análisis a una nueva ubicación (cuando cambia Lote o Código)
-   */
-  async moveAnalysisFolder(
-    analysisId: string,
-    oldCodigo: string,
-    oldLote: string,
-    newCodigo: string,
-    newLote: string
-  ): Promise<void> {
-    try {
-      logger.log(`🚚 Moviendo carpeta de análisis ${analysisId}...`);
-      logger.log(`  De: ${oldCodigo}/${oldLote}`);
-      logger.log(`  A:  ${newCodigo}/${newLote}`);
-
-      await this.ensureToken();
-
-      // 1. Encontrar la carpeta del análisis en la ubicación "vieja"
-      const rootId = this.rootFolderId || await this.findFolderInRoot(this.ROOT_FOLDER_NAME);
-      if (!rootId) throw new Error('Root folder not found');
-
-      const oldCodigoId = await this.findFolder(oldCodigo, rootId);
-      if (!oldCodigoId) {
-        logger.warn(`⚠️ Carpeta de código anterior ${oldCodigo} no encontrada. No hay nada que mover.`);
-        return;
-      }
-
-      const oldLoteId = await this.findFolder(oldLote, oldCodigoId);
-      if (!oldLoteId) {
-        logger.warn(`⚠️ Carpeta de lote anterior ${oldLote} no encontrada. No hay nada que mover.`);
-        return;
-      }
-
-      const analysisFolderId = await this.findFolder(analysisId, oldLoteId);
-      if (!analysisFolderId) {
-        logger.warn(`⚠️ Carpeta de análisis ${analysisId} no encontrada en la ubicación vieja. Completado sin cambios.`);
-        return;
-      }
-
-      // 2. Crear/Verificar la nueva estructura de destino
-      const newCodigoId = await this.getOrCreateFolder(newCodigo, rootId);
-      const newLoteId = await this.getOrCreateFolder(newLote, newCodigoId);
-
-      // 3. Mover la carpeta del análisis (addParents + removeParents)
-      await this.moveFile(analysisFolderId, newLoteId, oldLoteId);
-
-      logger.log(`✅ Carpeta de análisis movida exitosamente.`);
-
-      // 4. Limpieza opcional: Si las carpetas viejas quedan vacías, borrarlas?
-      // Por seguridad mejor no borrarlas automáticamente aún.
-
-    } catch (error) {
-      logger.error('❌ Error moviendo carpeta de análisis:', error);
-      // No lanzamos error para no romper el flujo principal de actualización de datos
-      // Pero sí logueamos fuerte el error
-    }
-  }
-
-  /**
-   * Mueve un archivo/carpeta de un padre a otro
-   */
-  async moveFile(fileId: string, newParentId: string, previousParentId?: string): Promise<void> {
-    try {
-      await this.ensureToken();
-
-      let parentsToRemove = previousParentId;
-
-      // Si no se especifica padre anterior, buscarlo
-      if (!parentsToRemove) {
-        const response = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${fileId}?fields=parents`,
-          { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
-        );
-        const data = await response.json();
-        if (data.parents && data.parents.length > 0) {
-          parentsToRemove = data.parents.join(',');
-        }
-      }
-
-      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${newParentId}` +
-        (parentsToRemove ? `&removeParents=${parentsToRemove}` : '');
-
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to move file: ${response.status}`);
-      }
-    } catch (error) {
-      logger.error('Error moving file:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Elimina un archivo de Google Drive
    * @param fileId ID del archivo
    */
@@ -945,6 +847,50 @@ class GoogleDriveService {
   }
 
   /**
+   * Mueve un archivo o carpeta a una nueva ubicación
+   * @param fileId ID del archivo/carpeta a mover
+   * @param newParentId ID de la nueva carpeta padre
+   */
+  async moveFile(fileId: string, newParentId: string): Promise<void> {
+    try {
+      logger.log(`🚚 Moviendo archivo ${fileId} a carpeta ${newParentId}`);
+      await this.ensureToken();
+
+      // 1. Obtener los padres actuales para removerlos
+      const file = await this.getFile(fileId);
+      // Nota: getFile actual no devuelve 'parents', necesitamos pedirlo o asumir
+      // Para ser seguros, usamos ?fields=parents
+      const parentsResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?fields=parents`,
+        { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+      );
+      const parentsData = await parentsResponse.json();
+      const previousParents = parentsData.parents ? parentsData.parents.join(',') : '';
+
+      // 2. Actualizar padres (addParents, removeParents)
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${newParentId}&removeParents=${previousParents}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+      }
+
+      logger.log(`✅ Archivo movido exitosamente`);
+    } catch (error) {
+      logger.error('❌ Error moving file:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Sincroniza las carpetas cuando cambia el código o lote
    */
   async syncAnalysisFolders(
@@ -954,15 +900,83 @@ class GoogleDriveService {
     newBatch: string,
     analysisId: string
   ): Promise<void> {
-    logger.log(`🔄 Sincronizando carpetas para análisis ${analysisId}: ${oldCode}/${oldBatch} -> ${newCode}/${newBatch}`);
+    logger.log(`🔄 Sincronizando carpetas: ${oldCode}/${oldBatch} -> ${newCode}/${newBatch}`);
 
     if (oldCode === newCode && oldBatch === newBatch) {
       logger.log('ℹ️ No hay cambios en código ni lote. Nada que sincronizar.');
       return;
     }
 
-    // Usar la nueva lógica granular que mueve solo la carpeta del análisis
-    await this.moveAnalysisFolder(analysisId, oldCode, oldBatch, newCode, newBatch);
+    try {
+      await this.ensureToken();
+      await this.initialize();
+
+      if (!this.rootFolderId) {
+        throw new Error('Root folder ID not found');
+      }
+
+      // 1. Buscar carpeta del código anterior
+      const oldCodeFolderId = await this.findFolder(oldCode, this.rootFolderId);
+      if (!oldCodeFolderId) {
+        logger.warn(`⚠️ Carpeta del código anterior "${oldCode}" no encontrada. No se puede sincronizar.`);
+        return;
+      }
+
+      // 2. Buscar carpeta del lote anterior
+      const oldBatchFolderId = await this.findFolder(oldBatch, oldCodeFolderId);
+      if (!oldBatchFolderId) {
+        logger.warn(`⚠️ Carpeta del lote anterior "${oldBatch}" no encontrada. No se puede sincronizar.`);
+        return;
+      }
+
+      // CASO 1: Solo cambió el LOTE (mismo código)
+      if (oldCode === newCode && oldBatch !== newBatch) {
+        logger.log(`📝 Solo cambió el lote. Renombrando carpeta ${oldBatchFolderId}...`);
+        await this.renameFile(oldBatchFolderId, newBatch);
+        logger.log('✅ Carpeta de lote renombrada exitosamente.');
+        return;
+      }
+
+      // CASO 2: Cambió el CÓDIGO (y posiblemente el lote)
+      if (oldCode !== newCode) {
+        logger.log(`🚚 Cambió el código. Moviendo carpeta de lote...`);
+
+        // a. Asegurar que existe la carpeta del NUEVO código
+        const newCodeFolderId = await this.getOrCreateFolder(newCode, this.rootFolderId);
+
+        // b. Mover la carpeta del lote a la carpeta del nuevo código
+        await this.moveFile(oldBatchFolderId, newCodeFolderId);
+
+        // c. Si también cambió el nombre del lote, renombrarla
+        if (oldBatch !== newBatch) {
+          logger.log(`📝 También cambió el nombre del lote. Renombrando...`);
+          await this.renameFile(oldBatchFolderId, newBatch);
+        }
+
+        logger.log('✅ Carpeta de lote movida (y renombrada si era necesario) exitosamente.');
+
+        // d. Limpieza: Verificar si la carpeta del código anterior quedó vacía
+        try {
+          const query = `'${oldCodeFolderId}' in parents and trashed=false`;
+          const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&pageSize=1`,
+            { headers: { 'Authorization': `Bearer ${this.accessToken}` } }
+          );
+          const data = await response.json();
+          if (!data.files || data.files.length === 0) {
+            logger.log(`🗑️ Carpeta del código anterior vacía. Eliminando...`);
+            await this.deleteFile(oldCodeFolderId);
+          }
+        } catch (cleanupError) {
+          logger.warn('⚠️ Error en limpieza de carpeta vacía (no crítico):', cleanupError);
+        }
+      }
+
+    } catch (error) {
+      logger.error('❌ Error en syncAnalysisFolders:', error);
+      // No lanzamos error para no romper el flujo de guardado en UI, pero logueamos fuerte
+      // throw error; 
+    }
   }
 
   /**

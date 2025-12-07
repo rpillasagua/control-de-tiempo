@@ -269,8 +269,8 @@ export default function Home() {
                   newCache = [...newCache, ...oldItems];
                 }
 
-                // Limitar a 300 items (antes 100)
-                const limitedCache = newCache.slice(0, 300);
+                // Limitar a 100 items
+                const limitedCache = newCache.slice(0, 100);
                 localStorage.setItem('cached_analyses', JSON.stringify(limitedCache));
               } catch (e) {
                 console.error('Error saving to cache', e);

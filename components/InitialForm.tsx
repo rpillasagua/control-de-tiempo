@@ -1,13 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { AnalystColor, ProductType, QualityAnalysis, ProductInfo } from '@/lib/types';
+import { useState } from 'react';
+import { AnalystColor, ProductType } from '@/lib/types';
 import { PRODUCT_DATA } from '@/lib/product-data';
 import AnalystColorSelector from './AnalystColorSelector';
-import NewProductModal from './NewProductModal'; // NEW
 import { Loader2, ArrowRight } from 'lucide-react';
-import { searchAnalyses } from '@/lib/analysisService';
-import { debounce } from '@/lib/utils';
 
 // 1. Tipado estricto y reutilizable
 interface AnalysisData {
@@ -16,26 +13,11 @@ interface AnalysisData {
     talla: string;
     color: AnalystColor | null;
     productType?: ProductType;
-    // @deprecated
     sections?: {
         weights: boolean;
         uniformity: boolean;
         defects: boolean;
     };
-    remuestreoConfig?: {
-        reason?: string;
-        linkedAnalysisId?: string;
-        activeFields: {
-            pesoBruto?: boolean;
-            pesoNeto?: boolean;
-            pesoCongelado?: boolean;
-            peseoSubmuestra?: boolean;
-            conteo?: boolean;
-            uniformidad?: boolean;
-            defectos?: boolean;
-        };
-    };
-    customProductInfo?: ProductInfo;
 }
 
 interface InitialFormProps {
@@ -87,65 +69,12 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         codigo: initialData?.codigo || '',
         talla: initialData?.talla || '',
         color: initialData?.color || null,
-        sections: { weights: true, uniformity: true, defects: true },
-        remuestreoConfig: {
-            activeFields: {
-                pesoBruto: true,
-                pesoNeto: true,
-                pesoCongelado: true,
-                peseoSubmuestra: false,
-                conteo: true,
-                uniformidad: true,
-                defectos: true
-            }
-        }
+        sections: { weights: true, uniformity: true, defects: true }
     });
 
     const [errors, setErrors] = useState<Partial<Record<keyof AnalysisData, string>>>({});
-
-    // Search State
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState<QualityAnalysis[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [showResults, setShowResults] = useState(false);
-
-    // Debounced search function
-    const handleSearch = useCallback(
-        debounce(async (term: string) => {
-            if (!term || term.length < 2) {
-                setSearchResults([]);
-                setIsSearching(false);
-                return;
-            }
-
-            setIsSearching(true);
-            try {
-                // Dynamically import to ensure client-side safety if needed, or just call directly
-                const results = await searchAnalyses(term);
-                setSearchResults(results);
-            } catch (error) {
-                console.error("Search failed", error);
-            } finally {
-                setIsSearching(false);
-            }
-        }, 500),
-        []
-    );
-
-    const selectAnalysis = (analysis: QualityAnalysis) => {
-        setFormData(prev => ({
-            ...prev,
-            remuestreoConfig: {
-                ...prev.remuestreoConfig!,
-                linkedAnalysisId: analysis.id
-            }
-        }));
-        setSearchTerm(`${analysis.lote} (${analysis.codigo})`);
-        setShowResults(false);
-    };
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showNewProductModal, setShowNewProductModal] = useState(false); // NEW
 
     const { validateSize } = useTechnicalSpecs();
 
@@ -223,8 +152,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 const product = PRODUCT_DATA[normalizedCode];
 
                 if (!product) {
-                    // error = 'Código no encontrado en la base de datos'; 
-                    // ALLOW UNKNOWN CODES -> Will trigger Modal on submit
+                    error = 'Código no encontrado en la base de datos';
                 } else if (
                     initialData?.productType &&
                     initialData.productType !== 'CONTROL_PESOS' &&
@@ -273,16 +201,10 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
             return;
         }
 
-        const normalizedCode = getNormalizedCode(formData.codigo);
-
-        // CHECK IF CODE EXISTS
-        if (!PRODUCT_DATA[normalizedCode]) {
-            setShowNewProductModal(true);
-            return;
-        }
-
         setIsSubmitting(true);
         try {
+            const normalizedCode = getNormalizedCode(formData.codigo);
+
             let pType = initialData?.productType;
             if (!pType && normalizedCode) {
                 const product = PRODUCT_DATA[normalizedCode];
@@ -304,321 +226,209 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         }
     };
 
-    const handleNewProductSubmit = async (info: ProductInfo) => {
-        setIsSubmitting(true);
-        setShowNewProductModal(false);
-        try {
-            const normalizedCode = await getNormalizedCode(formData.codigo); // await not needed but safe
-            const normalizedLote = getNormalizedLote(formData.lote, info.type); // Use new type
-
-            await onComplete({
-                ...formData,
-                lote: normalizedLote,
-                talla: formData.talla.trim(),
-                codigo: normalizedCode,
-                customProductInfo: info
-            });
-        } catch (error) {
-            console.error("Error submitting new product:", error);
-            setIsSubmitting(false);
-        }
-    };
-
     // Helper to check if current type is REMUESTREO
     const isRemuestreo = initialData?.productType === 'REMUESTREO';
 
     return (
-        <>
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in">
-                <style jsx global>{`
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in">
+            <style jsx global>{`
                 @keyframes floatUp {
                     from { transform: translateY(20px); opacity: 0; }
                     to { transform: translateY(0); opacity: 1; }
                 }
             `}</style>
 
-                <div
-                    className="bg-white w-[90%] max-w-[480px] p-[25px] rounded-[24px] relative text-left max-h-[90vh] overflow-y-auto"
-                    style={{
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        animation: 'floatUp 0.3s ease-out'
-                    }}
-                >
-                    {/* Título */}
-                    <h2 className="m-0 text-[22px] font-[800] text-[#111827]">
-                        {isRemuestreo ? 'Configurar Remuestreo' : 'Nuevo Análisis de Calidad'}
-                    </h2>
-                    <p className="mt-[5px] mb-[25px] text-[14px] text-[#6B7280]">
-                        {isRemuestreo ? 'Selecciona las secciones a analizar e ingresa los datos.' : 'Ingresa los datos de identificación del lote para comenzar.'}
-                    </p>
+            <div
+                className="bg-white w-[90%] max-w-[480px] p-[25px] rounded-[24px] relative text-left max-h-[90vh] overflow-y-auto"
+                style={{
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    animation: 'floatUp 0.3s ease-out'
+                }}
+            >
+                {/* Título */}
+                <h2 className="m-0 text-[22px] font-[800] text-[#111827]">
+                    {isRemuestreo ? 'Configurar Remuestreo' : 'Nuevo Análisis de Calidad'}
+                </h2>
+                <p className="mt-[5px] mb-[25px] text-[14px] text-[#6B7280]">
+                    {isRemuestreo ? 'Selecciona las secciones a analizar e ingresa los datos.' : 'Ingresa los datos de identificación del lote para comenzar.'}
+                </p>
 
-                    <form onSubmit={handleSubmit}>
-                        {/* Inputs */}
-                        <ModernInput
-                            id="lote"
-                            label="Lote de Producción"
-                            placeholder="Ej: L-2024-001"
-                            icon="📦"
-                            value={formData.lote}
-                            onChange={(e) => handleChange('lote', e.target.value)}
-                            onBlur={() => handleBlur('lote')}
-                            error={touched.lote ? errors.lote : undefined}
-                            required
-                            autoFocus
-                        />
+                <form onSubmit={handleSubmit}>
+                    {/* Inputs */}
+                    <ModernInput
+                        id="lote"
+                        label="Lote de Producción"
+                        placeholder="Ej: L-2024-001"
+                        icon="📦"
+                        value={formData.lote}
+                        onChange={(e) => handleChange('lote', e.target.value)}
+                        onBlur={() => handleBlur('lote')}
+                        error={touched.lote ? errors.lote : undefined}
+                        required
+                        autoFocus
+                    />
 
-                        <ModernInput
-                            id="codigo"
-                            label="Código Referencia"
-                            placeholder="Ej: REF-882"
-                            icon="🔢"
-                            value={formData.codigo}
-                            onChange={(e) => handleChange('codigo', e.target.value)}
-                            onBlur={() => handleBlur('codigo')}
-                            error={touched.codigo ? errors.codigo : undefined}
-                            required
-                        />
+                    <ModernInput
+                        id="codigo"
+                        label="Código Referencia"
+                        placeholder="Ej: REF-882"
+                        icon="🔢"
+                        value={formData.codigo}
+                        onChange={(e) => handleChange('codigo', e.target.value)}
+                        onBlur={() => handleBlur('codigo')}
+                        error={touched.codigo ? errors.codigo : undefined}
+                        required
+                    />
 
-                        <ModernInput
-                            id="talla"
-                            label="Talla"
-                            placeholder="Ej: 40-50"
-                            icon="📏"
-                            value={formData.talla}
-                            onChange={(e) => handleChange('talla', e.target.value)}
-                            onBlur={() => handleBlur('talla')}
-                            error={touched.talla ? errors.talla : undefined}
-                            required
-                        />
+                    <ModernInput
+                        id="talla"
+                        label="Talla"
+                        placeholder="Ej: 40-50"
+                        icon="📏"
+                        value={formData.talla}
+                        onChange={(e) => handleChange('talla', e.target.value)}
+                        onBlur={() => handleBlur('talla')}
+                        error={touched.talla ? errors.talla : undefined}
+                        required
+                    />
 
-                        {/* SECCIÓN DE REMUESTREO: Configuración Granular */}
-                        {isRemuestreo && (
-                            <div className="mb-[20px] p-[16px] bg-blue-50 border-2 border-blue-100 rounded-[14px] space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <label className="block text-[13px] font-[700] text-blue-900">
-                                        Configuración de Remuestreo
-                                    </label>
-                                </div>
-
-                                {/* Motivo */}
-                                <div className="bg-white p-3 rounded-xl border border-blue-100">
-                                    <label className="block text-[11px] font-[600] text-slate-500 mb-1">Motivo del Remuestreo</label>
+                    {/* SECCIÓN DE REMUESTREO: Checkboxes */}
+                    {isRemuestreo && (
+                        <div className="mb-[20px] p-[16px] bg-blue-50 border-2 border-blue-100 rounded-[14px]">
+                            <label className="block text-[13px] font-[700] text-blue-900 mb-[12px]">
+                                Secciones a Analizar <span className="text-red-500">*</span>
+                            </label>
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
                                     <input
-                                        type="text"
-                                        placeholder="Ej: Auditoría Cliente, Rechazo, Verificación"
-                                        className="w-full text-sm outline-none text-slate-900 placeholder-slate-400"
-                                        value={formData.remuestreoConfig?.reason || ''}
+                                        type="checkbox"
+                                        checked={formData.sections?.weights}
                                         onChange={(e) => setFormData(prev => ({
                                             ...prev,
-                                            remuestreoConfig: {
-                                                ...prev.remuestreoConfig!,
-                                                reason: e.target.value
-                                            }
+                                            sections: { ...prev.sections!, weights: e.target.checked }
                                         }))}
+                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                </div>
-
-                                {/* Vinculación con Búsqueda */}
-                                <div className="bg-white p-3 rounded-xl border border-blue-100 relative">
-                                    <label className="block text-[11px] font-[600] text-slate-500 mb-1">Vincular a Análisis (Buscar por Lote o Código)</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="🔍 Escribe lote o código..."
-                                            className="w-full text-sm outline-none text-slate-900 placeholder-slate-400 border-b border-dashed border-blue-200 pb-1 focus:border-blue-500 transition-colors"
-                                            value={searchTerm}
-                                            onChange={(e) => {
-                                                setSearchTerm(e.target.value);
-                                                handleSearch(e.target.value);
-                                            }}
-                                            onFocus={() => setShowResults(true)}
-                                        />
-
-                                        {/* Spinner */}
-                                        {isSearching && (
-                                            <div className="absolute right-0 top-0">
-                                                <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Resultados de Búsqueda */}
-                                    {showResults && searchResults.length > 0 && (
-                                        <div className="absolute z-10 left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-blue-100 max-h-48 overflow-y-auto">
-                                            {searchResults.map((result) => (
-                                                <div
-                                                    key={result.id}
-                                                    className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
-                                                    onClick={() => selectAnalysis(result)}
-                                                >
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <p className="text-xs font-bold text-slate-700">{result.lote}</p>
-                                                            <p className="text-[10px] text-slate-500">{result.codigo} • {new Date(result.date).toLocaleDateString()}</p>
-                                                        </div>
-                                                        {formData.remuestreoConfig?.linkedAnalysisId === result.id && (
-                                                            <span className="text-green-500 text-xs">✓</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Análisis Seleccionado (Preview) */}
-                                    {formData.remuestreoConfig?.linkedAnalysisId && (
-                                        <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded flex justify-between items-center">
-                                            <span>🔗 Vinculado: <strong>{searchResults.find(r => r.id === formData.remuestreoConfig?.linkedAnalysisId)?.lote || formData.remuestreoConfig?.linkedAnalysisId}</strong></span>
-                                            <button
-                                                onClick={() => {
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        remuestreoConfig: { ...prev.remuestreoConfig!, linkedAnalysisId: undefined }
-                                                    }));
-                                                    setSearchTerm('');
-                                                }}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                ✖
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Campos a Analizar */}
-                                <div>
-                                    <label className="block text-[11px] font-[600] text-slate-500 mb-2">Campos a Analizar:</label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            { key: 'pesoBruto', label: '⚖️ Peso Bruto' },
-                                            { key: 'pesoNeto', label: '⚖️ Peso Neto' },
-                                            { key: 'pesoCongelado', label: '❄️ Peso Congelado' },
-                                            { key: 'conteo', label: '🔢 Conteo' },
-                                            { key: 'uniformidad', label: '📏 Uniformidad' },
-                                            { key: 'defectos', label: '🔍 Defectos' },
-                                        ].map((field) => (
-                                            <label key={field.key} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-blue-100 cursor-pointer hover:border-blue-300">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!formData.remuestreoConfig?.activeFields?.[field.key as keyof typeof formData.remuestreoConfig.activeFields]}
-                                                    onChange={(e) => setFormData(prev => ({
-                                                        ...prev,
-                                                        remuestreoConfig: {
-                                                            ...prev.remuestreoConfig!,
-                                                            activeFields: {
-                                                                ...prev.remuestreoConfig!.activeFields,
-                                                                [field.key]: e.target.checked
-                                                            }
-                                                        }
-                                                    }))}
-                                                    className="w-4 h-4 rounded text-blue-600"
-                                                />
-                                                <span className="text-xs font-medium text-slate-700">{field.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
+                                    <span className="text-sm font-medium text-slate-700">⚖️ Pesos y Glaseo</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.sections?.uniformity}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            sections: { ...prev.sections!, uniformity: e.target.checked }
+                                        }))}
+                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">📏 Uniformidad</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 cursor-pointer hover:border-blue-300 transition-all">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.sections?.defects}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            sections: { ...prev.sections!, defects: e.target.checked }
+                                        }))}
+                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">🔍 Defectos y Calidad</span>
+                                </label>
                             </div>
-                        )}
-
-                        {/* Error Summary */}
-                        {Object.keys(errors).some(key => errors[key as keyof AnalysisData]) && Object.keys(touched).length > 0 && (
-                            <div className="mb-[20px] p-[16px] bg-red-50 border-2 border-red-200 rounded-[14px]">
-                                <div className="flex items-start gap-[12px]">
-                                    <div
-                                        className="flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[14px]"
-                                        style={{
-                                            width: '24px',
-                                            height: '24px',
-                                            backgroundColor: '#EF4444'
-                                        }}
-                                    >
-                                        !
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-[700] text-red-900 mb-[6px] text-[14px] m-0">No se puede continuar</h4>
-                                        <ul className="space-y-[4px] text-[13px] text-red-700 m-0 p-0 list-none">
-                                            {errors.lote && <li>• {errors.lote}</li>}
-                                            {errors.codigo && <li>• {errors.codigo}</li>}
-                                            {errors.talla && <li>• {errors.talla}</li>}
-                                            {errors.color && <li>• {errors.color}</li>}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Selector de Color */}
-                        <div
-                            className="mb-[20px] p-[16px] rounded-[14px] border-2 transition-all"
-                            style={{
-                                backgroundColor: errors.color && touched.color ? '#FEF2F2' : '#F3F4F6',
-                                borderColor: errors.color && touched.color ? '#FCA5A5' : '#E5E7EB'
-                            }}
-                        >
-                            <label className="block text-[13px] font-[700] text-[#374151] mb-[12px] text-center">
-                                Color del Analista <span className="text-red-500">*</span>
-                            </label>
-                            <p className="text-[11px] text-[#6B7280] text-center mb-[12px] m-0">
-                                💡 Este color te identificará en todos los análisis que realices hoy
-                            </p>
-                            <AnalystColorSelector
-                                selectedColor={formData.color || ''}
-                                onSelect={(c) => {
-                                    handleChange('color', c);
-                                    if (touched.color) validateField('color');
-                                }}
-                            />
                         </div>
+                    )}
 
-                        {/* Botón Principal */}
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full text-white border-none rounded-[14px] text-[16px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-all"
-                            style={{
-                                backgroundColor: isSubmitting ? '#E5E7EB' : '#2563EB',
-                                color: isSubmitting ? '#9CA3AF' : 'white',
-                                padding: '16px',
-                                boxShadow: isSubmitting ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
-                                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                                opacity: isSubmitting ? 0.7 : 1
+                    {/* Error Summary */}
+                    {Object.keys(errors).some(key => errors[key as keyof AnalysisData]) && Object.keys(touched).length > 0 && (
+                        <div className="mb-[20px] p-[16px] bg-red-50 border-2 border-red-200 rounded-[14px]">
+                            <div className="flex items-start gap-[12px]">
+                                <div
+                                    className="flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[14px]"
+                                    style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        backgroundColor: '#EF4444'
+                                    }}
+                                >
+                                    !
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-[700] text-red-900 mb-[6px] text-[14px] m-0">No se puede continuar</h4>
+                                    <ul className="space-y-[4px] text-[13px] text-red-700 m-0 p-0 list-none">
+                                        {errors.lote && <li>• {errors.lote}</li>}
+                                        {errors.codigo && <li>• {errors.codigo}</li>}
+                                        {errors.talla && <li>• {errors.talla}</li>}
+                                        {errors.color && <li>• {errors.color}</li>}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Selector de Color */}
+                    <div
+                        className="mb-[20px] p-[16px] rounded-[14px] border-2 transition-all"
+                        style={{
+                            backgroundColor: errors.color && touched.color ? '#FEF2F2' : '#F3F4F6',
+                            borderColor: errors.color && touched.color ? '#FCA5A5' : '#E5E7EB'
+                        }}
+                    >
+                        <label className="block text-[13px] font-[700] text-[#374151] mb-[12px] text-center">
+                            Color del Analista <span className="text-red-500">*</span>
+                        </label>
+                        <p className="text-[11px] text-[#6B7280] text-center mb-[12px] m-0">
+                            💡 Este color te identificará en todos los análisis que realices hoy
+                        </p>
+                        <AnalystColorSelector
+                            selectedColor={formData.color || ''}
+                            onSelect={(c) => {
+                                handleChange('color', c);
+                                if (touched.color) validateField('color');
                             }}
-                            onMouseEnter={(e) => {
-                                if (!isSubmitting) {
-                                    e.currentTarget.style.backgroundColor = '#1D4ED8';
-                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isSubmitting) {
-                                    e.currentTarget.style.backgroundColor = '#2563EB';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }
-                            }}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Procesando...
-                                </>
-                            ) : (
-                                <>
-                                    Comenzar Análisis
-                                    <ArrowRight className="w-5 h-5" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-                </div>
+                        />
+                    </div>
+
+                    {/* Botón Principal */}
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full text-white border-none rounded-[14px] text-[16px] font-[600] cursor-pointer flex justify-center items-center gap-[8px] transition-all"
+                        style={{
+                            backgroundColor: isSubmitting ? '#E5E7EB' : '#2563EB',
+                            color: isSubmitting ? '#9CA3AF' : 'white',
+                            padding: '16px',
+                            boxShadow: isSubmitting ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
+                            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                            opacity: isSubmitting ? 0.7 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isSubmitting) {
+                                e.currentTarget.style.backgroundColor = '#1D4ED8';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isSubmitting) {
+                                e.currentTarget.style.backgroundColor = '#2563EB';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                            }
+                        }}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Procesando...
+                            </>
+                        ) : (
+                            <>
+                                Comenzar Análisis
+                                <ArrowRight className="w-5 h-5" />
+                            </>
+                        )}
+                    </button>
+                </form>
             </div>
-
-            <NewProductModal
-                isOpen={showNewProductModal}
-                onClose={() => setShowNewProductModal(false)}
-                onSubmit={handleNewProductSubmit}
-                initialCode={formData.codigo}
-            />
-        </>
+        </div>
     );
 }

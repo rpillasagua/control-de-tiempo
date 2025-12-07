@@ -761,11 +761,16 @@ const createValidationsSheet = (
         'Talla',
         'Validación Talla',
         'Tipo Producto',
+        'Peso Bruto (Kg)',
         'Validación P. Bruto',
+        'Peso Neto (Kg)',
         'Validación P. Neto',
+        'Conteo',
         'Validación Conteo',
+        'Uniformidad',
         'Validación Uniformidad',
         'Defectos Individuales',
+        'Total Defectos %',
         'Validación Total'
     ];
 
@@ -789,44 +794,41 @@ const createValidationsSheet = (
             d.talla,
             d.validationTalla || '-',
             PRODUCT_TYPE_LABELS[d.productType],
+            d.pesoBruto || '-',
             d.validationPesoBruto || '-',
+            d.pesoNeto || '-',
             d.validationPesoNeto || '-',
+            d.conteo || '-',
             d.validationConteo || '-',
+            d.uniformidadGrandes || d.uniformidadPequenos || '-',
             d.validationUniformidad || '-',
             defectosText,
+            d.totalDefectos ? `${d.totalDefectos.toFixed(2)}%` : '-',
             d.validationDefectosTotales || '-'
         ]);
         row.alignment = { vertical: 'middle', wrapText: true };
 
         // Resaltar celdas con problemas en rojo
-        // Indices ajustados a los nuevos encabezados (1-based)
-        // 6: Validación Talla
         if (d.validationTalla && d.validationTalla.includes('⚠️')) {
             row.getCell(6).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
-        // 8: Validación P. Bruto
         if (d.validationPesoBruto && d.validationPesoBruto.includes('⚠️')) {
-            row.getCell(8).font = { color: { argb: 'FFFF0000' }, bold: true };
-        }
-        // 9: Validación P. Neto
-        if (d.validationPesoNeto && d.validationPesoNeto.includes('⚠️')) {
             row.getCell(9).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
-        // 10: Validación Conteo
-        if (d.validationConteo && d.validationConteo.includes('⚠️')) {
-            row.getCell(10).font = { color: { argb: 'FFFF0000' }, bold: true };
-        }
-        // 11: Validación Uniformidad
-        if (d.validationUniformidad && d.validationUniformidad.includes('⚠️')) {
+        if (d.validationPesoNeto && d.validationPesoNeto.includes('⚠️')) {
             row.getCell(11).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
-        // 12: Defectos Individuales
-        if (d.validationDefectosIndividuales && d.validationDefectosIndividuales.length > 0) {
-            row.getCell(12).font = { color: { argb: 'FFFF0000' }, bold: true };
-        }
-        // 13: Validación Total
-        if (d.validationDefectosTotales && d.validationDefectosTotales.includes('⚠️')) {
+        if (d.validationConteo && d.validationConteo.includes('⚠️')) {
             row.getCell(13).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationUniformidad && d.validationUniformidad.includes('⚠️')) {
+            row.getCell(15).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationDefectosIndividuales && d.validationDefectosIndividuales.length > 0) {
+            row.getCell(16).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+        if (d.validationDefectosTotales && d.validationDefectosTotales.includes('⚠️')) {
+            row.getCell(18).font = { color: { argb: 'FFFF0000' }, bold: true };
         }
     });
 
@@ -839,11 +841,16 @@ const createValidationsSheet = (
         { width: 10 },  // Talla
         { width: 25 },  // Validación Talla
         { width: 18 },  // Tipo Producto
+        { width: 14 },  // Peso Bruto
         { width: 35 },  // Validación P. Bruto
+        { width: 14 },  // Peso Neto
         { width: 35 },  // Validación P. Neto
+        { width: 10 },  // Conteo
         { width: 30 },  // Validación Conteo
+        { width: 12 },  // Uniformidad
         { width: 30 },  // Validación Uniformidad
         { width: 40 },  // Defectos Individuales
+        { width: 15 },  // Total Defectos
         { width: 30 }   // Validación Total
     ];
 

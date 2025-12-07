@@ -306,27 +306,10 @@ export interface QualityAnalysis {
   productType: ProductType;
 
   // Secciones habilitadas (para REMUESTREO)
-  // @deprecated Use remuestreoConfig instead
   sections?: {
     weights: boolean;
     uniformity: boolean;
     defects: boolean;
-  };
-
-  // Configuración avanzada para REMUESTREO
-  remuestreoConfig?: {
-    reason?: string;
-    linkedAnalysisId?: string;
-    activeFields: {
-      pesoBruto?: boolean;
-      pesoNeto?: boolean;
-      pesoCongelado?: boolean;
-      peseoSubmuestra?: boolean;
-      pesoGlaseo?: boolean;
-      conteo?: boolean;
-      uniformidad?: boolean;
-      defectos?: boolean;
-    };
   };
 
   // CAMPOS OBLIGATORIOS (se llenan primero)

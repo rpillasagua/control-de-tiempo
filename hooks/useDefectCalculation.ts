@@ -162,7 +162,7 @@ export function useDefectCalculation(
         let totalDefectsSum = 0;
 
         Object.entries(defects).forEach(([defectKey, quantity]) => {
-            if (quantity === undefined || quantity === null) return;
+            if (!quantity) return;
 
             const percentage = (quantity / totalPieces) * 100;
 

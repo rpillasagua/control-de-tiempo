@@ -22,7 +22,83 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
     const [master, setMaster] = useState('');
     const [type, setType] = useState<ProductType>('ENTERO');
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    // const fileInputRef = useRef<HTMLInputElement>(null); // Ref replaced by label htmlFor pattern
+
+    if (!isOpen) return null;
+
+    // Helper Component for Modern Input (extracted for reusability within file)
+    const ModernInput = ({
+        label,
+        value,
+        onChange,
+        placeholder,
+        required,
+        disabled,
+        readOnly,
+        type = "text",
+        icon
+    }: any) => (
+        <div className="mb-[16px]">
+            <label className="block text-[13px] font-[600] text-[#374151] mb-[8px]">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <div
+                className={`flex items-center rounded-[12px] px-[16px] py-[12px] border-2 transition-all ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                style={{
+                    backgroundColor: '#F3F4F6',
+                    borderColor: 'transparent'
+                }}
+            >
+                {icon && <span className="mr-[10px] text-[18px]">{icon}</span>}
+                <input
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    required={required}
+                    disabled={disabled}
+                    readOnly={readOnly}
+                    className="border-none bg-transparent w-full text-[15px] outline-none font-[500]"
+                    style={{ color: '#1F2937' }}
+                />
+            </div>
+        </div>
+    );
+
+    const ModernSelect = ({
+        label,
+        value,
+        onChange,
+        options,
+        required
+    }: any) => (
+        <div className="mb-[16px]">
+            <label className="block text-[13px] font-[600] text-[#374151] mb-[8px]">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <div
+                className="flex items-center rounded-[12px] px-[16px] py-[12px] border-2 transition-all"
+                style={{
+                    backgroundColor: '#F3F4F6',
+                    borderColor: 'transparent'
+                }}
+            >
+                <select
+                    value={value}
+                    onChange={onChange}
+                    required={required}
+                    className="border-none bg-transparent w-full text-[15px] outline-none font-[500] appearance-none"
+                    style={{ color: '#1F2937' }}
+                >
+                    {options.map((opt: any) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        </div>
+    );
 
     if (!isOpen) return null;
 
@@ -66,7 +142,9 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
         } finally {
             setIsUploading(false);
             // Reset input
-            if (fileInputRef.current) fileInputRef.current.value = '';
+            // Reset input value to allow re-uploading same file if needed
+            const input = document.getElementById('technical-spec-upload') as HTMLInputElement;
+            if (input) input.value = '';
         }
     };
 
@@ -93,27 +171,35 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
     };
 
     return (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-4 border-b bg-slate-50">
+                <div className="flex justify-between items-center px-[24px] py-[20px] border-b border-slate-100 bg-white">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-800">Nuevo Producto</h2>
-                        <p className="text-xs text-slate-500">Código: <span className="font-mono bg-slate-200 px-1 rounded">{initialCode}</span></p>
+                        <h2 className="text-[20px] font-[700] text-[#111827] tracking-tight">Nuevo Producto</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[12px] font-medium text-slate-500">Código:</span>
+                            <span className="text-[12px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">
+                                {initialCode}
+                            </span>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-slate-500" />
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-slate-100 rounded-full transition-all duration-200 text-slate-400 hover:text-red-500"
+                    >
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b">
+                {/* Custom Tabs */}
+                <div className="flex px-[6px] pt-[6px]">
                     <button
                         onClick={() => setActiveTab('pdf')}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'pdf'
-                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                            : 'text-slate-500 hover:bg-slate-50'
+                        className={`flex-1 py-3 text-[13px] font-[600] rounded-t-[12px] transition-all flex items-center justify-center gap-2 ${activeTab === 'pdf'
+                            ? 'text-blue-600 bg-blue-50/50 border-b-2 border-blue-600'
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         <FileText className="w-4 h-4" />
@@ -121,9 +207,9 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
                     </button>
                     <button
                         onClick={() => setActiveTab('manual')}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'manual'
-                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                            : 'text-slate-500 hover:bg-slate-50'
+                        className={`flex-1 py-3 text-[13px] font-[600] rounded-t-[12px] transition-all flex items-center justify-center gap-2 ${activeTab === 'manual'
+                            ? 'text-blue-600 bg-blue-50/50 border-b-2 border-blue-600'
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         <Check className="w-4 h-4" />
@@ -132,113 +218,105 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-[24px] bg-white">
 
                     {activeTab === 'pdf' ? (
-                        <div className="flex flex-col items-center justify-center py-8 space-y-4 text-center">
-                            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
+                        <div className="flex flex-col items-center justify-center py-8 space-y-6 text-center">
+                            <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-[24px] flex items-center justify-center mb-2 shadow-sm border border-blue-100/50">
                                 <Upload className="w-8 h-8" />
                             </div>
-                            <h3 className="text-sm font-semibold text-slate-900">Cargar Ficha Técnica</h3>
-                            <p className="text-xs text-slate-500 max-w-[200px]">
-                                Sube el PDF para autocompletar la información del cliente, marca y empaque.
-                            </p>
+                            <div className="space-y-2">
+                                <h3 className="text-[16px] font-[700] text-[#111827]">Cargar Ficha Técnica</h3>
+                                <p className="text-[13px] text-slate-500 max-w-[240px] leading-relaxed mx-auto">
+                                    Sube el PDF para extraer automáticamente la información del producto.
+                                </p>
+                            </div>
 
                             <input
+                                id="technical-spec-upload"
                                 type="file"
-                                ref={fileInputRef}
                                 accept=".pdf"
                                 className="hidden"
                                 onChange={handleFileUpload}
+                                disabled={isUploading}
                             />
 
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="btn btn-primary w-full max-w-xs flex items-center justify-center gap-2"
+                            <label
+                                htmlFor="technical-spec-upload"
+                                className={`w-full max-w-xs bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-[14px] rounded-[14px] text-[15px] font-[600] shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}
                             >
                                 {isUploading ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Procesando...
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>Procesando...</span>
                                     </>
                                 ) : (
-                                    'Seleccionar Archivo'
+                                    <>
+                                        <span className="truncate">Seleccionar Archivo</span>
+                                    </>
                                 )}
-                            </button>
+                            </label>
 
                             <button
                                 onClick={() => setActiveTab('manual')}
-                                className="text-xs text-slate-400 hover:text-blue-600 underline"
+                                className="text-[13px] font-[500] text-slate-400 hover:text-blue-600 transition-colors"
                             >
                                 O ingresar datos manualmente
                             </button>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-1">
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-slate-700">Tipo de Producto</label>
-                                <select
-                                    value={type}
-                                    onChange={(e) => setType(e.target.value as ProductType)}
-                                    className="w-full p-2 border rounded-md text-sm bg-white"
-                                >
-                                    {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => (
-                                        <option key={t} value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
-                                    ))}
-                                </select>
+                            <ModernSelect
+                                label="Tipo de Producto"
+                                value={type}
+                                onChange={(e: any) => setType(e.target.value as ProductType)}
+                                options={(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => ({
+                                    value: t,
+                                    label: PRODUCT_TYPE_LABELS[t]
+                                }))}
+                            />
+
+                            <ModernInput
+                                label="Cliente / Importador"
+                                value={client}
+                                onChange={(e: any) => setClient(e.target.value)}
+                                placeholder="Ej: SIN IMPORTADOR"
+                            />
+
+                            <ModernInput
+                                label="Marca"
+                                value={brand}
+                                onChange={(e: any) => setBrand(e.target.value)}
+                                placeholder="Ej: JIN PAI"
+                            />
+
+                            <ModernInput
+                                label="Máster / Empaque"
+                                value={master}
+                                onChange={(e: any) => setMaster(e.target.value)}
+                                placeholder="Ej: 6 Und * 1.5 Kg"
+                            />
+
+                            <div className="flex justify-end -mt-3 mb-6">
+                                <span className="text-[11px] font-medium text-slate-400 px-2 py-1 bg-slate-50 rounded-md">
+                                    Unidad detectada: <span className="text-slate-600">{master.toLowerCase().includes('lb') ? 'LB' : 'KG'}</span>
+                                </span>
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-slate-700">Cliente / Importador</label>
-                                <input
-                                    type="text"
-                                    value={client}
-                                    onChange={(e) => setClient(e.target.value)}
-                                    placeholder="Ej: SIN IMPORTADOR"
-                                    className="w-full p-2 border rounded-md text-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-slate-700">Marca</label>
-                                <input
-                                    type="text"
-                                    value={brand}
-                                    onChange={(e) => setBrand(e.target.value)}
-                                    placeholder="Ej: JIN PAI"
-                                    className="w-full p-2 border rounded-md text-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-slate-700">Máster / Empaque</label>
-                                <input
-                                    type="text"
-                                    value={master}
-                                    onChange={(e) => setMaster(e.target.value)}
-                                    placeholder="Ej: 6 Und * 1.5 Kg"
-                                    className="w-full p-2 border rounded-md text-sm"
-                                />
-                                <p className="text-[10px] text-slate-400 text-right">
-                                    Unidad detectada: {master.toLowerCase().includes('lb') ? 'LB' : 'KG'}
-                                </p>
-                            </div>
-
-                            <div className="pt-2 flex gap-2">
+                            <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200"
+                                    className="flex-1 py-[14px] text-[15px] font-[600] text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-[14px] transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                    className="flex-1 py-[14px] text-[15px] font-[600] text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-[14px] shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all active:scale-95"
                                 >
-                                    Guardar y Continuar
+                                    Guardar
                                 </button>
                             </div>
 
