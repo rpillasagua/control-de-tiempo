@@ -39,7 +39,7 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
 
             {/* Modal Content */}
             <div
-                className="relative bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 slide-in-from-bottom-2"
+                className="relative z-50 bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 slide-in-from-bottom-2"
             >
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-100 bg-white z-10 gap-4">
