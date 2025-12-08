@@ -30,16 +30,21 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
     if (!isOpen || !mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+            style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                style={{ zIndex: 1 }}
                 onClick={onClose}
             />
 
             {/* Modal Content */}
             <div
-                className="relative z-50 bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 slide-in-from-bottom-2"
+                className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 slide-in-from-bottom-2"
+                style={{ zIndex: 2, position: 'relative' }}
             >
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-100 bg-white z-10 gap-4">
