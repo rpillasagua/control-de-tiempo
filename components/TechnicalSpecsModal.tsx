@@ -31,7 +31,7 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
 
     return createPortal(
         <div
-            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in p-4"
+            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-[3px] animate-fade-in p-4"
             style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
             <style jsx global>{`
