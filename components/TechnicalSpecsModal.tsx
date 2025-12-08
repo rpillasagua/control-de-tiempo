@@ -31,57 +31,69 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
 
     return createPortal(
         <div
-            className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in p-4"
             style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
-            {/* Backdrop */}
+            <style jsx global>{`
+                @keyframes floatUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
+
+            {/* Backdrop - clickable to close */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0"
                 style={{ zIndex: 1 }}
                 onClick={onClose}
             />
 
             {/* Modal Content */}
             <div
-                className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 slide-in-from-bottom-2"
-                style={{ zIndex: 2, position: 'relative' }}
+                className="bg-white w-[95%] max-w-4xl max-h-[90vh] rounded-[24px] flex flex-col overflow-hidden"
+                style={{
+                    zIndex: 2,
+                    position: 'relative',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    animation: 'floatUp 0.3s ease-out'
+                }}
             >
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-100 bg-white z-10 gap-4">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
                     <div className="flex items-center gap-3">
                         <div className="bg-blue-50 p-2 rounded-lg">
                             <FileText className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">Ficha Técnica</h2>
-                            <p className="text-sm text-slate-500">Especificaciones detalladas</p>
+                            <h2 className="text-xl font-bold text-slate-900">📋 Ficha Técnica</h2>
+                            <p className="text-sm text-slate-500">Código: {activeCode}</p>
                         </div>
                     </div>
 
                     {/* Search Bar */}
-                    <div className="flex items-center gap-2 flex-1 max-w-md">
+                    <div className="flex items-center gap-2 flex-1 max-w-xs mx-4">
                         <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 type="text"
                                 value={activeCode}
                                 onChange={(e) => setActiveCode(e.target.value)}
-                                placeholder="Buscar otro código..."
-                                className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                                placeholder="Buscar código..."
+                                className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-all rounded-xl"
                             />
                         </div>
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all absolute top-2 right-2 sm:static"
+                        className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-500 rounded-full transition-all"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
                     <TechnicalSpecsViewer code={activeCode} />
                 </div>
 
@@ -89,7 +101,7 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
                 <div className="px-6 py-4 border-t border-slate-100 bg-white flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors"
+                        className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
                     >
                         Cerrar
                     </button>
