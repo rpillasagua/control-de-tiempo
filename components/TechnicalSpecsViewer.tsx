@@ -55,7 +55,10 @@ export function TechnicalSpecsViewer({ code }: TechnicalSpecsViewerProps) {
                     <InfoItem label="Congelación" value={specs.freezingMethod} />
                     <InfoItem label="Certificación" value={specs.certification} />
                     <InfoItem label="Color" value={specs.color} />
-                    <InfoItem label="Preservante" value={specs.preservative} />
+                    <InfoItem
+                        label="Preservante"
+                        value={specs.preservative?.split('EMPAQUES')[0]?.trim() || specs.preservative?.substring(0, 50)}
+                    />
                 </div>
             </Section>
 
