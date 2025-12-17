@@ -432,5 +432,6 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = {
     '00547': { client: 'AQUAGOLD S.A.', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
     '00548': { client: 'AQUAGOLD S.A.', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
     '00549': { client: 'AQUAGOLD S.A.', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
+    '00478': { client: 'C.P. Food Products INC', type: 'VALOR_AGREGADO', master: '5 Und * 2 Lb', brand: 'Captn\'s Pack', unit: deriveUnit('5 Und * 2 Lb') },
     '00555': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 1.5 Kg', brand: 'JIN PAI', unit: deriveUnit('6 Und * 1.5 Kg') },
 };

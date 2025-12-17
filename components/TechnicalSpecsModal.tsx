@@ -30,7 +30,7 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
     if (!isOpen || !mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200" style={{ zIndex: 99999 }}>
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
