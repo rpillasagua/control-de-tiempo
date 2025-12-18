@@ -137,7 +137,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                     uniformidadGrandes: analysis.uniformidad?.grandes?.valor,
                     uniformidadPequenos: analysis.uniformidad?.pequenos?.valor,
                     defectos: analysis.defectos || {},
-                    totalDefectos: Object.values(analysis.defectos || {}).reduce((sum, val) => sum + (Number(val) || 0), 0),
+                    totalDefectos: Object.values(analysis.defectos || {}).reduce<number>((sum, val: any) => sum + (Number(val) || 0), 0),
                     pesosBrutos: analysis.pesosBrutos?.map(p => p.peso) || [],
 
                     // Validation results
@@ -185,7 +185,7 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
                 uniformidadGrandes: legacy.uniformidad?.grandes?.valor,
                 uniformidadPequenos: legacy.uniformidad?.pequenos?.valor,
                 defectos: legacy.defectos || {},
-                totalDefectos: Object.values(legacy.defectos || {}).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0),
+                totalDefectos: Object.values(legacy.defectos || {}).reduce<number>((sum, val: any) => sum + (Number(val) || 0), 0),
                 pesosBrutos: legacy.pesosBrutos?.map((p: any) => p.peso) || [],
 
                 // Validation results
