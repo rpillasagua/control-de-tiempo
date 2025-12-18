@@ -1031,7 +1031,7 @@ export default function NewMultiAnalysisPageContent() {
                                         <CardTitle>⚖️ Control de Pesos</CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-3' : 'space-y-6 md:space-y-4'}>
+                                        <div className={viewMode === 'COMPACTA' ? 'space-y-3' : 'space-y-6 md:space-y-4'}>
                                             {/* Peso Bruto */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoBruto) && !isDualBag && (
                                                 <div className="space-y-3">
