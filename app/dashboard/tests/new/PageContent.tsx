@@ -1031,13 +1031,13 @@ export default function NewMultiAnalysisPageContent() {
                                         <CardTitle>⚖️ Control de Pesos</CardTitle>
                                     </CardHeader>
                                     <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-3' : 'space-y-6 md:space-y-4'}>
+                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-2' : 'space-y-6 md:space-y-4'}>
                                             {/* Peso Bruto */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoBruto) && !isDualBag && (
-                                                <div className="space-y-3">
-                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
-                                                        <Label className="text-sm">
-                                                            {viewMode === 'COMPACTA' ? `P. BRUTO (${weightUnit})` : `Peso Bruto (${weightUnit})`}
+                                                <div className="space-y-2">
+                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2rem]' : ''}`}>
+                                                        <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase tracking-tight" : "text-sm"}>
+                                                            {viewMode === 'COMPACTA' ? `P. BRUTO` : `Peso Bruto (${weightUnit})`}
                                                         </Label>
                                                         {currentAnalysis.pesoBruto?.valor && (
                                                             <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
@@ -1050,6 +1050,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         placeholder="0"
                                                         value={currentAnalysis.pesoBruto?.valor || ''}
                                                         onChange={(e) => handleWeightChange('pesoBruto', parseFloat(e.target.value))}
+                                                        className={viewMode === 'COMPACTA' ? "h-7 text-xs px-1 text-center" : ""}
                                                     />
                                                     {/* Validation Message */}
                                                     {weightValidationResults.pesoBruto.message && currentAnalysis.pesoBruto?.valor && (
@@ -1075,10 +1076,10 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Peso Congelado */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoCongelado) && (
-                                                <div className="space-y-3">
-                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
-                                                        <Label className="text-sm">
-                                                            {viewMode === 'COMPACTA' ? `P. CONG. (${weightUnit})` : `Peso Congelado (${weightUnit})`}
+                                                <div className="space-y-2">
+                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2rem]' : ''}`}>
+                                                        <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase tracking-tight" : "text-sm"}>
+                                                            {viewMode === 'COMPACTA' ? `P. CONG.` : `Peso Congelado (${weightUnit})`}
                                                         </Label>
                                                         {currentAnalysis.pesoCongelado?.valor && (
                                                             <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
@@ -1091,6 +1092,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         placeholder="0"
                                                         value={currentAnalysis.pesoCongelado?.valor || ''}
                                                         onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
+                                                        className={viewMode === 'COMPACTA' ? "h-7 text-xs px-1 text-center" : ""}
                                                     />
                                                     <PhotoCapture
                                                         key={`pesoCongelado-${activeAnalysisIndex}`}
@@ -1169,10 +1171,10 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Peso Neto */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoNeto) && (
-                                                <div className="space-y-3">
-                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2.5rem]' : ''}`}>
-                                                        <Label className="text-sm">
-                                                            {viewMode === 'COMPACTA' ? `P. NETO (${weightUnit})` : `Peso Neto (${weightUnit})`}
+                                                <div className="space-y-2">
+                                                    <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2rem]' : ''}`}>
+                                                        <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase tracking-tight" : "text-sm"}>
+                                                            {viewMode === 'COMPACTA' ? `P. NETO` : `Peso Neto (${weightUnit})`}
                                                         </Label>
                                                         {currentAnalysis.pesoNeto?.valor && (
                                                             <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
@@ -1185,6 +1187,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         placeholder="0"
                                                         value={currentAnalysis.pesoNeto?.valor || ''}
                                                         onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
+                                                        className={viewMode === 'COMPACTA' ? "h-7 text-xs px-1 text-center" : ""}
                                                     />
                                                     {/* Validation Message */}
                                                     {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
