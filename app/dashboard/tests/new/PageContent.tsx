@@ -1463,8 +1463,9 @@ export default function NewMultiAnalysisPageContent() {
                                         </div>
                                     </CardContent>
                                 </Card>
+                            )}
 
-                                    {/* Global Upload Indicator */}
+                        {/* Global Upload Indicator */}
                         {
                             uploadingPhotos.size > 0 && (
                                 <div className="fixed bottom-6 right-6 bg-blue-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300 border border-blue-400/30 backdrop-blur-md">
