@@ -1021,8 +1021,8 @@ export default function NewMultiAnalysisPageContent() {
                         )
                     }
 
-                    {/* Content Grid - 2 Columns on Desktop */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    {/* Content Grid - 1 Col in Compact, 2 Cols in Standard on Desktop */}
+                    <div className={`grid gap-6 items-start ${viewMode === 'COMPACTA' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                         {/* Pesos Section */}
                         {
                             ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (isRemuestreo && showWeights)) && (
