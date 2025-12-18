@@ -1221,11 +1221,12 @@ export default function NewMultiAnalysisPageContent() {
                                             {
                                                 showConteo && (
                                                     <Card>
-                                                        <CardContent className="p-6 md:p-4">
+                                                        <CardHeader>
+                                                            <CardTitle>🔢 Conteo</CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent>
                                                             <div className="flex items-center justify-between gap-4">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-semibold text-lg">🔢 Conteo</span>
-                                                                </div>
+                                                                <Label className="flex-1">Número de piezas</Label>
                                                                 <div className="flex items-center gap-3">
                                                                     {currentAnalysis.conteo && (
                                                                         <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
@@ -1247,7 +1248,7 @@ export default function NewMultiAnalysisPageContent() {
                                                                                 return updated;
                                                                             });
                                                                         }}
-                                                                        className={`w-[100px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                                        className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                                     />
                                                                 </div>
                                                             </div>
