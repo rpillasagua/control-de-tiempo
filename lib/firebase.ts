@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
 }
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyB3DC17qeItdOfnl1r7kl_WzS61MMTDu6g',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDxOH8U006DP1dSRIo0qaYoTrhoC_4b9bE',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'studio-6276322063-5d9d6.firebaseapp.com',
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'studio-6276322063-5d9d6',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'studio-6276322063-5d9d6.firebasestorage.app',
