@@ -230,14 +230,13 @@ export default function NewMultiAnalysisPageContent() {
         };
     }, [currentAnalysis, sizeSpec]);
 
-    // Calcular Glaseo (Neto / Congelado * 100)
-    // Calcular Glaseo (Neto / Congelado * 100)
+    // Calcular Glaseo ((Congelado - Neto) / Neto * 100)
     const calculatedGlazing = React.useMemo(() => {
         const analysis = currentAnalysis as any;
         const net = analysis.pesoNeto?.valor;
         const frozen = analysis.pesoCongelado?.valor;
-        if (!net || !frozen || frozen === 0) return null;
-        return (net / frozen) * 100;
+        if (!net || !frozen || net === 0) return null;
+        return ((frozen - net) / net) * 100;
     }, [currentAnalysis]);
 
 
