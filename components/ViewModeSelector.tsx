@@ -26,8 +26,8 @@ export default function ViewModeSelector({ viewMode, onModeChange }: ViewModeSel
         type="button"
         onClick={() => onModeChange('SUELTA')}
         className={`px-4 py-2.5 rounded-[10px] transition-all duration-300 flex items-center gap-2 font-[600] text-sm ${viewMode === 'SUELTA'
-            ? 'text-white shadow-lg scale-105'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+          ? 'text-white shadow-lg scale-105'
+          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           }`}
         style={
           viewMode === 'SUELTA'
@@ -46,8 +46,8 @@ export default function ViewModeSelector({ viewMode, onModeChange }: ViewModeSel
         type="button"
         onClick={() => onModeChange('COMPACTA')}
         className={`px-4 py-2.5 rounded-[10px] transition-all duration-300 flex items-center gap-2 font-[600] text-sm ${viewMode === 'COMPACTA'
-            ? 'text-white shadow-lg scale-105'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+          ? 'text-white shadow-lg scale-105'
+          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           }`}
         style={
           viewMode === 'COMPACTA'
@@ -70,7 +70,7 @@ export default function ViewModeSelector({ viewMode, onModeChange }: ViewModeSel
  * Hook para manejar la persistencia del modo de vista
  */
 export function useViewMode() {
-  const [viewMode, setViewMode] = useState<ViewMode>('SUELTA');
+  const [viewMode, setViewMode] = useState<ViewMode>('COMPACTA');
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
