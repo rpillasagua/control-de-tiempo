@@ -263,8 +263,9 @@ export default function NewMultiAnalysisPageContent() {
     const updateCurrentAnalysis = (updates: Partial<Analysis>) => {
         // Calculate Glazing Percentage automatically if weights change
         if (updates.pesoNeto || updates.pesoCongelado) {
-            const netWeight = updates.pesoNeto?.valor ?? currentAnalysis.pesoNeto?.valor;
-            const frozenWeight = updates.pesoCongelado?.valor ?? currentAnalysis.pesoCongelado?.valor;
+            const analysis = currentAnalysis as any;
+            const netWeight = updates.pesoNeto?.valor ?? analysis.pesoNeto?.valor;
+            const frozenWeight = updates.pesoCongelado?.valor ?? analysis.pesoCongelado?.valor;
 
             if (typeof netWeight === 'number' && typeof frozenWeight === 'number' && frozenWeight !== 0) {
                 updates.glazingPercentage = (netWeight / frozenWeight) * 100;
