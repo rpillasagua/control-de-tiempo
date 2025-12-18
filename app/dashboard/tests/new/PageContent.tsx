@@ -1461,8 +1461,8 @@ export default function NewMultiAnalysisPageContent() {
                                                 </button>
                                             </div>
                                         </div>
-                                    </div >
-                                </div >
+                                    </div>
+                                </div>
 
                                     {/* Global Upload Indicator */}
                         {
@@ -1512,7 +1512,7 @@ export default function NewMultiAnalysisPageContent() {
                                 productType: productType || undefined
                             }}
                         />
-                    </div >
+                    </div>
                     );
 }
 
