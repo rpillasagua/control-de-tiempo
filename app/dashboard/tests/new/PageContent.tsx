@@ -1228,9 +1228,11 @@ export default function NewMultiAnalysisPageContent() {
                                                         <CardHeader>
                                                             <CardTitle>🔢 Conteo</CardTitle>
                                                         </CardHeader>
-                                                        <CardContent>
+                                                        <CardContent className={viewMode === 'COMPACTA' ? 'p-3' : ''}>
                                                             <div className="flex items-center justify-between gap-4">
-                                                                <Label className="flex-1">Número de piezas</Label>
+                                                                <Label className={viewMode === 'COMPACTA' ? "flex-1 text-[10px] font-bold uppercase" : "flex-1"}>
+                                                                    {viewMode === 'COMPACTA' ? "Nº PIEZAS" : "Número de piezas"}
+                                                                </Label>
                                                                 <div className="flex items-center gap-3">
                                                                     {currentAnalysis.conteo && (
                                                                         <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
@@ -1252,7 +1254,7 @@ export default function NewMultiAnalysisPageContent() {
                                                                                 return updated;
                                                                             });
                                                                         }}
-                                                                        className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                                        className={`w-[80px] text-center font-bold ${viewMode === 'COMPACTA' ? 'h-7 text-xs' : ''} ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                                     />
                                                                 </div>
                                                             </div>
@@ -1273,12 +1275,14 @@ export default function NewMultiAnalysisPageContent() {
                                                         <CardHeader>
                                                             <CardTitle>📏 Uniformidad</CardTitle>
                                                         </CardHeader>
-                                                        <CardContent>
+                                                        <CardContent className={viewMode === 'COMPACTA' ? 'p-3' : ''}>
                                                             <div className="grid grid-cols-2 gap-4 mb-4">
                                                                 {/* Grandes */}
                                                                 <div className="space-y-3">
                                                                     <div className="flex items-center justify-between">
-                                                                        <Label>Grandes ({weightUnit})</Label>
+                                                                        <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase" : ""}>
+                                                                            {viewMode === 'COMPACTA' ? `GRANDES` : `Grandes (${weightUnit})`}
+                                                                        </Label>
                                                                         {currentAnalysis.uniformidad?.grandes?.valor && (
                                                                             <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                                                 <CheckCircle2 className="w-3 h-3 text-white" />
@@ -1313,7 +1317,9 @@ export default function NewMultiAnalysisPageContent() {
                                                                 {/* Pequeños */}
                                                                 <div className="space-y-3">
                                                                     <div className="flex items-center justify-between">
-                                                                        <Label>Pequeños ({weightUnit})</Label>
+                                                                        <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase" : ""}>
+                                                                            {viewMode === 'COMPACTA' ? `PEQUEÑOS` : `Pequeños (${weightUnit})`}
+                                                                        </Label>
                                                                         {currentAnalysis.uniformidad?.pequenos?.valor && (
                                                                             <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                                                 <CheckCircle2 className="w-3 h-3 text-white" />
