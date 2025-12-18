@@ -1265,11 +1265,12 @@ export default function NewMultiAnalysisPageContent() {
                                             {
                                                 showUniformity && (
                                                     <Card>
-                                                        <CardHeader>
-                                                            <CardTitle>📏 Uniformidad</CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent>
-                                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                                        <CardContent className="p-6 md:p-4">
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <span className="font-semibold text-lg">📏 Uniformidad</span>
+                                                            </div>
+                                                            {/* Changed to grid-cols-1 for better mobile visibility ("sin dividir") */}
+                                                            <div className="grid grid-cols-1 gap-4 mb-4">
                                                                 {/* Grandes */}
                                                                 <div className="space-y-3">
                                                                     <div className="flex items-center justify-between">
@@ -1368,7 +1369,10 @@ export default function NewMultiAnalysisPageContent() {
                                             {
                                                 showDefects && (
                                                     <Card>
-                                                        <CardContent className="pt-6">
+                                                        <CardContent className="p-6 md:p-4">
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <span className="font-semibold text-lg">📦 Defectos</span>
+                                                            </div>
                                                             <DefectSelector
                                                                 productType={productType}
                                                                 selectedDefects={currentAnalysis.defectos || {}}
@@ -1382,12 +1386,13 @@ export default function NewMultiAnalysisPageContent() {
                                             {
                                                 showDefects && (
                                                     <Card>
-                                                        <CardHeader>
-                                                            <CardTitle>📸 Foto de Calidad General</CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent>
-                                                            <div className={viewMode === 'COMPACTA' ? 'flex justify-center' : ''}>
-                                                                <div style={{ width: viewMode === 'COMPACTA' ? '32%' : '100%' }}>
+                                                        <CardContent className="p-6 md:p-4">
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <span className="font-semibold text-lg">📸 Foto de Calidad General</span>
+                                                            </div>
+                                                            {/* Removed forced width constraint for better visibility */}
+                                                            <div className="flex justify-center">
+                                                                <div className="w-full">
                                                                     <PhotoCapture
                                                                         key={`fotoCalidad-${activeAnalysisIndex}`}
                                                                         label="Foto General"
