@@ -75,7 +75,7 @@ export function useViewMode() {
 
   useEffect(() => {
     // Cargar modo guardado
-    const saved = localStorage.getItem('viewMode');
+    const saved = localStorage.getItem('viewMode_v2');
     if (saved === 'SUELTA' || saved === 'COMPACTA') {
       setViewMode(saved);
     }
@@ -84,7 +84,7 @@ export function useViewMode() {
 
   const updateViewMode = (mode: ViewMode) => {
     setViewMode(mode);
-    localStorage.setItem('viewMode', mode);
+    localStorage.setItem('viewMode_v2', mode);
   };
 
   return { viewMode, setViewMode: updateViewMode, isLoaded };

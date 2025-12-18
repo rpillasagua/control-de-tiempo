@@ -1226,281 +1226,283 @@ export default function NewMultiAnalysisPageContent() {
                                                     </span>
                                                 </div>
                                             )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        }
 
-                                            {/* Conteo Section */}
-                                            {
-                                                showConteo && (
-                                                    <Card>
-                                                        <CardHeader>
-                                                            <CardTitle>🔢 Conteo</CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent className="p-4 md:p-6">
-                                                            <div className="flex items-center justify-between gap-4">
-                                                                <Label className="flex-1">
-                                                                    Número de piezas
-                                                                </Label>
-                                                                <div className="flex items-center gap-3">
-                                                                    {currentAnalysis.conteo && (
-                                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                        </div>
-                                                                    )}
-                                                                    <Input
-                                                                        type="number"
-                                                                        placeholder="0"
-                                                                        value={currentAnalysis.conteo || ''}
-                                                                        onChange={(e) => {
-                                                                            const count = parseInt(e.target.value) || undefined;
-                                                                            setAnalyses(prev => {
-                                                                                const updated = [...prev];
-                                                                                updated[activeAnalysisIndex] = {
-                                                                                    ...updated[activeAnalysisIndex],
-                                                                                    conteo: count
-                                                                                };
-                                                                                return updated;
-                                                                            });
-                                                                        }}
-                                                                        className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            {!conteoValidation.isValid && (
-                                                                <p className="text-red-500 text-sm mt-2 font-medium text-right">
-                                                                    {conteoValidation.message}
-                                                                </p>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                )
-                                            }
+                        {/* Conteo Section */}
+                        {
+                            showConteo && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>🔢 Conteo</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 md:p-6">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <Label className="flex-1">
+                                                Número de piezas
+                                            </Label>
+                                            <div className="flex items-center gap-3">
+                                                {currentAnalysis.conteo && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                                <Input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    value={currentAnalysis.conteo || ''}
+                                                    onChange={(e) => {
+                                                        const count = parseInt(e.target.value) || undefined;
+                                                        setAnalyses(prev => {
+                                                            const updated = [...prev];
+                                                            updated[activeAnalysisIndex] = {
+                                                                ...updated[activeAnalysisIndex],
+                                                                conteo: count
+                                                            };
+                                                            return updated;
+                                                        });
+                                                    }}
+                                                    className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                />
+                                            </div>
+                                        </div>
+                                        {!conteoValidation.isValid && (
+                                            <p className="text-red-500 text-sm mt-2 font-medium text-right">
+                                                {conteoValidation.message}
+                                            </p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )
+                        }
 
-                                            {/* Uniformidad */}
-                                            {
-                                                showUniformity && (
-                                                    <Card>
-                                                        <CardHeader>
-                                                            <CardTitle>📏 Uniformidad</CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent className="p-4 md:p-6">
-                                                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                                                {/* Grandes */}
-                                                                <div className="space-y-3">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <Label>
-                                                                            Grandes ({weightUnit})
-                                                                        </Label>
-                                                                        {currentAnalysis.uniformidad?.grandes?.valor && (
-                                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="0.00"
-                                                                        value={currentAnalysis.uniformidad?.grandes?.valor || ''}
-                                                                        onChange={(e) => {
-                                                                            const val = parseFloat(e.target.value);
-                                                                            updateCurrentAnalysis({
-                                                                                uniformidad: {
-                                                                                    ...currentAnalysis.uniformidad,
-                                                                                    grandes: { ...currentAnalysis.uniformidad?.grandes, valor: isNaN(val) ? undefined : val }
-                                                                                }
-                                                                            });
-                                                                        }}
-                                                                    />
-                                                                    <PhotoCapture
-                                                                        label="Foto Grandes"
-                                                                        photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
-                                                                        onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
-                                                                        isUploading={isFieldUploading('uniformidad_grandes')}
-                                                                        context={{ analysisId: analysisId || '', field: 'uniformidad_grandes' }}
-                                                                        forceGalleryMode={isGalleryMode}
-                                                                    />
-                                                                </div>
-
-                                                                {/* Pequeños */}
-                                                                <div className="space-y-3">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <Label>
-                                                                            Pequeños ({weightUnit})
-                                                                        </Label>
-                                                                        {currentAnalysis.uniformidad?.pequenos?.valor && (
-                                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="0.00"
-                                                                        value={currentAnalysis.uniformidad?.pequenos?.valor || ''}
-                                                                        onChange={(e) => {
-                                                                            const val = parseFloat(e.target.value);
-                                                                            updateCurrentAnalysis({
-                                                                                uniformidad: {
-                                                                                    ...currentAnalysis.uniformidad,
-                                                                                    pequenos: { ...currentAnalysis.uniformidad?.pequenos, valor: isNaN(val) ? undefined : val }
-                                                                                }
-                                                                            });
-                                                                        }}
-                                                                    />
-                                                                    <PhotoCapture
-                                                                        label="Foto Pequeños"
-                                                                        photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
-                                                                        onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
-                                                                        isUploading={isFieldUploading('uniformidad_pequenos')}
-                                                                        context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos' }}
-                                                                        forceGalleryMode={isGalleryMode}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                                                                <Label className="flex-1 font-semibold text-slate-900">Ratio de Uniformidad</Label>
-                                                                <div className="flex items-center gap-3">
-                                                                    {uniformityRatio && (
-                                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="text-2xl font-bold text-slate-700">
-                                                                        {typeof uniformityRatio === 'number' ? uniformityRatio.toFixed(2) : '0.00'}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            {!uniformityValidation.isValid && (
-                                                                <span className="text-xs text-red-500 font-medium mt-1 text-center max-w-[150px] block ml-auto">
-                                                                    {uniformityValidation.message}
-                                                                </span>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                )
-                                            }
-
-                                            {/* Defectos de Calidad */}
-                                            {
-                                                showDefects && (
-                                                    <Card>
-                                                        <CardContent className="pt-6">
-                                                            <DefectSelector
-                                                                productType={productType}
-                                                                selectedDefects={currentAnalysis.defectos || {}}
-                                                                onDefectsChange={handleDefectsChange}
-                                                                validationResults={defectValidationResults}
-                                                            />
-                                                        </CardContent>
-                                                    </Card>
-                                                )
-                                            }
-                                            {
-                                                showDefects && (
-                                                    <Card>
-                                                        <CardHeader>
-                                                            <CardTitle>📸 Foto de Calidad General</CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent>
-                                                            <div>
-                                                                <div className="w-full">
-                                                                    <PhotoCapture
-                                                                        key={`fotoCalidad-${activeAnalysisIndex}`}
-                                                                        label="Foto General"
-                                                                        photoUrl={currentAnalysis.fotoCalidad}
-                                                                        onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
-                                                                        isUploading={isFieldUploading('fotoCalidad')}
-                                                                        context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
-                                                                        forceGalleryMode={isGalleryMode}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </CardContent>
-                                                    </Card>
-                                                )
-                                            }
-
-
-
-                                            {/* Observaciones */}
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle>📝 Observaciones</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <Textarea
-                                                        placeholder="Escribe cualquier observación adicional aquí..."
-                                                        value={currentAnalysis.observations || ''}
-                                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateCurrentAnalysis({ observations: e.target.value })}
-                                                    />
-                                                </CardContent>
-                                            </Card>
-
-                                            {/* Ficha Técnica - Defectos */}
-
-
-                                        </div >
-
-                                        {/* Complete Analysis Button */}
-                                        {
-                                            !isCompleted ? (
-                                                <div className="pt-8 flex justify-center">
-                                                    <button
-                                                        onClick={handleCompleteAnalysis}
-                                                        className="w-full max-w-[280px] bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400/50 hover:from-green-600 hover:to-emerald-700 hover:border-green-300 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
-                                                        style={{
-                                                            boxShadow: '0 10px 20px -5px rgba(34, 197, 94, 0.3)'
-                                                        }}
-                                                    >
-                                                        <CheckCircle2 className="w-4 h-4" />
-                                                        <span>Completar Análisis</span>
-                                                    </button>
+                        {/* Uniformidad */}
+                        {
+                            showUniformity && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>📏 Uniformidad</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 md:p-6">
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            {/* Grandes */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <Label>
+                                                        Grandes ({weightUnit})
+                                                    </Label>
+                                                    {currentAnalysis.uniformidad?.grandes?.valor && (
+                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="pt-8 flex justify-center">
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (!analysisId) return;
-                                                            try {
-                                                                setIsCompleted(false);
-                                                                await saveDocument('EN_PROGRESO');
-                                                                toast.success('Edición habilitada');
-                                                            } catch (error) {
-                                                                console.error('Error enabling editing:', error);
-                                                                toast.error('Error al habilitar edición');
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={currentAnalysis.uniformidad?.grandes?.valor || ''}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        updateCurrentAnalysis({
+                                                            uniformidad: {
+                                                                ...currentAnalysis.uniformidad,
+                                                                grandes: { ...currentAnalysis.uniformidad?.grandes, valor: isNaN(val) ? undefined : val }
                                                             }
-                                                        }}
-                                                        className="w-full max-w-[280px] bg-white text-slate-600 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
-                                                    >
-                                                        <Edit className="w-4 h-4" />
-                                                        <span>Habilitar Edición</span>
-                                                    </button>
-                                                </div>
-                                            )
-                                        }
+                                                        });
+                                                    }}
+                                                />
+                                                <PhotoCapture
+                                                    label="Foto Grandes"
+                                                    photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
+                                                    isUploading={isFieldUploading('uniformidad_grandes')}
+                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_grandes' }}
+                                                    forceGalleryMode={isGalleryMode}
+                                                />
+                                            </div>
 
-                                        {/* Delete Section - Styled like DailyReportCard */}
-                                        <div className="pt-6 pb-4 flex justify-center">
-                                            <div
-                                                className="bg-white p-[18px] rounded-[14px] w-full max-w-[280px] text-center"
-                                                style={{
-                                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
-                                                }}
-                                            >
-                                                <button
-                                                    type="button"
-                                                    onClick={handleSmartDelete}
-                                                    className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[10px] rounded-[14px] text-[13px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] hover:shadow-md"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    <span>Borrar Análisis</span>
-                                                </button>
+                                            {/* Pequeños */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <Label>
+                                                        Pequeños ({weightUnit})
+                                                    </Label>
+                                                    {currentAnalysis.uniformidad?.pequenos?.valor && (
+                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={currentAnalysis.uniformidad?.pequenos?.valor || ''}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        updateCurrentAnalysis({
+                                                            uniformidad: {
+                                                                ...currentAnalysis.uniformidad,
+                                                                pequenos: { ...currentAnalysis.uniformidad?.pequenos, valor: isNaN(val) ? undefined : val }
+                                                            }
+                                                        });
+                                                    }}
+                                                />
+                                                <PhotoCapture
+                                                    label="Foto Pequeños"
+                                                    photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
+                                                    isUploading={isFieldUploading('uniformidad_pequenos')}
+                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos' }}
+                                                    forceGalleryMode={isGalleryMode}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                                            <Label className="flex-1 font-semibold text-slate-900">Ratio de Uniformidad</Label>
+                                            <div className="flex items-center gap-3">
+                                                {uniformityRatio && (
+                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                                <div className="text-2xl font-bold text-slate-700">
+                                                    {typeof uniformityRatio === 'number' ? uniformityRatio.toFixed(2) : '0.00'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {!uniformityValidation.isValid && (
+                                            <span className="text-xs text-red-500 font-medium mt-1 text-center max-w-[150px] block ml-auto">
+                                                {uniformityValidation.message}
+                                            </span>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )
+                        }
+
+                        {/* Defectos de Calidad */}
+                        {
+                            showDefects && (
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <DefectSelector
+                                            productType={productType}
+                                            selectedDefects={currentAnalysis.defectos || {}}
+                                            onDefectsChange={handleDefectsChange}
+                                            validationResults={defectValidationResults}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            )
+                        }
+                        {
+                            showDefects && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>📸 Foto de Calidad General</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div>
+                                            <div className="w-full">
+                                                <PhotoCapture
+                                                    key={`fotoCalidad-${activeAnalysisIndex}`}
+                                                    label="Foto General"
+                                                    photoUrl={currentAnalysis.fotoCalidad}
+                                                    onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
+                                                    isUploading={isFieldUploading('fotoCalidad')}
+                                                    context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
+                                                    forceGalleryMode={isGalleryMode}
+                                                />
                                             </div>
                                         </div>
                                     </CardContent>
                                 </Card>
-                            )}
+                            )
+                        }
+
+
+
+                        {/* Observaciones */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>📝 Observaciones</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Textarea
+                                    placeholder="Escribe cualquier observación adicional aquí..."
+                                    value={currentAnalysis.observations || ''}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateCurrentAnalysis({ observations: e.target.value })}
+                                />
+                            </CardContent>
+                        </Card>
+
+                        {/* Ficha Técnica - Defectos */}
+
+
+                    </div >
+
+                    {/* Complete Analysis Button */}
+                    {
+                        !isCompleted ? (
+                            <div className="pt-8 flex justify-center">
+                                <button
+                                    onClick={handleCompleteAnalysis}
+                                    className="w-full max-w-[280px] bg-gradient-to-r from-green-500 to-emerald-600 text-white border-2 border-green-400/50 hover:from-green-600 hover:to-emerald-700 hover:border-green-300 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
+                                    style={{
+                                        boxShadow: '0 10px 20px -5px rgba(34, 197, 94, 0.3)'
+                                    }}
+                                >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>Completar Análisis</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="pt-8 flex justify-center">
+                                <button
+                                    onClick={async () => {
+                                        if (!analysisId) return;
+                                        try {
+                                            setIsCompleted(false);
+                                            await saveDocument('EN_PROGRESO');
+                                            toast.success('Edición habilitada');
+                                        } catch (error) {
+                                            console.error('Error enabling editing:', error);
+                                            toast.error('Error al habilitar edición');
+                                        }
+                                    }}
+                                    className="w-full max-w-[280px] bg-white text-slate-600 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 p-[12px] rounded-[14px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                    <span>Habilitar Edición</span>
+                                </button>
+                            </div>
+                        )
+                    }
+
+                    {/* Delete Section - Styled like DailyReportCard */}
+                    <div className="pt-6 pb-4 flex justify-center">
+                        <div
+                            className="bg-white p-[18px] rounded-[14px] w-full max-w-[280px] text-center"
+                            style={{
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+                            }}
+                        >
+                            <button
+                                type="button"
+                                onClick={handleSmartDelete}
+                                className="w-full bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 p-[10px] rounded-[14px] text-[13px] font-[600] cursor-pointer flex justify-center items-center gap-[6px] transition-all active:scale-[0.98] hover:shadow-md"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                <span>Borrar Análisis</span>
+                            </button>
+                        </div>
+
 
                         {/* Global Upload Indicator */}
                         {
@@ -1551,9 +1553,9 @@ export default function NewMultiAnalysisPageContent() {
                             }}
                         />
                     </div>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 }
 
