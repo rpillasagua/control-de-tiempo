@@ -1301,7 +1301,7 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Conteo Section */}
                                             {
-                                                productType !== 'CONTROL_PESOS' && showConteo && (
+                                                showConteo && (
                                                     <Card>
                                                         <CardHeader>
                                                             <CardTitle>🔢 Conteo</CardTitle>
@@ -1346,7 +1346,7 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Defectos de Calidad */}
                                             {
-                                                productType !== 'CONTROL_PESOS' && showDefects && (
+                                                showDefects && (
                                                     <Card>
                                                         <CardContent className="pt-6">
                                                             <DefectSelector
