@@ -252,7 +252,7 @@ export default function NewMultiAnalysisPageContent() {
 
     // Helper Functions
     const updateAnalysisAtIndex = (index: number, updates: Partial<Analysis>) => {
-        setAnalyses(prev => prev.map((a, i) => i === index ? { ...a, ...updates } : a));
+        setAnalyses((prev: Analysis[]) => prev.map((a: Analysis, i: number) => i === index ? { ...a, ...updates } : a));
     };
 
     const updateCurrentAnalysis = (updates: Partial<Analysis>) => {
@@ -277,7 +277,7 @@ export default function NewMultiAnalysisPageContent() {
             id: generateId(),
             numero: analyses.length + 1,
         };
-        setAnalyses(prev => [...prev, newAnalysis]);
+        setAnalyses((prev: Analysis[]) => [...prev, newAnalysis]);
         setActiveAnalysisIndex(analyses.length);
     };
 
@@ -439,7 +439,7 @@ export default function NewMultiAnalysisPageContent() {
                 return;
             }
 
-            unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+            unsubscribeAuth = onAuthStateChanged(auth, async (user: any) => {
                 if (!user) {
                     console.log('⏳ Esperando autenticación de Firebase...');
                     return;
@@ -590,7 +590,7 @@ export default function NewMultiAnalysisPageContent() {
 
                 // 🔥 Transactional delete from Firestore
                 if (analysisId && currentAnalysis.pesosBrutos) {
-                    const index = currentAnalysis.pesosBrutos.findIndex(r => r.id === registro.id);
+                    const index = currentAnalysis.pesosBrutos.findIndex((r: PesoBrutoRegistro) => r.id === registro.id);
                     if (index !== -1) {
                         const { deleteAnalysisPhoto } = await import('@/lib/analysisService');
                         // Use ID for safe deletion
