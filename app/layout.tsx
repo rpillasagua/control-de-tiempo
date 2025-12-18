@@ -5,6 +5,7 @@ import { Toaster } from '@/components/Toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ServiceWorkerManager from '@/components/ServiceWorkerManager';
 import TokenExpiryNotifier from '@/components/TokenExpiryNotifier';
+import AuthInitializer from '@/components/AuthInitializer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
@@ -60,6 +61,7 @@ export default function RootLayout({
         </ErrorBoundary>
         <Toaster />
         <TokenExpiryNotifier />
+        <AuthInitializer />
         <ServiceWorkerManager />
       </body>
     </html>
