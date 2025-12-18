@@ -120,7 +120,7 @@ export default function NewMultiAnalysisPageContent() {
     const ignoreNextSnapshotRef = React.useRef(false);
 
     // Derived State
-    const currentAnalysis = analyses[activeAnalysisIndex] || {};
+    const currentAnalysis = (analyses[activeAnalysisIndex] || {}) as Analysis;
     const productInfo = PRODUCT_DATA[codigo];
     const clientName = productInfo?.client || '';
     const brandName = productInfo?.brand || '';
