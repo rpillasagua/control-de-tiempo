@@ -433,6 +433,12 @@ export default function NewMultiAnalysisPageContent() {
             const { onAuthStateChanged } = await import('firebase/auth');
 
             // Wait for Firebase Auth to be ready
+            if (!auth) {
+                console.error('Firebase Auth not initialized in client');
+                setIsLoading(false);
+                return;
+            }
+
             unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                 if (!user) {
                     console.log('⏳ Esperando autenticación de Firebase...');
