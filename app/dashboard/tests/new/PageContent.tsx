@@ -1461,8 +1461,8 @@ export default function NewMultiAnalysisPageContent() {
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </CardContent>
+                                </Card>
 
                                     {/* Global Upload Indicator */}
                         {
