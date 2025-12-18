@@ -1035,7 +1035,7 @@ export default function NewMultiAnalysisPageContent() {
                                         <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-2' : 'space-y-6 md:space-y-4'}>
                                             {/* Peso Bruto */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoBruto) && !isDualBag && (
-                                                <div className="space-y-2">
+                                                <div className="space-y-2 min-w-0">
                                                     <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2rem]' : ''}`}>
                                                         <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase tracking-tight" : "text-sm"}>
                                                             {viewMode === 'COMPACTA' ? `P. BRUTO` : `Peso Bruto (${weightUnit})`}
@@ -1055,7 +1055,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     />
                                                     {/* Validation Message */}
                                                     {weightValidationResults.pesoBruto.message && currentAnalysis.pesoBruto?.valor && (
-                                                        <div className={`text-xs font-medium ${weightValidationResults.pesoBruto.isValid
+                                                        <div className={`text-[10px] leading-tight break-words truncate ${weightValidationResults.pesoBruto.isValid
                                                             ? 'text-green-600'
                                                             : 'text-red-600'
                                                             }`}>
@@ -1064,7 +1064,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     )}
                                                     <PhotoCapture
                                                         key={`pesoBruto-${activeAnalysisIndex}`}
-                                                        label="Foto Peso Bruto"
+                                                        label={viewMode === 'COMPACTA' ? "Foto" : "Foto Peso Bruto"}
                                                         photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
                                                         isUploading={isFieldUploading('pesoBruto')}
@@ -1077,7 +1077,7 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Peso Congelado */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoCongelado) && (
-                                                <div className="space-y-2">
+                                                <div className="space-y-2 min-w-0">
                                                     <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2rem]' : ''}`}>
                                                         <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase tracking-tight" : "text-sm"}>
                                                             {viewMode === 'COMPACTA' ? `P. CONG.` : `Peso Congelado (${weightUnit})`}
@@ -1097,7 +1097,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     />
                                                     <PhotoCapture
                                                         key={`pesoCongelado-${activeAnalysisIndex}`}
-                                                        label="Foto Peso Congelado"
+                                                        label={viewMode === 'COMPACTA' ? "Foto" : "Foto Peso Congelado"}
                                                         photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
                                                         isUploading={isFieldUploading('pesoCongelado')}
@@ -1172,7 +1172,7 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Peso Neto */}
                                             {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoNeto) && (
-                                                <div className="space-y-2">
+                                                <div className="space-y-2 min-w-0">
                                                     <div className={`flex items-center justify-between ${viewMode === 'COMPACTA' ? 'min-h-[2rem]' : ''}`}>
                                                         <Label className={viewMode === 'COMPACTA' ? "text-[10px] font-bold uppercase tracking-tight" : "text-sm"}>
                                                             {viewMode === 'COMPACTA' ? `P. NETO` : `Peso Neto (${weightUnit})`}
@@ -1201,7 +1201,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     )}
                                                     <PhotoCapture
                                                         key={`pesoNeto-${activeAnalysisIndex}`}
-                                                        label="Foto Peso Neto"
+                                                        label={viewMode === 'COMPACTA' ? "Foto" : "Foto Peso Neto"}
                                                         photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
                                                         isUploading={isFieldUploading('pesoNeto')}
