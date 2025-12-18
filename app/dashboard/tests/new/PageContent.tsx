@@ -426,85 +426,100 @@ export default function NewMultiAnalysisPageContent() {
     // Load initial data effect with real-time subscription
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
+        let unsubscribeAuth: (() => void) | undefined;
 
-        const loadAnalysis = async () => {
-            const id = searchParams.get('id');
-            if (id) {
-                try {
-                    const { subscribeToAnalysis } = await import('@/lib/analysisService');
+        const setupSubscription = async () => {
+            const { auth } = await import('@/lib/firebase');
+            const { onAuthStateChanged } = await import('firebase/auth');
 
-                    unsubscribe = subscribeToAnalysis(id, (data) => {
-                        if (data) {
-                            // 🛡️ RACE CONDITION FIX: Ignore updates while uploading photos
-                            // This prevents the server (which has old text + new photo) from overwriting
-                            // the local state (which has new text + new photo).
-                            if (isUploadingRef.current) {
-                                console.log('🛡️ Skipping snapshot update during photo upload to prevent data loss');
-                                return;
+            // Wait for Firebase Auth to be ready
+            unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    console.log('⏳ Esperando autenticación de Firebase...');
+                    return;
+                }
+
+                // If prior subscription exists, clean it up before re-subscribing (though auth change shouldn't happen often)
+                if (unsubscribe) {
+                    unsubscribe();
+                    unsubscribe = undefined;
+                }
+
+                const id = searchParams.get('id');
+                if (id) {
+                    try {
+                        const { subscribeToAnalysis } = await import('@/lib/analysisService');
+                        console.log('✅ Usuario autenticado, suscribiendo al análisis:', id);
+
+                        unsubscribe = subscribeToAnalysis(id, (data) => {
+                            if (data) {
+                                // 🛡️ RACE CONDITION FIX: Ignore updates while uploading photos
+                                if (isUploadingRef.current) {
+                                    console.log('🛡️ Skipping snapshot update during photo upload to prevent data loss');
+                                    return;
+                                }
+
+                                // 🛡️ IGNORE SELF-TRIGGERED SNAPSHOTS
+                                if (ignoreNextSnapshotRef.current) {
+                                    console.log('🛡️ Ignoring snapshot triggered by local photo upload');
+                                    ignoreNextSnapshotRef.current = false;
+                                    return;
+                                }
+
+                                // Mark this as a remote update to prevent auto-save
+                                markAsRemoteUpdate();
+
+                                setAnalysisId(data.id);
+                                setProductType(data.productType);
+                                setSections(data.sections);
+                                setRemuestreoConfig(data.remuestreoConfig);
+                                setCodigo(data.codigo);
+                                setLote(data.lote);
+                                setTalla(data.talla || '');
+                                setAnalystColor(data.analystColor);
+
+                                // Backfill IDs if missing (migration)
+                                const analysesWithIds = data.analyses.map(a => ({
+                                    ...a,
+                                    id: a.id || generateId()
+                                }));
+                                setAnalyses(analysesWithIds);
+
+                                setGlobalPesoBruto(data.globalPesoBruto || {});
+                                setBasicsCompleted(true);
+
+                                setOriginalCreatedAt(data.createdAt);
+                                setOriginalCreatedBy(data.createdBy);
+                                setOriginalDate(data.date);
+                                setOriginalShift(data.shift);
+                                setOriginalAnalystColor(data.analystColor);
+
+                                if (data.status === 'COMPLETADO') {
+                                    setIsCompleted(true);
+                                }
+                            } else {
+                                toast.error('Análisis no encontrado');
+                                router.push('/');
                             }
+                            setIsLoading(false);
+                        });
 
-                            // 🛡️ IGNORE SELF-TRIGGERED SNAPSHOTS
-                            // If we just uploaded a photo, we updated Firestore but the text fields might be pending auto-save.
-                            // The snapshot will come back with the new photo URL but OLD text.
-                            // We must ignore this specific snapshot to avoid overwriting local text changes.
-                            if (ignoreNextSnapshotRef.current) {
-                                console.log('🛡️ Ignoring snapshot triggered by local photo upload');
-                                ignoreNextSnapshotRef.current = false;
-                                return;
-                            }
-
-                            // Mark this as a remote update to prevent auto-save
-                            markAsRemoteUpdate();
-
-                            setAnalysisId(data.id);
-                            setProductType(data.productType);
-                            setSections(data.sections);
-                            setRemuestreoConfig(data.remuestreoConfig);
-                            setCodigo(data.codigo);
-                            setLote(data.lote);
-                            setTalla(data.talla || '');
-                            setAnalystColor(data.analystColor);
-
-                            // Backfill IDs if missing (migration)
-                            const analysesWithIds = data.analyses.map(a => ({
-                                ...a,
-                                id: a.id || generateId()
-                            }));
-                            setAnalyses(analysesWithIds);
-
-                            setGlobalPesoBruto(data.globalPesoBruto || {});
-                            setBasicsCompleted(true);
-
-                            setOriginalCreatedAt(data.createdAt);
-                            setOriginalCreatedBy(data.createdBy);
-                            setOriginalDate(data.date);
-                            setOriginalShift(data.shift);
-                            setOriginalAnalystColor(data.analystColor);
-
-                            if (data.status === 'COMPLETADO') {
-                                setIsCompleted(true);
-                            }
-                        } else {
-                            toast.error('Análisis no encontrado');
-                            router.push('/');
-                        }
+                    } catch (error) {
+                        console.error('Error setting up analysis subscription:', error);
+                        // toast.error('Error al cargar el análisis'); // Removing to avoid spam if auth is flickering
                         setIsLoading(false);
-                    });
-
-                } catch (error) {
-                    console.error('Error setting up analysis subscription:', error);
-                    toast.error('Error al cargar el análisis');
+                    }
+                } else {
                     setIsLoading(false);
                 }
-            } else {
-                setIsLoading(false);
-            }
+            });
         };
 
-        loadAnalysis();
+        setupSubscription();
 
         return () => {
             if (unsubscribe) unsubscribe();
+            if (unsubscribeAuth) unsubscribeAuth();
         };
     }, [searchParams, router]);
 
