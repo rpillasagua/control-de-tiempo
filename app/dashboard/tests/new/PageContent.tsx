@@ -1514,7 +1514,10 @@ export default function NewMultiAnalysisPageContent() {
                             }}
                         />
                     </div>
-                    );
+                </div>
+            </div>
+        </div>
+    );
 }
 
 
