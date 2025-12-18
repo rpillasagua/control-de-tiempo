@@ -8,6 +8,8 @@
  */
 
 import { logger } from './logger';
+import { GoogleAuthProvider, signInWithCredential, signOut } from 'firebase/auth';
+import { auth } from './firebase';
 
 interface GoogleAuthConfig {
   clientId: string;
@@ -148,6 +150,18 @@ class GoogleAuthService {
         // IMPORTANTE: Si falla por red, ASUMIMOS que es válido para no desloguear al usuario offline
         const isValid = await this.verifyToken();
 
+        // 🔐 Resync Firebase Auth if needed
+        if (isValid && auth && !auth.currentUser) {
+          try {
+            logger.log('🔐 Restaurando sesión Firebase con token guardado...');
+            const credential = GoogleAuthProvider.credential(null, this.accessToken);
+            await signInWithCredential(auth, credential);
+            logger.log('✅ Sesión Firebase restaurada');
+          } catch (e) {
+            logger.warn('⚠️ No se pudo restaurar sesión Firebase con token guardado:', e);
+          }
+        }
+
         if (isValid) {
           logger.log('✅ Token restaurado desde localStorage (persistencia)');
           this.notifyListeners();
@@ -260,6 +274,22 @@ class GoogleAuthService {
         localStorage.setItem(this.TOKEN_STORAGE_KEY, this.accessToken);
       }
 
+      // 🔐 FIREBASE AUTH INTEGRATION
+      try {
+        if (auth) {
+          logger.log('🔐 Iniciando sesión en Firebase con credencial de Google...');
+          const credential = GoogleAuthProvider.credential(null, response.access_token);
+          await signInWithCredential(auth, credential);
+          logger.log('✅ Firebase Auth exitoso');
+        } else {
+          logger.warn('⚠️ Firebase Auth no inicializado, no se pudo hacer login en Firebase');
+        }
+      } catch (firebaseError) {
+        logger.error('❌ Error en Firebase Auth:', firebaseError);
+        // No bloqueamos el flujo si falla firebase, pero es crítico para la base de datos
+        // Podríamos mostrar un toast o alerta
+      }
+
       // Configurar refresh automático basado en expires_in si viene en la respuesta
       const expiresIn = response.expires_in || 3600; // Por defecto 1 hora
 
@@ -298,6 +328,11 @@ class GoogleAuthService {
       (window as any).google.accounts.oauth2.revoke(this.accessToken, () => {
         logger.log('Token revocado en Google');
       });
+    }
+
+    // 🔐 FIREBASE LOGOUT
+    if (auth) {
+      signOut(auth).catch(err => logger.error('Error cerrando sesión Firebase:', err));
     }
 
     this.clearStoredAuth();

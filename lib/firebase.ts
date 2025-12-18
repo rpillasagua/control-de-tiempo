@@ -109,5 +109,7 @@ if (isFirebaseConfigured) {
   console.error('❌ Firebase NO está configurado. Configura las variables de entorno en .env.local');
 }
 
-// Solo exportamos db - storage ya no se usa
+// Solo exportamos db y auth - storage ya no se usa
+import { getAuth } from 'firebase/auth';
+export const auth = app ? getAuth(app) : null;
 export { db };

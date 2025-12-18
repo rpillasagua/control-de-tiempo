@@ -277,6 +277,7 @@ export interface Analysis {
   pesoSubmuestra?: PesoConFoto;
   pesoNeto?: PesoConFoto;
   pesoConGlaseo?: PesoConFoto;
+  glazingPercentage?: number; // Calculated (Net / Frozen * 100)
 
   // Control de pesos brutos (múltiples registros)
   pesosBrutos?: PesoBrutoRegistro[];
