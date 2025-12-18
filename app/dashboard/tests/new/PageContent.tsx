@@ -268,7 +268,9 @@ export default function NewMultiAnalysisPageContent() {
             const frozenWeight = updates.pesoCongelado?.valor ?? analysis.pesoCongelado?.valor;
 
             if (typeof netWeight === 'number' && typeof frozenWeight === 'number' && frozenWeight !== 0) {
-                updates.glazingPercentage = (netWeight / frozenWeight) * 100;
+                if (netWeight !== 0) {
+                    updates.glazingPercentage = ((frozenWeight - netWeight) / netWeight) * 100;
+                }
             } else {
                 // If either is missing or 0, clear the percentage
                 updates.glazingPercentage = undefined;
@@ -1220,7 +1222,7 @@ export default function NewMultiAnalysisPageContent() {
                                             {/* Calculated Glazing Display */}
                                             {calculatedGlazing !== null && (
                                                 <div className="col-span-full bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between">
-                                                    <span className="text-sm font-medium text-blue-800">Glaseo Calculado (Neto/Congelado)</span>
+                                                    <span className="text-sm font-medium text-blue-800">Glaseo Calculado ((Congelado - Neto) / Neto)</span>
                                                     <span className="text-lg font-bold text-blue-700">
                                                         {calculatedGlazing.toFixed(2)}%
                                                     </span>
