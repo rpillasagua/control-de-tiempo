@@ -1198,7 +1198,7 @@ export default function NewMultiAnalysisPageContent() {
 
                                             {/* Uniformidad */}
                                             {
-                                                productType !== 'CONTROL_PESOS' && showUniformity && (
+                                                showUniformity && (
                                                     <Card>
                                                         <CardHeader>
                                                             <CardTitle>📏 Uniformidad</CardTitle>
