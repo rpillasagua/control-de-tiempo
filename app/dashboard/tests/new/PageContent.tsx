@@ -1217,6 +1217,51 @@ export default function NewMultiAnalysisPageContent() {
                                                 </div>
                                             )}
 
+                                            {/* Conteo Section */}
+                                            {
+                                                showConteo && (
+                                                    <Card>
+                                                        <CardHeader>
+                                                            <CardTitle>� Conteo</CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent>
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <Label className="flex-1">Número de piezas</Label>
+                                                                <div className="flex items-center gap-3">
+                                                                    {currentAnalysis.conteo && (
+                                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                                                        </div>
+                                                                    )}
+                                                                    <Input
+                                                                        type="number"
+                                                                        placeholder="0"
+                                                                        value={currentAnalysis.conteo || ''}
+                                                                        onChange={(e) => {
+                                                                            const count = parseInt(e.target.value) || undefined;
+                                                                            setAnalyses(prev => {
+                                                                                const updated = [...prev];
+                                                                                updated[activeAnalysisIndex] = {
+                                                                                    ...updated[activeAnalysisIndex],
+                                                                                    conteo: count
+                                                                                };
+                                                                                return updated;
+                                                                            });
+                                                                        }}
+                                                                        className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            {!conteoValidation.isValid && (
+                                                                <p className="text-red-500 text-sm mt-2 font-medium text-right">
+                                                                    {conteoValidation.message}
+                                                                </p>
+                                                            )}
+                                                        </CardContent>
+                                                    </Card>
+                                                )
+                                            }
+
                                             {/* Uniformidad */}
                                             {
                                                 showUniformity && (
@@ -1314,51 +1359,6 @@ export default function NewMultiAnalysisPageContent() {
                                                                 <span className="text-xs text-red-500 font-medium mt-1 text-center max-w-[150px] block ml-auto">
                                                                     {uniformityValidation.message}
                                                                 </span>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                )
-                                            }
-
-                                            {/* Conteo Section */}
-                                            {
-                                                showConteo && (
-                                                    <Card>
-                                                        <CardHeader>
-                                                            <CardTitle>🔢 Conteo</CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent>
-                                                            <div className="flex items-center justify-between gap-4">
-                                                                <Label className="flex-1">Número de piezas</Label>
-                                                                <div className="flex items-center gap-3">
-                                                                    {currentAnalysis.conteo && (
-                                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                        </div>
-                                                                    )}
-                                                                    <Input
-                                                                        type="number"
-                                                                        placeholder="0"
-                                                                        value={currentAnalysis.conteo || ''}
-                                                                        onChange={(e) => {
-                                                                            const count = parseInt(e.target.value) || undefined;
-                                                                            setAnalyses(prev => {
-                                                                                const updated = [...prev];
-                                                                                updated[activeAnalysisIndex] = {
-                                                                                    ...updated[activeAnalysisIndex],
-                                                                                    conteo: count
-                                                                                };
-                                                                                return updated;
-                                                                            });
-                                                                        }}
-                                                                        className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            {!conteoValidation.isValid && (
-                                                                <p className="text-red-500 text-sm mt-2 font-medium text-right">
-                                                                    {conteoValidation.message}
-                                                                </p>
                                                             )}
                                                         </CardContent>
                                                     </Card>
