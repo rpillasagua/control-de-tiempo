@@ -192,12 +192,14 @@ export default function NewMultiAnalysisPageContent() {
     const sizeSpec = specs?.sizes.find(s => s.sizeMp === talla);
 
     // Calcular ratio de uniformidad
+    // Calcular ratio de uniformidad
     const uniformityRatio = React.useMemo(() => {
-        const grandes = currentAnalysis.uniformidad?.grandes?.valor;
-        const pequenos = currentAnalysis.uniformidad?.pequenos?.valor;
+        const analysis = currentAnalysis as any;
+        const grandes = analysis.uniformidad?.grandes?.valor;
+        const pequenos = analysis.uniformidad?.pequenos?.valor;
         if (!grandes || !pequenos || pequenos === 0) return null;
         return grandes / pequenos;
-    }, [currentAnalysis.uniformidad]);
+    }, [currentAnalysis]);
 
     // Validar uniformidad
     const uniformityValidation = React.useMemo(() => {
