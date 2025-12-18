@@ -217,7 +217,8 @@ export default function NewMultiAnalysisPageContent() {
 
     // Validar conteo
     const conteoValidation = React.useMemo(() => {
-        const conteo = currentAnalysis.conteo;
+        const analysis = currentAnalysis as any;
+        const conteo = analysis.conteo;
         if (!conteo || !sizeSpec?.countFinal) return { isValid: true, message: '' };
         const match = sizeSpec.countFinal.match(/(\d+)-(\d+)/);
         if (!match) return { isValid: true, message: '' };
@@ -227,15 +228,17 @@ export default function NewMultiAnalysisPageContent() {
             isValid,
             message: isValid ? `✓ Rango OK (${sizeSpec.countFinal})` : `⚠️ Fuera (${sizeSpec.countFinal})`
         };
-    }, [currentAnalysis.conteo, sizeSpec]);
+    }, [currentAnalysis, sizeSpec]);
 
     // Calcular Glaseo (Neto / Congelado * 100)
+    // Calcular Glaseo (Neto / Congelado * 100)
     const calculatedGlazing = React.useMemo(() => {
-        const net = currentAnalysis.pesoNeto?.valor;
-        const frozen = currentAnalysis.pesoCongelado?.valor;
+        const analysis = currentAnalysis as any;
+        const net = analysis.pesoNeto?.valor;
+        const frozen = analysis.pesoCongelado?.valor;
         if (!net || !frozen || frozen === 0) return null;
         return (net / frozen) * 100;
-    }, [currentAnalysis.pesoNeto?.valor, currentAnalysis.pesoCongelado?.valor]);
+    }, [currentAnalysis]);
 
 
     // Prevenir cierre de pestaña si hay subidas en progreso
