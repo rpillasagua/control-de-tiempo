@@ -469,6 +469,7 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = {
     '00356': { client: 'VITAGULF S.A.', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'VITAGULF', unit: deriveUnit('6 Und * 2 Kg') },
     '00360': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'SIN MARCA', unit: deriveUnit('6 Und * 2 Kg') },
     '00362': { client: 'VITAGULF S.A.', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'VITAGULF', unit: deriveUnit('6 Und * 2 Kg') },
+    '00407': { client: 'Stavis Seafood', type: 'ENTERO', master: '5 Und * 1 Kg', brand: 'VITAGULF', unit: deriveUnit('5 Und * 1 Kg') },
     '00380': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'SIN MARCA', unit: deriveUnit('6 Und * 2 Kg') },
 };
 
