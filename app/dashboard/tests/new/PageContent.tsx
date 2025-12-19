@@ -560,7 +560,8 @@ export default function NewMultiAnalysisPageContent() {
         codigo,
         currentAnalysis.pesoBruto?.valor,
         currentAnalysis.pesoNeto?.valor,
-        productType
+        productType,
+        weightUnit
     );
 
     // Use the new hook for weight inputs
@@ -1221,7 +1222,7 @@ export default function NewMultiAnalysisPageContent() {
                                             {/* Calculated Glazing Display */}
                                             {calculatedGlazing !== null && (
                                                 <div className="col-span-full bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between">
-                                                    <span className="text-sm font-medium text-blue-800">Glaseo Calculado ((Congelado - Neto) / Neto)</span>
+                                                    <span className="text-sm font-medium text-blue-800">% de glaseo</span>
                                                     <span className="text-lg font-bold text-blue-700">
                                                         {calculatedGlazing.toFixed(2)}%
                                                     </span>
@@ -1293,8 +1294,9 @@ export default function NewMultiAnalysisPageContent() {
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
                                                     <Label>
-                                                        Grandes ({weightUnit})
+                                                        Grandes (kg)
                                                     </Label>
+
                                                     {currentAnalysis.uniformidad?.grandes?.valor && (
                                                         <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                                             <CheckCircle2 className="w-3 h-3 text-white" />
@@ -1330,7 +1332,7 @@ export default function NewMultiAnalysisPageContent() {
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
                                                     <Label>
-                                                        Pequeños ({weightUnit})
+                                                        Pequeños (kg)
                                                     </Label>
                                                     {currentAnalysis.uniformidad?.pequenos?.valor && (
                                                         <div className="bg-green-500 rounded-full p-0.5 shadow-sm">

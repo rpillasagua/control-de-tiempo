@@ -18,6 +18,7 @@ export default function PhotoThumbnail({
 }: PhotoThumbnailProps) {
     const [showPreview, setShowPreview] = useState(false);
     const [isFlashing, setIsFlashing] = useState(false);
+    const [zoomLevel, setZoomLevel] = useState(1);
 
     const sizeClasses = {
         sm: 'w-10 h-10',
@@ -81,29 +82,52 @@ export default function PhotoThumbnail({
             {/* Fullscreen preview modal */}
             {showPreview && (
                 <div
-                    className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-                    onClick={() => setShowPreview(false)}
+                    className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+                    onClick={() => {
+                        setShowPreview(false);
+                        setZoomLevel(1); // Reset zoom on close
+                    }}
                 >
-                    <div className="relative max-w-6xl max-h-[95vh] w-full">
+                    <div className="relative max-w-6xl max-h-[95vh] w-full flex flex-col items-center">
+                        {/* Title Bar - More visible */}
+                        <div className="absolute top-0 left-0 right-0 z-10 bg-black/80 text-white p-4 text-center backdrop-blur-md rounded-t-lg">
+                            <h3 className="text-xl font-bold">{alt}</h3>
+                            <p className="text-xs text-gray-300 mt-1">Doble click/tap para hacer zoom</p>
+                        </div>
+
                         {/* Close button */}
                         <button
-                            onClick={() => setShowPreview(false)}
-                            className="absolute -top-14 right-0 text-white hover:text-gray-300 transition-colors"
+                            onClick={() => {
+                                setShowPreview(false);
+                                setZoomLevel(1);
+                            }}
+                            className="absolute z-20 top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
                         >
-                            <X className="w-10 h-10" />
+                            <X className="w-8 h-8" />
                         </button>
 
-                        {/* Image */}
-                        <img
-                            src={photoUrl}
-                            alt={alt}
-                            className="max-w-full max-h-[95vh] mx-auto rounded-lg shadow-2xl"
+                        {/* Image Container with Zoom */}
+                        <div
+                            className="relative w-full h-full flex items-center justify-center overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
-                        />
-
-                        {/* Info bar */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm backdrop-blur">
-                            Click fuera para cerrar
+                        >
+                            <img
+                                src={photoUrl}
+                                alt={alt}
+                                className="max-w-full max-h-[80vh] object-contain transition-transform duration-200 cursor-zoom-in"
+                                style={{ transform: `scale(${zoomLevel})` }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Simple toggle zoom on single click if user prefers, 
+                                    // but user asked for double tap. 
+                                    // Let's support double click explicitly for 'desktop' feel
+                                    // and maybe a simple tap-to-zoom if mobile has issues, but stick to requested double tap/click.
+                                }}
+                                onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setZoomLevel(prev => prev === 1 ? 2.5 : 1);
+                                }}
+                            />
                         </div>
                     </div>
                 </div>
@@ -111,3 +135,7 @@ export default function PhotoThumbnail({
         </>
     );
 }
+
+// Helper state for zoom (add this inside the component)
+// You need to update the component function body to include this state.
+

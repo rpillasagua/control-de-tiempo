@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { QualityAnalysis, WorkShift, PRODUCT_TYPE_LABELS, ProductType, DEFECTOS_ENTERO, DEFECTOS_COLA, DEFECTOS_VALOR_AGREGADO, DEFECTO_LABELS, ANALYST_COLOR_LABELS, Analysis } from '@/lib/types';
 import { validateGrossWeight, validateNetWeight } from './validations/weightValidations';
 import { validateCount, validateUniformity, validateDefects, validateSize } from './validations/reportValidations';
+import { PRODUCT_DATA } from '@/lib/product-data';
 
 // Tipos auxiliares
 type ReportShift = 'ALL' | WorkShift;
@@ -107,9 +108,15 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
         // Si tiene array de análisis (nueva estructura)
         if (doc.analyses && doc.analyses.length > 0) {
             doc.analyses.forEach(analysis => {
+                const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
+                const toGrams = (val: number) => weightUnit === 'LB' ? val * 453.592 : val * 1000;
+
                 // Validaciones
-                const pesoBrutoVal = validateGrossWeight(doc.codigo, (analysis.pesoBruto?.valor || 0), doc.productType);
-                const pesoNetoVal = validateNetWeight(doc.codigo, (analysis.pesoNeto?.valor || 0), doc.productType);
+                const pesoBrutoGrams = toGrams(analysis.pesoBruto?.valor || 0);
+                const pesoNetoGrams = toGrams(analysis.pesoNeto?.valor || 0);
+
+                const pesoBrutoVal = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
+                const pesoNetoVal = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);
                 const tallaVal = validateSize(doc.codigo, doc.talla);
                 const conteoVal = validateCount(doc.codigo, doc.talla, analysis.conteo);
                 const uniformidadVal = validateUniformity(doc.codigo, doc.talla, analysis.uniformidad?.grandes?.valor, analysis.uniformidad?.pequenos?.valor);
@@ -156,10 +163,15 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
         } else {
             // Soporte Legacy (estructura plana antigua)
             const legacy = doc as any;
+            const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
+            const toGrams = (val: number) => weightUnit === 'LB' ? val * 453.592 : val * 1000;
 
             // Validaciones Legacy
-            const pesoBrutoVal = validateGrossWeight(doc.codigo, (legacy.pesoBruto?.valor || 0), doc.productType);
-            const pesoNetoVal = validateNetWeight(doc.codigo, (legacy.pesoNeto?.valor || 0), doc.productType);
+            const pesoBrutoGrams = toGrams(legacy.pesoBruto?.valor || 0);
+            const pesoNetoGrams = toGrams(legacy.pesoNeto?.valor || 0);
+
+            const pesoBrutoVal = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
+            const pesoNetoVal = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);
             const tallaVal = validateSize(doc.codigo, doc.talla);
             const conteoVal = validateCount(doc.codigo, doc.talla, legacy.conteo);
             const uniformidadVal = validateUniformity(doc.codigo, doc.talla, legacy.uniformidad?.grandes?.valor, legacy.uniformidad?.pequenos?.valor);
@@ -342,7 +354,9 @@ const createStandardProductSheet = (
     productType: ProductType,
     date: string
 ) => {
-    const worksheet = workbook.addWorksheet(PRODUCT_TYPE_LABELS[productType]);
+    // Regex to remove common emojis and symbols (including variants)
+    const emojiRegex = /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g;
+    const worksheet = workbook.addWorksheet(PRODUCT_TYPE_LABELS[productType].replace(emojiRegex, '').trim());
 
     // Obtener defectos según tipo de producto
     let defectosList: readonly string[] = [];
@@ -384,8 +398,8 @@ const createStandardProductSheet = (
         ...(productType === 'VALOR_AGREGADO' ? ['Peso Submuestra', 'Peso sin Glaseo'] : []),
         'Peso Neto',
         'Conteo',
-        'Uniformidad Grandes',
-        'Uniformidad Pequeños',
+        'Uniformidad Grandes (Kg)',
+        'Uniformidad Pequeños (Kg)',
         'Total Defectos',
         ...defectosList.map(d => DEFECTO_LABELS[d] || d),
         'Observaciones'

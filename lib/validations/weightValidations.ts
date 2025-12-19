@@ -67,7 +67,8 @@ function toGrams(value: number, unit: string): number {
 export function validateGrossWeight(
     codigo: string,
     pesoBrutoGrams: number,
-    productType: ProductType
+    productType: ProductType,
+    displayUnit: 'KG' | 'LB' = 'KG'
 ): WeightValidationResult {
     if (!codigo || !pesoBrutoGrams) {
         return { isValid: true };
@@ -142,18 +143,19 @@ export function validateGrossWeight(
         };
     }
 
+
     if (pesoBrutoGrams < lowerLimitGrams) {
         return {
             isValid: false,
-            message: `PESO BRUTO bajo (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
-            limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
+            message: `PESO BRUTO bajo (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
+            limits: `${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'}`,
             actual: actualKg
         };
     }
 
     return {
         isValid: true,
-        limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
+        limits: `${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'}`,
         actual: actualKg
     };
 }
@@ -169,7 +171,8 @@ export function validateGrossWeight(
 export function validateNetWeight(
     codigo: string,
     pesoNetoGrams: number,
-    productType: ProductType
+    productType: ProductType,
+    displayUnit: 'KG' | 'LB' = 'KG'
 ): WeightValidationResult {
     if (!codigo || !pesoNetoGrams) {
         return { isValid: true };
@@ -202,8 +205,8 @@ export function validateNetWeight(
     if (pesoNetoGrams > upperLimitGrams) {
         return {
             isValid: false,
-            message: `PESO NETO alto (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
-            limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
+            message: `PESO NETO alto (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
+            limits: `${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'}`,
             actual: actualKg
         };
     }
@@ -211,15 +214,26 @@ export function validateNetWeight(
     if (pesoNetoGrams < baseNetWeightGrams) {
         return {
             isValid: false,
-            message: `PESO NETO bajo (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
-            limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
+            message: `PESO NETO bajo (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
+            limits: `${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'}`,
             actual: actualKg
         };
     }
 
     return {
         isValid: true,
-        limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
+        limits: `${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'}`,
         actual: actualKg
     };
+}
+
+/**
+ * Helper to format weight based on display Unit
+ * Takes value in KG, converts to LB if needed
+ */
+function formatWeight(valueInKg: number, unit: 'KG' | 'LB'): string {
+    if (unit === 'LB') {
+        return (valueInKg * 2.20462).toFixed(2);
+    }
+    return valueInKg.toFixed(2);
 }

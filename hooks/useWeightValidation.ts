@@ -22,9 +22,10 @@ interface WeightValidationResult {
 
 export function useWeightValidation(
     codigo: string,
-    pesoBrutoKg: number | undefined,
-    pesoNetoKg: number | undefined,
-    productType: ProductType | null
+    pesoBrutoValue: number | undefined,
+    pesoNetoValue: number | undefined,
+    productType: ProductType | null,
+    weightUnit: 'KG' | 'LB' = 'KG'
 ): WeightValidationResult {
     return useMemo(() => {
         const result: WeightValidationResult = {
@@ -37,11 +38,16 @@ export function useWeightValidation(
             return result;
         }
 
+        // Helper to convert input to grams
+        const toGrams = (val: number) => {
+            if (weightUnit === 'LB') return val * 453.592;
+            return val * 1000; // Assume KG if not LB
+        };
+
         // Validate Peso Bruto
-        // NOTE: Input values are already in GRAMS, no conversion needed
-        if (pesoBrutoKg && pesoBrutoKg > 0) {
-            const pesoBrutoGrams = pesoBrutoKg; // Already in grams
-            const validationResult = validateGrossWeight(codigo, pesoBrutoGrams, productType);
+        if (pesoBrutoValue && pesoBrutoValue > 0) {
+            const pesoBrutoGrams = toGrams(pesoBrutoValue);
+            const validationResult = validateGrossWeight(codigo, pesoBrutoGrams, productType, weightUnit);
 
             if (validationResult.isValid) {
                 result.pesoBruto = {
@@ -61,10 +67,9 @@ export function useWeightValidation(
         }
 
         // Validate Peso Neto
-        // NOTE: Input values are already in GRAMS, no conversion needed
-        if (pesoNetoKg && pesoNetoKg > 0) {
-            const pesoNetoGrams = pesoNetoKg; // Already in grams
-            const validationResult = validateNetWeight(codigo, pesoNetoGrams, productType);
+        if (pesoNetoValue && pesoNetoValue > 0) {
+            const pesoNetoGrams = toGrams(pesoNetoValue);
+            const validationResult = validateNetWeight(codigo, pesoNetoGrams, productType, weightUnit);
 
             if (validationResult.isValid) {
                 result.pesoNeto = {
@@ -84,5 +89,5 @@ export function useWeightValidation(
         }
 
         return result;
-    }, [codigo, pesoBrutoKg, pesoNetoKg, productType]);
+    }, [codigo, pesoBrutoValue, pesoNetoValue, productType, weightUnit]);
 }
