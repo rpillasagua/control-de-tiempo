@@ -1,0 +1,41 @@
+﻿================================================================================
+AN┴LISIS PARTE 5: VALORES NUM╔RICOS Y RANGOS
+================================================================================
+
+1. Verificando pesos negativos o cero...
+   WARN: 1 pesos en cero
+     grossWeight: 0
+   OK: 1329 pesos verificados, ninguno negativo
+
+2. Verificando glazingRatio...
+   WARN: 72 valores > 100
+     Rango: 0.0 - 750.0
+
+3. Verificando n·meros de versi¾n...
+   OK: Rango 1 - 43
+
+4. Verificando overweightPct...
+   OK: Todos los sobrepesos <= 10%
+
+5. Buscando caracteres especiales problemßticos...
+   WARN: 103 caracteres no-ASCII estßndar
+     ┌nicos: 11
+
+6. Verificando strings excesivamente largos...
+   WARN: 437 strings > 500 caracteres
+     Longitud: 4466 chars
+     Longitud: 5682 chars
+
+================================================================================
+RESUMEN PARTE 5
+================================================================================
+Errores crÝticos: 0
+Advertencias: 4
+
+ADVERTENCIAS:
+  1. Pesos en cero: 1
+  2. GlazingRatio alto: 72 casos
+  3. Caracteres especiales: 11 tipos
+  4. Strings muy largos: 437
+
+================================================================================

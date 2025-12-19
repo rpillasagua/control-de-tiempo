@@ -48,7 +48,7 @@ import {
 } from '@/lib/types';
 import { generateId } from '@/lib/utils';
 import { useWeightInput } from '@/hooks/useWeightInput';
-import { PRODUCT_DATA } from '@/lib/product-data';
+import { PRODUCT_DATA, DOUBLE_ANALYSIS_CODES } from '@/lib/product-data';
 import { usePhotoUpload } from '@/hooks/usePhotoUpload';
 import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { useTechnicalSpecs } from '@/hooks/useTechnicalSpecs';
@@ -825,6 +825,19 @@ export default function NewMultiAnalysisPageContent() {
                             />
                         </div>
                     </div>
+
+                    {/* Alerta de Doble Análisis - Solo para códigos específicos */}
+                    {codigo && DOUBLE_ANALYSIS_CODES.includes(codigo) && (
+                        <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg animate-pulse mb-6">
+                            <span className="text-xl">⚠️</span>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-amber-600 text-sm">DOBLE ANÁLISIS REQUERIDO</span>
+                                <span className="text-amber-600/90 text-xs">
+                                    Verificar fotos y datos con ficha técnica y fotos de cliente.
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Analysis Tabs */}

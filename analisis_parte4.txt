@@ -1,0 +1,62 @@
+ANÁLISIS PARTE 4: CONSISTENCIA
+================================================================================
+
+Códigos en specs: 443
+Códigos en data: 440
+Códigos comunes: 431
+Solo en specs: 12
+Solo en data: 9
+
+CÓDIGOS SOLO EN SPECS:
+  - 00031
+  - 00038
+  - 00330
+  - 00340
+  - 00342
+  - 00345
+  - 00353
+  - 00356
+  - 00360
+  - 00362
+  - 00380
+  - 00407
+
+CÓDIGOS SOLO EN DATA:
+  - 00067
+  - 00341
+  - 00479
+  - 00496
+  - 00539
+  - 00544
+  - 00547
+  - 00548
+  - 00549
+
+TIPOS INCONSISTENTES:
+  - 00205: specs=ENTERO, data=VALOR_AGREGADO
+  - 00449: specs=ENTERO, data=COLA
+  - 00355: specs=ENTERO, data=VALOR_AGREGADO
+  - 00195: specs=ENTERO, data=COLA
+  - 00184: specs=ENTERO, data=VALOR_AGREGADO
+  - 00196: specs=ENTERO, data=VALOR_AGREGADO
+  - 00401: specs=ENTERO, data=VALOR_AGREGADO
+  - 00116: specs=ENTERO, data=COLA
+  - 00439: specs=ENTERO, data=COLA
+  - 00410: specs=ENTERO, data=COLA
+  - 00469: specs=ENTERO, data=COLA
+  - 00162: specs=ENTERO, data=COLA
+  - 00283: specs=ENTERO, data=COLA
+  - 00016: specs=ENTERO, data=COLA
+  - 00149: specs=ENTERO, data=VALOR_AGREGADO
+  - 00147: specs=ENTERO, data=VALOR_AGREGADO
+  - 00276: specs=ENTERO, data=COLA
+  - 00249: specs=ENTERO, data=COLA
+  - 00099: specs=ENTERO, data=COLA
+  - 00398: specs=ENTERO, data=VALOR_AGREGADO
+  - 00143: specs=ENTERO, data=COLA
+  - 00377: specs=ENTERO, data=VALOR_AGREGADO
+  - 00476: specs=ENTERO, data=COLA
+  - 00252: specs=ENTERO, data=VALOR_AGREGADO
+  - 00203: specs=ENTERO, data=COLA
+  - 00028: specs=ENTERO, data=COLA
+  - 00500: specs=ENTERO, data=VALOR_AGREGADO
