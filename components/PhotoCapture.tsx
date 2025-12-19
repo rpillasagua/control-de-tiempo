@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ZoomIn, ImageOff, Camera, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { compressImage } from '@/lib/imageCompression';

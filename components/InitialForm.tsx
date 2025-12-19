@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AnalystColor, ProductType, QualityAnalysis } from '@/lib/types';
 import { PRODUCT_DATA } from '@/lib/product-data';
 import AnalystColorSelector from './AnalystColorSelector';
@@ -153,7 +153,7 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { validateSize } = useTechnicalSpecs();
+    const { validateSize, getSpecs } = useTechnicalSpecs();
 
     // Actualizar campos y limpiar errores
     const handleChange = (field: keyof AnalysisData, value: any) => {
@@ -226,7 +226,9 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
                 error = 'El código es requerido';
             } else {
                 const normalizedCode = getNormalizedCode(formData.codigo);
-                const product = PRODUCT_DATA[normalizedCode] || tempProductData?.[normalizedCode];
+                // Check Static Data OR Temp Data OR Custom Specs (Firebase)
+                const specs = getSpecs(normalizedCode);
+                const product = PRODUCT_DATA[normalizedCode] || tempProductData?.[normalizedCode] || (specs ? { ...specs, type: specs.productType } : undefined);
 
                 if (!product) {
                     error = 'Código no encontrado en la base de datos';

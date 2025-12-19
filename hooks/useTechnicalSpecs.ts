@@ -1,19 +1,86 @@
+import { useState, useEffect } from 'react';
 import { TECHNICAL_SPECS, ProductSpec } from '../lib/technical-specs';
+import { getAllCustomProductSpecs, CustomProductSpec } from '../lib/customProductService';
 
 export function useTechnicalSpecs() {
+    // Initialize with static specs
+    const [combinedSpecs, setCombinedSpecs] = useState<Record<string, ProductSpec>>(TECHNICAL_SPECS);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch custom specs on mount
+    useEffect(() => {
+        const fetchCustomSpecs = async () => {
+            try {
+                const customSpecsList = await getAllCustomProductSpecs();
+
+                if (customSpecsList && customSpecsList.length > 0) {
+                    const customSpecsMap: Record<string, ProductSpec> = {};
+
+                    customSpecsList.forEach((custom: CustomProductSpec) => {
+                        // Map CustomProductSpec (Firebase) to ProductSpec (App Type)
+                        // Ensure all required fields for ProductSpec are present or defaulted
+                        customSpecsMap[custom.code] = {
+                            code: custom.code,
+                            description: custom.description || `Ficha Manual - ${custom.code}`,
+                            client: custom.client,
+                            brand: custom.brand,
+                            netWeight: custom.netWeight || null,
+                            netWeightUnit: custom.netWeightUnit || null,
+                            grossWeight: custom.grossWeight || null,
+                            grossWeightUnit: custom.grossWeightUnit || null,
+                            grossWeightMasters: custom.grossWeightMasters || null, // Not always present in custom
+                            grossWeightMastersUnit: custom.grossWeightMastersUnit || null,
+                            overweightPct: custom.overweightPct || null,
+                            productType: custom.type,
+                            freezingMethod: custom.freezingMethod || null,
+                            destination: custom.destination || null,
+                            version: custom.version || 1,
+                            certification: custom.certification || null,
+                            color: custom.color || null,
+                            packing: custom.packing || custom.master, // Fallback to master if packing missing
+                            preservative: custom.preservative || null,
+                            glazingRatio: custom.glazingRatio || null,
+                            glazingUnit: custom.glazingUnit || null,
+                            sizes: custom.sizes?.map(s => ({
+                                sizeMp: s.sizeMp,
+                                countMp: s.countMp,
+                                sizeMarked: s.sizeMarked,
+                                uniformity: s.uniformity || null,
+                                countFinal: s.countFinal
+                            })) || [],
+                            defects: custom.defects?.map(d => ({
+                                defect: d.defect,
+                                limit: d.limit
+                            })) || []
+                        };
+                    });
+
+                    // Merge static and custom specs
+                    // Custom specs overwrite static ones if code exists in both (though usually they shouldn't overlap)
+                    setCombinedSpecs(prev => ({
+                        ...prev,
+                        ...customSpecsMap
+                    }));
+                }
+            } catch (error) {
+                console.error("Error loading custom specs:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCustomSpecs();
+    }, []);
 
     const getSpecs = (code: string): ProductSpec | null => {
         if (!code) return null;
-        // Handle potential leading zeros if input doesn't have them, or vice versa
-        // The keys in TECHNICAL_SPECS are 5 digits (e.g. "00038")
         const normalizedCode = code.padStart(5, '0');
-        return TECHNICAL_SPECS[normalizedCode] || null;
+        return combinedSpecs[normalizedCode] || null;
     };
 
     const validateSize = (code: string, size: string, productType: string): { isValid: boolean; message?: string } => {
         if (!code || !size) return { isValid: true };
 
-        // Skip validation for VALOR_AGREGADO as requested
         if (productType === 'VALOR_AGREGADO') {
             return { isValid: true };
         }
@@ -21,7 +88,6 @@ export function useTechnicalSpecs() {
         const specs = getSpecs(code);
         if (!specs) return { isValid: true };
 
-        // Check against both sizeMp and sizeMarked
         const validSize = specs.sizes.find(s =>
             (s.sizeMp && s.sizeMp.toLowerCase() === size.toLowerCase()) ||
             (s.sizeMarked && s.sizeMarked.toLowerCase() === size.toLowerCase())
@@ -29,13 +95,13 @@ export function useTechnicalSpecs() {
 
         if (!validSize) {
             const validSizesList = specs.sizes
-                .map(s => s.sizeMarked || s.sizeMp) // Prefer marked for display
+                .map(s => s.sizeMarked || s.sizeMp)
                 .filter(Boolean)
                 .join(', ');
 
             return {
                 isValid: false,
-                message: `Talla "${size}" no coincide con la ficha técnica. Tallas esperadas: ${validSizesList}`
+                message: `Talla "${size}" no coincide. Esperadas: ${validSizesList}`
             };
         }
 
@@ -55,7 +121,6 @@ export function useTechnicalSpecs() {
 
         if (!sizeSpec || !sizeSpec.countFinal) return { isValid: true };
 
-        // Parse count range "17-19"
         const parts = sizeSpec.countFinal.split('-').map(p => parseFloat(p.trim()));
         if (parts.length === 2) {
             const [min, max] = parts;
@@ -99,6 +164,7 @@ export function useTechnicalSpecs() {
         getSpecs,
         validateSize,
         validateCount,
-        validateUniformity
+        validateUniformity,
+        isLoading
     };
 }
