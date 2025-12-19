@@ -219,6 +219,27 @@ export function TechnicalSpecForm({ initialData, code, onSave, onCancel }: Techn
                     </div>
 
                     <div>
+                        <label className="text-xs font-semibold text-slate-500 uppercase">Peso Bruto Master</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="w-full p-2 border border-slate-200 rounded-lg mt-1"
+                                value={formData.grossWeightMasters || ''}
+                                onChange={e => handleChange('grossWeightMasters', parseFloat(e.target.value))}
+                            />
+                            <select
+                                className="w-20 p-2 border border-slate-200 rounded-lg mt-1 bg-white text-xs"
+                                value={formData.grossWeightMastersUnit || 'KG'}
+                                onChange={e => handleChange('grossWeightMastersUnit', e.target.value)}
+                            >
+                                <option value="KG">KG</option>
+                                <option value="LB">LB</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
                         <label className="text-xs font-semibold text-slate-500 uppercase">Glaseo</label>
                         <div className="flex gap-2">
                             <input

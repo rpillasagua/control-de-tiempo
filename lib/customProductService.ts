@@ -33,6 +33,8 @@ export interface CustomProductSpec {
     netWeightUnit?: string;
     grossWeight?: number;
     grossWeightUnit?: string;
+    grossWeightMasters?: number;
+    grossWeightMastersUnit?: string;
     packing?: string;
 
     // Size specifications
