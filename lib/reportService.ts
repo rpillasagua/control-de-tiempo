@@ -109,11 +109,16 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
         if (doc.analyses && doc.analyses.length > 0) {
             doc.analyses.forEach(analysis => {
                 const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
-                const toGrams = (val: number) => weightUnit === 'LB' ? val * 453.592 : val * 1000;
+                const normalizeToGrams = (val: number) => {
+                    if (weightUnit === 'LB') {
+                        return (val / 1000) * 453.592;
+                    }
+                    return val;
+                };
 
                 // Validaciones
-                const pesoBrutoGrams = toGrams(analysis.pesoBruto?.valor || 0);
-                const pesoNetoGrams = toGrams(analysis.pesoNeto?.valor || 0);
+                const pesoBrutoGrams = normalizeToGrams(analysis.pesoBruto?.valor || 0);
+                const pesoNetoGrams = normalizeToGrams(analysis.pesoNeto?.valor || 0);
 
                 const pesoBrutoVal = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
                 const pesoNetoVal = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);
@@ -164,11 +169,16 @@ const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
             // Soporte Legacy (estructura plana antigua)
             const legacy = doc as any;
             const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
-            const toGrams = (val: number) => weightUnit === 'LB' ? val * 453.592 : val * 1000;
+            const normalizeToGrams = (val: number) => {
+                if (weightUnit === 'LB') {
+                    return (val / 1000) * 453.592;
+                }
+                return val;
+            };
 
             // Validaciones Legacy
-            const pesoBrutoGrams = toGrams(legacy.pesoBruto?.valor || 0);
-            const pesoNetoGrams = toGrams(legacy.pesoNeto?.valor || 0);
+            const pesoBrutoGrams = normalizeToGrams(legacy.pesoBruto?.valor || 0);
+            const pesoNetoGrams = normalizeToGrams(legacy.pesoNeto?.valor || 0);
 
             const pesoBrutoVal = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
             const pesoNetoVal = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);

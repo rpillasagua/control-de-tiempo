@@ -39,14 +39,19 @@ export function useWeightValidation(
         }
 
         // Helper to convert input to grams
-        const toGrams = (val: number) => {
-            if (weightUnit === 'LB') return val * 453.592;
-            return val * 1000; // Assume KG if not LB
+        // KG inputs are in Grams (e.g. 2000 = 2kg)
+        // LB inputs are in Milli-Lbs (e.g. 4050 = 4.05lb) -> need to divide by 1000 then convert to grams
+        const normalizeToGrams = (val: number) => {
+            if (weightUnit === 'LB') {
+                const lbs = val / 1000;
+                return lbs * 453.592;
+            }
+            return val; // Already in grams
         };
 
         // Validate Peso Bruto
         if (pesoBrutoValue && pesoBrutoValue > 0) {
-            const pesoBrutoGrams = toGrams(pesoBrutoValue);
+            const pesoBrutoGrams = normalizeToGrams(pesoBrutoValue);
             const validationResult = validateGrossWeight(codigo, pesoBrutoGrams, productType, weightUnit);
 
             if (validationResult.isValid) {
@@ -68,7 +73,7 @@ export function useWeightValidation(
 
         // Validate Peso Neto
         if (pesoNetoValue && pesoNetoValue > 0) {
-            const pesoNetoGrams = toGrams(pesoNetoValue);
+            const pesoNetoGrams = normalizeToGrams(pesoNetoValue);
             const validationResult = validateNetWeight(codigo, pesoNetoGrams, productType, weightUnit);
 
             if (validationResult.isValid) {

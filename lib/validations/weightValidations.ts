@@ -137,8 +137,8 @@ export function validateGrossWeight(
     if (pesoBrutoGrams > upperLimitGrams) {
         return {
             isValid: false,
-            message: `PESO BRUTO alto (${actualKg.toFixed(2)} Kg) (Límite: ${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG)`,
-            limits: `${lowerLimitKg.toFixed(2)}-${upperLimitKg.toFixed(2)} KG`,
+            message: `PESO BRUTO alto (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
+            limits: `${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'}`,
             actual: actualKg
         };
     }
