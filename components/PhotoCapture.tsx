@@ -196,14 +196,46 @@ export default function PhotoCapture({ label, modalTitle, photoUrl, onPhotoCaptu
     }
   };
 
-  const toggleZoom = (e: React.MouseEvent) => {
+  const [transformOrigin, setTransformOrigin] = useState('center center');
+  const lastTapRef = useRef<number>(0);
+
+  const handleZoomTap = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
-    setZoomLevel(prev => prev === 1 ? 2.5 : 1);
+
+    // Logic for Double Tap
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected!
+      if (zoomLevel === 1) {
+        // Zoom IN to the specific point
+        const img = e.currentTarget;
+        const rect = img.getBoundingClientRect();
+
+        // Calculate click position relative to the image
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+        setTransformOrigin(`${x}% ${y}%`);
+        setZoomLevel(2.5);
+      } else {
+        // Zoom OUT (reset)
+        setZoomLevel(1);
+        setTimeout(() => setTransformOrigin('center center'), 300); // Reset origin after transition
+      }
+    } else {
+      // Single tap - just update last tap time
+      lastTapRef.current = now;
+    }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setZoomLevel(1); // Reset zoom on close
   };
+
+
 
   const handleManualRetry = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -557,21 +589,22 @@ export default function PhotoCapture({ label, modalTitle, photoUrl, onPhotoCaptu
             <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10">
               <div
                 className="overflow-hidden w-full h-auto max-h-[80vh] bg-black/90 flex items-center justify-center cursor-zoom-in"
-                onClick={toggleZoom}
+                onClick={(e) => {
+                  // Optional: If clicking background also should handle zoom or close, but usually better to stick to image
+                  e.stopPropagation();
+                }}
               >
                 <img
                   src={photoUrl}
                   alt={label}
                   style={{
                     transform: `scale(${zoomLevel})`,
+                    transformOrigin: transformOrigin,
                     transition: 'transform 0.3s ease-in-out',
                     cursor: zoomLevel === 1 ? 'zoom-in' : 'zoom-out'
                   }}
                   className="w-full h-full object-contain"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleZoom(e);
-                  }}
+                  onClick={handleZoomTap}
                   onError={(e) => {
                     console.warn(`⚠️ Error cargando imagen en modal ${label}:`, photoUrl);
                     console.warn('Modal error details:', e);
