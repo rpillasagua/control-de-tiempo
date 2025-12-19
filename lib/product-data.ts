@@ -459,6 +459,17 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = {
     '00560': { client: 'SIN IMPORTADOR', type: 'VALOR_AGREGADO', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
     '00561': { client: 'SIN IMPORTADOR', type: 'COLA', master: '2 Und * 20 Lb', brand: 'SIN MARCA', unit: deriveUnit('2 Und * 20 Lb') },
     '00567': { client: 'SIORAS NIKITAS CO', type: 'ENTERO', master: '3 Und * 4 Kg', brand: 'SIN MARCA', unit: deriveUnit('3 Und * 4 Kg') },
+    '00031': { client: 'VITAGULF S.A.', type: 'ENTERO', master: '6 Und * 1.6 Kg', brand: 'VITAGULF', unit: deriveUnit('6 Und * 1.6 Kg') },
+    '00038': { client: 'BLUE PACIFIC LLC', type: 'ENTERO', master: '10 Und * 2 Kg', brand: 'MAJESTIC', unit: deriveUnit('10 Und * 2 Kg') },
+    '00330': { client: 'A&M SEAFOOD CO', type: 'ENTERO', master: '6 Und * 1.5 Kg', brand: 'A&M', unit: deriveUnit('6 Und * 1.5 Kg') },
+    '00340': { client: 'CALVO CONSERVAS', type: 'ENTERO', master: '10 Und * 1 Kg', brand: 'CALVO', unit: deriveUnit('10 Und * 1 Kg') },
+    '00342': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'SIN MARCA', unit: deriveUnit('6 Und * 2 Kg') },
+    '00345': { client: 'VITAGULF S.A.', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'VITAGULF', unit: deriveUnit('6 Und * 2 Kg') },
+    '00353': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '10 Und * 1 Kg', brand: 'SIN MARCA', unit: deriveUnit('10 Und * 1 Kg') },
+    '00356': { client: 'VITAGULF S.A.', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'VITAGULF', unit: deriveUnit('6 Und * 2 Kg') },
+    '00360': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'SIN MARCA', unit: deriveUnit('6 Und * 2 Kg') },
+    '00362': { client: 'VITAGULF S.A.', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'VITAGULF', unit: deriveUnit('6 Und * 2 Kg') },
+    '00380': { client: 'SIN IMPORTADOR', type: 'ENTERO', master: '6 Und * 2 Kg', brand: 'SIN MARCA', unit: deriveUnit('6 Und * 2 Kg') },
 };
 
 /**
