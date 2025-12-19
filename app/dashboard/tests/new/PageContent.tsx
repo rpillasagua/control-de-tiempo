@@ -1073,6 +1073,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     <PhotoCapture
                                                         key={`pesoBruto-${activeAnalysisIndex}`}
                                                         label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Bruto"}
+                                                        modalTitle="Peso Bruto"
                                                         photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
                                                         isUploading={isFieldUploading('pesoBruto')}
@@ -1106,6 +1107,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     <PhotoCapture
                                                         key={`pesoCongelado-${activeAnalysisIndex}`}
                                                         label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Congelado"}
+                                                        modalTitle="Peso Congelado"
                                                         photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
                                                         isUploading={isFieldUploading('pesoCongelado')}
@@ -1139,6 +1141,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         <PhotoCapture
                                                             key={`pesoSubmuestra-${activeAnalysisIndex}`}
                                                             label="Foto Peso Submuestra"
+                                                            modalTitle="Peso Submuestra"
                                                             photoUrl={currentAnalysis.pesoSubmuestra?.fotoUrl}
                                                             onPhotoCapture={(file) => handlePhotoCapture('pesoSubmuestra', file)}
                                                             isUploading={isFieldUploading('pesoSubmuestra')}
@@ -1168,6 +1171,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         <PhotoCapture
                                                             key={`pesoSinGlaseo-${activeAnalysisIndex}`}
                                                             label="Foto Peso Sin Glaseo"
+                                                            modalTitle="Peso Sin Glaseo"
                                                             photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
                                                             onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
                                                             isUploading={isFieldUploading('pesoSinGlaseo')}
@@ -1210,6 +1214,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     <PhotoCapture
                                                         key={`pesoNeto-${activeAnalysisIndex}`}
                                                         label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Neto"}
+                                                        modalTitle="Peso Neto"
                                                         photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
                                                         isUploading={isFieldUploading('pesoNeto')}
@@ -1320,6 +1325,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 />
                                                 <PhotoCapture
                                                     label="Foto Grandes"
+                                                    modalTitle="Uniformidad Grandes"
                                                     photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
                                                     onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
                                                     isUploading={isFieldUploading('uniformidad_grandes')}
@@ -1357,6 +1363,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 />
                                                 <PhotoCapture
                                                     label="Foto Pequeños"
+                                                    modalTitle="Uniformidad Pequeños"
                                                     photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
                                                     onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
                                                     isUploading={isFieldUploading('uniformidad_pequenos')}

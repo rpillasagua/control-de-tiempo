@@ -5,6 +5,7 @@ import { compressImage } from '@/lib/imageCompression';
 
 interface PhotoCaptureProps {
   label: string;
+  modalTitle?: string;
   photoUrl?: string;
   onPhotoCapture: (file: File) => void;
   onPhotoRemove?: () => void;
@@ -17,7 +18,7 @@ interface PhotoCaptureProps {
   forceGalleryMode?: boolean;
 }
 
-export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false, context, forceGalleryMode = false }: PhotoCaptureProps) {
+export default function PhotoCapture({ label, modalTitle, photoUrl, onPhotoCapture, onPhotoRemove, isUploading = false, compact = false, context, forceGalleryMode = false }: PhotoCaptureProps) {
   const [showModal, setShowModal] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [errorType, setErrorType] = useState<'blob' | 'drive_auth' | 'drive_permissions' | 'unknown'>('unknown');
@@ -30,6 +31,7 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [offlinePhotoStatus, setOfflinePhotoStatus] = useState<'pending' | 'error' | null>(null);
   const [offlineFile, setOfflineFile] = useState<Blob | null>(null); // Store the file for retry
+  const [zoomLevel, setZoomLevel] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -190,7 +192,13 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
   const handleImageClick = () => {
     if (!imageError) {
       setShowModal(true);
+      setZoomLevel(1);
     }
+  };
+
+  const toggleZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setZoomLevel(prev => prev === 1 ? 2.5 : 1);
   };
 
   const handleCloseModal = () => {
@@ -547,21 +555,38 @@ export default function PhotoCapture({ label, photoUrl, onPhotoCapture, onPhotoR
               <X className="w-6 h-6" />
             </button>
             <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-              <img
-                src={photoUrl}
-                alt={label}
-                className="w-full h-auto max-h-[80vh] object-contain bg-black/50"
-                onClick={(e) => e.stopPropagation()}
-                onError={(e) => {
-                  console.warn(`⚠️ Error cargando imagen en modal ${label}:`, photoUrl);
-                  console.warn('Modal error details:', e);
-                }}
-                onLoad={() => {
-                  console.log(`✅ Imagen del modal cargada correctamente: ${label}`);
-                }}
-              />
-              <div className="bg-black/80 text-white p-4 backdrop-blur-md border-t border-white/10">
-                <p className="text-center font-bold text-sm tracking-wide">{label}</p>
+              <div
+                className="overflow-hidden w-full h-auto max-h-[80vh] bg-black/90 flex items-center justify-center cursor-zoom-in"
+                onClick={toggleZoom}
+              >
+                <img
+                  src={photoUrl}
+                  alt={label}
+                  style={{
+                    transform: `scale(${zoomLevel})`,
+                    transition: 'transform 0.3s ease-in-out',
+                    cursor: zoomLevel === 1 ? 'zoom-in' : 'zoom-out'
+                  }}
+                  className="w-full h-full object-contain"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleZoom(e);
+                  }}
+                  onError={(e) => {
+                    console.warn(`⚠️ Error cargando imagen en modal ${label}:`, photoUrl);
+                    console.warn('Modal error details:', e);
+                  }}
+                  onLoad={() => {
+                    console.log(`✅ Imagen del modal cargada correctamente: ${label}`);
+                  }}
+                />
+              </div>
+
+              {/* Force opaque background for readability */}
+              <div className="bg-black text-white p-4 border-t border-white/20 relative z-20">
+                <p className="text-center font-bold text-lg tracking-wide text-white drop-shadow-md">
+                  {modalTitle || label}
+                </p>
               </div>
             </div>
           </div>
