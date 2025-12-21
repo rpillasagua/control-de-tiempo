@@ -17,6 +17,9 @@ export function useTechnicalSpecs() {
                     const customSpecsMap: Record<string, ProductSpec> = {};
 
                     customSpecsList.forEach((custom: CustomProductSpec) => {
+                        // FORCE FIX: Ignore custom spec for 00554 to use static definition
+                        if (custom.code === '00554') return;
+
                         // Map CustomProductSpec (Firebase) to ProductSpec (App Type)
                         // Ensure all required fields for ProductSpec are present or defaulted
                         customSpecsMap[custom.code] = {
