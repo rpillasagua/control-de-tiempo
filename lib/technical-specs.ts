@@ -22560,7 +22560,7 @@ export const TECHNICAL_SPECS: Record<string, ProductSpec> = {
                 "brand": "AQUAGOLD",
                 "destination": "JAPON Mercado JAPON",
                 "version": 16,
-                "productType": "ENTERO",
+                "productType": "COLA",
                 "freezingMethod": "BRINE",
                 "certification": "CONVENCIONAL",
                 "color": "A2+/A3/A4 Color Marcado A3/A4",
