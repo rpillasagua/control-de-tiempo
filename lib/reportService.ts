@@ -104,124 +104,98 @@ const STYLES = {
 const flattenAnalyses = (analyses: QualityAnalysis[]): FlattenedAnalysis[] => {
     const flattened: FlattenedAnalysis[] = [];
 
+    // Helper unificado para normalizar datos de análisis individual
+    const processAnalysisItem = (
+        doc: QualityAnalysis,
+        item: any, // Puede ser analysis item nuevo o legacy doc
+        isLegacy: boolean,
+        index: number
+    ) => {
+        const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
+        const normalizeToGrams = (val: number) => {
+            if (weightUnit === 'LB') {
+                return (val / 1000) * 453.592;
+            }
+            return val;
+        };
+
+        // Extraer valores con fallbacks seguros
+        // Si es legacy, 'item' es el doc mismo, así que accedemos directo a las props
+        // Si es nuevo, 'item' es un objeto dentro de doc.analyses
+        const pesoBrutoVal = item.pesoBruto?.valor;
+        const pesoNetoVal = item.pesoNeto?.valor;
+        const conteoVal = item.conteo;
+        const defectosData = item.defectos || {};
+
+        // Validaciones
+        const pesoBrutoGrams = normalizeToGrams(pesoBrutoVal || 0);
+        const pesoNetoGrams = normalizeToGrams(pesoNetoVal || 0);
+
+        const vPesoBruto = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
+        const vPesoNeto = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);
+        const vTalla = validateSize(doc.codigo, doc.talla);
+        const vConteo = validateCount(doc.codigo, doc.talla, conteoVal);
+        const vUniformidad = validateUniformity(
+            doc.codigo,
+            doc.talla,
+            item.uniformidad?.grandes?.valor,
+            item.uniformidad?.pequenos?.valor
+        );
+        const vDefectos = validateDefects(doc.codigo, doc.productType, pesoNetoVal, conteoVal, defectosData);
+
+        return {
+            docId: doc.id,
+            createdAt: doc.createdAt,
+            shift: doc.shift,
+            productType: doc.productType,
+            lote: doc.lote,
+            codigo: doc.codigo,
+            talla: doc.talla || '-',
+            // @ts-ignore - Index access safe defined in types
+            analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
+            observations: (isLegacy ? doc.observations : item.observations) || doc.observations || '-',
+            status: doc.status,
+
+            numero: isLegacy ? 1 : (item.numero || index + 1),
+            pesoBruto: pesoBrutoVal,
+            pesoCongelado: item.pesoCongelado?.valor,
+            pesoSubmuestra: item.pesoSubmuestra?.valor,
+            pesoSinGlaseo: item.pesoSinGlaseo?.valor,
+            pesoNeto: pesoNetoVal,
+            conteo: conteoVal,
+            uniformidadGrandes: item.uniformidad?.grandes?.valor,
+            uniformidadPequenos: item.uniformidad?.pequenos?.valor,
+            defectos: defectosData,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            totalDefectos: Object.values(defectosData).reduce<number>((sum, val: any) => sum + (Number(val) || 0), 0),
+            pesosBrutos: item.pesosBrutos?.map((p: any) => p.peso) || [],
+
+            // Validation results
+            validationTalla: vTalla.isValid ? '✓ OK' : vTalla.message,
+            validationPesoBruto: vPesoBruto.isValid ? '✓ OK' : vPesoBruto.message,
+            validationPesoNeto: vPesoNeto.isValid ? '✓ OK' : vPesoNeto.message,
+            validationConteo: vConteo.isValid ? '✓ OK' : vConteo.message,
+            validationUniformidad: vUniformidad.isValid ? '✓ OK' : vUniformidad.message,
+            validationDefectosIndividuales: vDefectos.individual,
+            validationDefectosTotales: vDefectos.total,
+            hasValidationIssues: !vTalla.isValid || !vPesoBruto.isValid || !vPesoNeto.isValid ||
+                !vConteo.isValid || !vUniformidad.isValid ||
+                vDefectos.hasIssues
+        } as FlattenedAnalysis;
+    };
+
     analyses.forEach(doc => {
-        // Si tiene array de análisis (nueva estructura)
+        // ESTRATEGIA UNIFICADA:
+        // 1. Si tiene array 'analyses' y no está vacío -> Usar estructura nueva
+        // 2. Si no -> Usar estructura legacy (trunk data)
+
         if (doc.analyses && doc.analyses.length > 0) {
-            doc.analyses.forEach(analysis => {
-                const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
-                const normalizeToGrams = (val: number) => {
-                    if (weightUnit === 'LB') {
-                        return (val / 1000) * 453.592;
-                    }
-                    return val;
-                };
-
-                // Validaciones
-                const pesoBrutoGrams = normalizeToGrams(analysis.pesoBruto?.valor || 0);
-                const pesoNetoGrams = normalizeToGrams(analysis.pesoNeto?.valor || 0);
-
-                const pesoBrutoVal = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
-                const pesoNetoVal = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);
-                const tallaVal = validateSize(doc.codigo, doc.talla);
-                const conteoVal = validateCount(doc.codigo, doc.talla, analysis.conteo);
-                const uniformidadVal = validateUniformity(doc.codigo, doc.talla, analysis.uniformidad?.grandes?.valor, analysis.uniformidad?.pequenos?.valor);
-                const defectosVal = validateDefects(doc.codigo, doc.productType, analysis.pesoNeto?.valor, analysis.conteo, analysis.defectos || {});
-
-                flattened.push({
-                    docId: doc.id,
-                    createdAt: doc.createdAt,
-                    shift: doc.shift,
-                    productType: doc.productType,
-                    lote: doc.lote,
-                    codigo: doc.codigo,
-                    talla: doc.talla || '-',
-                    analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
-                    observations: analysis.observations || doc.observations || '-',
-                    status: doc.status,
-
-                    numero: analysis.numero,
-                    pesoBruto: analysis.pesoBruto?.valor,
-                    pesoCongelado: analysis.pesoCongelado?.valor,
-                    pesoSubmuestra: analysis.pesoSubmuestra?.valor,
-                    pesoSinGlaseo: analysis.pesoSinGlaseo?.valor,
-                    pesoNeto: analysis.pesoNeto?.valor,
-                    conteo: analysis.conteo,
-                    uniformidadGrandes: analysis.uniformidad?.grandes?.valor,
-                    uniformidadPequenos: analysis.uniformidad?.pequenos?.valor,
-                    defectos: analysis.defectos || {},
-                    totalDefectos: Object.values(analysis.defectos || {}).reduce<number>((sum, val: any) => sum + (Number(val) || 0), 0),
-                    pesosBrutos: analysis.pesosBrutos?.map(p => p.peso) || [],
-
-                    // Validation results
-                    validationTalla: tallaVal.isValid ? '✓ OK' : tallaVal.message,
-                    validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
-                    validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
-                    validationConteo: conteoVal.isValid ? '✓ OK' : conteoVal.message,
-                    validationUniformidad: uniformidadVal.isValid ? '✓ OK' : uniformidadVal.message,
-                    validationDefectosIndividuales: defectosVal.individual,
-                    validationDefectosTotales: defectosVal.total,
-                    hasValidationIssues: !tallaVal.isValid || !pesoBrutoVal.isValid || !pesoNetoVal.isValid ||
-                        !conteoVal.isValid || !uniformidadVal.isValid ||
-                        defectosVal.hasIssues
-                });
+            doc.analyses.forEach((analysisItem, index) => {
+                flattened.push(processAnalysisItem(doc, analysisItem, false, index));
             });
         } else {
-            // Soporte Legacy (estructura plana antigua)
-            const legacy = doc as any;
-            const weightUnit = PRODUCT_DATA[doc.codigo]?.unit || 'KG';
-            const normalizeToGrams = (val: number) => {
-                if (weightUnit === 'LB') {
-                    return (val / 1000) * 453.592;
-                }
-                return val;
-            };
-
-            // Validaciones Legacy
-            const pesoBrutoGrams = normalizeToGrams(legacy.pesoBruto?.valor || 0);
-            const pesoNetoGrams = normalizeToGrams(legacy.pesoNeto?.valor || 0);
-
-            const pesoBrutoVal = validateGrossWeight(doc.codigo, pesoBrutoGrams, doc.productType, weightUnit);
-            const pesoNetoVal = validateNetWeight(doc.codigo, pesoNetoGrams, doc.productType, weightUnit);
-            const tallaVal = validateSize(doc.codigo, doc.talla);
-            const conteoVal = validateCount(doc.codigo, doc.talla, legacy.conteo);
-            const uniformidadVal = validateUniformity(doc.codigo, doc.talla, legacy.uniformidad?.grandes?.valor, legacy.uniformidad?.pequenos?.valor);
-            const defectosVal = validateDefects(doc.codigo, doc.productType, legacy.pesoNeto?.valor, legacy.conteo, legacy.defectos || {});
-
-            flattened.push({
-                docId: doc.id,
-                createdAt: doc.createdAt,
-                shift: doc.shift,
-                productType: doc.productType,
-                lote: doc.lote,
-                codigo: doc.codigo,
-                talla: doc.talla || '-',
-                analystColor: ANALYST_COLOR_LABELS[doc.analystColor] || doc.analystColor,
-                observations: doc.observations || '-',
-                status: doc.status,
-
-                numero: 1,
-                pesoBruto: legacy.pesoBruto?.valor,
-                pesoCongelado: legacy.pesoCongelado?.valor,
-                pesoNeto: legacy.pesoNeto?.valor,
-                conteo: legacy.conteo,
-                uniformidadGrandes: legacy.uniformidad?.grandes?.valor,
-                uniformidadPequenos: legacy.uniformidad?.pequenos?.valor,
-                defectos: legacy.defectos || {},
-                totalDefectos: Object.values(legacy.defectos || {}).reduce<number>((sum, val: any) => sum + (Number(val) || 0), 0),
-                pesosBrutos: legacy.pesosBrutos?.map((p: any) => p.peso) || [],
-
-                // Validation results
-                validationTalla: tallaVal.isValid ? '✓ OK' : tallaVal.message,
-                validationPesoBruto: pesoBrutoVal.isValid ? '✓ OK' : pesoBrutoVal.message,
-                validationPesoNeto: pesoNetoVal.isValid ? '✓ OK' : pesoNetoVal.message,
-                validationConteo: conteoVal.isValid ? '✓ OK' : conteoVal.message,
-                validationUniformidad: uniformidadVal.isValid ? '✓ OK' : uniformidadVal.message,
-                validationDefectosIndividuales: defectosVal.individual,
-                validationDefectosTotales: defectosVal.total,
-                hasValidationIssues: !tallaVal.isValid || !pesoBrutoVal.isValid || !pesoNetoVal.isValid ||
-                    !conteoVal.isValid || !uniformidadVal.isValid ||
-                    defectosVal.hasIssues
-            });
+            // Soporte Legacy
+            flattened.push(processAnalysisItem(doc, doc, true, 0));
         }
     });
 

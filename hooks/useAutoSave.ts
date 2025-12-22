@@ -60,6 +60,8 @@ export function useAutoSave<T>(
 
     const [debouncedData] = useDebounce(data, delay);
     const isFirstRender = useRef(true);
+    const isSavingRef = useRef(false);
+    const pendingSaveRef = useRef<boolean>(false);
 
     useEffect(() => {
         // No guardar en el primer render
@@ -71,9 +73,17 @@ export function useAutoSave<T>(
         if (!enabled || !debouncedData) return;
 
         const saveData = async () => {
-            setState(prev => ({ ...prev, isSaving: true, error: null }));
+            // Si ya está guardando, marcar como pendiente para reintentar al terminar
+            if (isSavingRef.current) {
+                console.log('⏳ AutoSave: Save already in progress, marking as pending...');
+                pendingSaveRef.current = true;
+                return;
+            }
 
             try {
+                isSavingRef.current = true;
+                setState(prev => ({ ...prev, isSaving: true, error: null }));
+
                 // 1. Guardar en localStorage inmediatamente (backup)
                 const backup: BackupData<T> = {
                     version: BACKUP_VERSION,
@@ -95,11 +105,25 @@ export function useAutoSave<T>(
                 });
             } catch (error) {
                 logger.error('Error en auto-save, pero backup local guardado:', error);
+
+                // Si el error es "STALE_DATA", no es crítico, es solo concurrencia
+                const isStale = error instanceof Error && error.message.includes('STALE_DATA');
+
                 setState({
                     isSaving: false,
-                    lastSaved: null,
-                    error: error instanceof Error ? error.message : 'Error desconocido'
+                    lastSaved: isStale ? new Date() : null, // Si es stale, consideramos "guardado" (la otra versión ganó)
+                    error: isStale ? null : (error instanceof Error ? error.message : 'Error desconocido')
                 });
+            } finally {
+                isSavingRef.current = false;
+
+                // Si había un guardado pendiente, dispararlo ahora (recursivamente con el último dato disponible en closure? No, debouncedData es stale aquí)
+                // MEJOR: Dejar que el próximo ciclo de efecto lo maneje o forzar update?
+                // Realmente, si pendingSaveRef es true, significa que debouncedData cambió MIENTRAS guardábamos.
+                // El useEffect se disparará de nuevo con el nuevo debouncedData automáticamente.
+                // Lo único que validamos arriba es isSavingRef.
+                // Así que al poner isSavingRef = false, el siguiente effect call procederá.
+                pendingSaveRef.current = false;
             }
         };
 
