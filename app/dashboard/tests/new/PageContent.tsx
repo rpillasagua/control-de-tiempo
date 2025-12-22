@@ -1016,7 +1016,7 @@ export default function NewMultiAnalysisPageContent() {
                                                 photoUrl={globalPesoBruto.fotoUrl}
                                                 onPhotoCapture={handleGlobalPesoBrutoPhoto}
                                                 isUploading={uploadingPhotos.has('global-pesoBruto')}
-                                                context={{ analysisId: analysisId || '', field: 'global-pesoBruto' }}
+                                                context={{ analysisId: analysisId || '', field: 'global-pesoBruto', analysisIndex: undefined }}
                                                 forceGalleryMode={isGalleryMode}
                                             />
                                         </div>
@@ -1090,7 +1090,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
                                                         isUploading={isFieldUploading('pesoBruto')}
-                                                        context={{ analysisId: analysisId || '', field: 'pesoBruto' }}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoBruto', analysisIndex: activeAnalysisIndex }}
                                                         forceGalleryMode={isGalleryMode}
                                                     />
                                                 </div>
@@ -1124,7 +1124,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
                                                         isUploading={isFieldUploading('pesoCongelado')}
-                                                        context={{ analysisId: analysisId || '', field: 'pesoCongelado' }}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoCongelado', analysisIndex: activeAnalysisIndex }}
                                                         forceGalleryMode={isGalleryMode}
                                                     />
                                                 </div>
@@ -1158,7 +1158,7 @@ export default function NewMultiAnalysisPageContent() {
                                                             photoUrl={currentAnalysis.pesoSubmuestra?.fotoUrl}
                                                             onPhotoCapture={(file) => handlePhotoCapture('pesoSubmuestra', file)}
                                                             isUploading={isFieldUploading('pesoSubmuestra')}
-                                                            context={{ analysisId: analysisId || '', field: 'pesoSubmuestra' }}
+                                                            context={{ analysisId: analysisId || '', field: 'pesoSubmuestra', analysisIndex: activeAnalysisIndex }}
                                                             forceGalleryMode={isGalleryMode}
                                                         />
                                                     </div>
@@ -1188,7 +1188,7 @@ export default function NewMultiAnalysisPageContent() {
                                                             photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
                                                             onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
                                                             isUploading={isFieldUploading('pesoSinGlaseo')}
-                                                            context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo' }}
+                                                            context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo', analysisIndex: activeAnalysisIndex }}
                                                             forceGalleryMode={isGalleryMode}
                                                         />
                                                     </div>
@@ -1231,7 +1231,7 @@ export default function NewMultiAnalysisPageContent() {
                                                         photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
                                                         onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
                                                         isUploading={isFieldUploading('pesoNeto')}
-                                                        context={{ analysisId: analysisId || '', field: 'pesoNeto' }}
+                                                        context={{ analysisId: analysisId || '', field: 'pesoNeto', analysisIndex: activeAnalysisIndex }}
                                                         forceGalleryMode={isGalleryMode}
                                                     />
                                                 </div>
@@ -1342,7 +1342,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
                                                     onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
                                                     isUploading={isFieldUploading('uniformidad_grandes')}
-                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_grandes' }}
+                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_grandes', analysisIndex: activeAnalysisIndex }}
                                                     forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>
@@ -1380,7 +1380,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
                                                     onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
                                                     isUploading={isFieldUploading('uniformidad_pequenos')}
-                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos' }}
+                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos', analysisIndex: activeAnalysisIndex }}
                                                     forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>
@@ -1439,7 +1439,7 @@ export default function NewMultiAnalysisPageContent() {
                                                     photoUrl={currentAnalysis.fotoCalidad}
                                                     onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
                                                     isUploading={isFieldUploading('fotoCalidad')}
-                                                    context={{ analysisId: analysisId || '', field: 'fotoCalidad' }}
+                                                    context={{ analysisId: analysisId || '', field: 'fotoCalidad', analysisIndex: activeAnalysisIndex }}
                                                     forceGalleryMode={isGalleryMode}
                                                 />
                                             </div>

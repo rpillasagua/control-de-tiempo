@@ -46,7 +46,7 @@ export const usePhotoUpload = ({
 
         // 1. Compress and save photo locally first
         try {
-            await photoStorageService.deletePhotosByContext(analysisId, field);
+            await photoStorageService.deletePhotosByContext(analysisId, field, targetIndex);
 
             const compressedBlob = await compressImage(file);
             const batchCode = generateId();
@@ -209,7 +209,7 @@ export const usePhotoUpload = ({
 
         // 1. Compress and save photo locally first
         try {
-            await photoStorageService.deletePhotosByContext(analysisId, `pesobruto-${registroId}`);
+            await photoStorageService.deletePhotosByContext(analysisId, `pesobruto-${registroId}`, targetIndex);
 
             const compressedBlob = await compressImage(file);
             const batchCode = generateId();
@@ -357,7 +357,7 @@ export const usePhotoUpload = ({
 
         // 1. Compress and save photo locally first
         try {
-            await photoStorageService.deletePhotosByContext(analysisId, 'global-pesoBruto');
+            await photoStorageService.deletePhotosByContext(analysisId, 'global-pesoBruto', undefined);
 
             const compressedBlob = await compressImage(file);
             const batchCode = generateId();

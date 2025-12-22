@@ -13,6 +13,7 @@ interface PhotoCaptureProps {
   context?: {
     analysisId: string;
     field: string;
+    analysisIndex?: number;
   };
   compact?: boolean;
   forceGalleryMode?: boolean;
@@ -58,7 +59,7 @@ export default function PhotoCapture({ label, modalTitle, photoUrl, onPhotoCaptu
       if (!photoUrl && !localPreviewUrl && context) {
         try {
           const { photoStorageService } = await import('@/lib/photoStorageService');
-          const pendingPhoto = await photoStorageService.getPhotoByContext(context.analysisId, context.field);
+          const pendingPhoto = await photoStorageService.getPhotoByContext(context.analysisId, context.field, context.analysisIndex);
 
           if (pendingPhoto && pendingPhoto.file) {
             console.log(`📦 Found offline photo for ${label}:`, pendingPhoto.status);

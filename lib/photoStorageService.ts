@@ -351,8 +351,9 @@ class PhotoStorageService {
     /**
      * Get a specific photo by analysisId and field
      * Useful for rehydrating UI from local storage
+     * NOW SUPPORTS OPTIONAL analysisIndex for stricter filtering
      */
-    async getPhotoByContext(analysisId: string, field: string): Promise<PendingPhoto | null> {
+    async getPhotoByContext(analysisId: string, field: string, analysisIndex?: number): Promise<PendingPhoto | null> {
         const db = await this.ensureDB();
 
         return new Promise((resolve, reject) => {
@@ -366,7 +367,30 @@ class PhotoStorageService {
                 // Find the specific photo for this field that is not successful (pending, uploading, error)
                 // We prioritize the most recent one if duplicates exist (though they shouldn't)
                 const match = photos
-                    .filter(p => p.field === field && p.status !== 'success')
+                    .filter(p => {
+                        // 1. Must match field
+                        if (p.field !== field) return false;
+
+                        // 2. Must not be successful (we only care about pending/offline stuff here)
+                        if (p.status === 'success') return false;
+
+                        // 3. ✅ STRICT INDEX CHECK
+                        // If analysisIndex is provided, the photo MUST match it
+                        if (analysisIndex !== undefined) {
+                            // Local variable for clarity
+                            const photoIndex = p.metadata?.analysisIndex;
+                            // Check equality (comparing numbers)
+                            return photoIndex === analysisIndex;
+                        }
+
+                        // If no analysisIndex provided (legacy behavior or global fields),
+                        // we loosely match (or ideally, global fields should explicitly be index-less)
+                        // For safety: if context has NO index (global), match photos with NO index.
+                        // If context IS global field, ignore index.
+                        if (field === 'global-pesoBruto' || field === 'peso_bruto_global') return true;
+
+                        return true;
+                    })
                     .sort((a, b) => b.timestamp - a.timestamp)[0];
 
                 resolve(match || null);
@@ -381,17 +405,27 @@ class PhotoStorageService {
     /**
      * Delete all photos for a specific context (analysisId + field)
      * Used to cleanup old failed attempts before starting a new one
+     * NOW SUPPORTS OPTIONAL analysisIndex for stricter cleanup
      */
-    async deletePhotosByContext(analysisId: string, field: string): Promise<void> {
+    async deletePhotosByContext(analysisId: string, field: string, analysisIndex?: number): Promise<void> {
         const db = await this.ensureDB();
         const photos = await this.getPhotosByAnalysis(analysisId);
 
-        // Filter for the specific field
-        const photosToDelete = photos.filter(p => p.field === field);
+        // Filter for the specific field AND index
+        const photosToDelete = photos.filter(p => {
+            if (p.field !== field) return false;
+
+            // ✅ STRICT INDEX CHECK
+            if (analysisIndex !== undefined) {
+                return p.metadata?.analysisIndex === analysisIndex;
+            }
+
+            return true;
+        });
 
         if (photosToDelete.length === 0) return;
 
-        console.log(`🧹 Cleaning up ${photosToDelete.length} old photos for ${field}`);
+        console.log(`🧹 Cleaning up ${photosToDelete.length} old photos for ${field} (Index: ${analysisIndex})`);
 
         const transaction = db.transaction([this.storeName], 'readwrite');
         const objectStore = transaction.objectStore(this.storeName);
