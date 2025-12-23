@@ -59,6 +59,7 @@ import {
     QualityAnalysis
 } from '@/lib/types';
 import { generateId } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { useWeightInput } from '@/hooks/useWeightInput';
 import { PRODUCT_DATA, DOUBLE_ANALYSIS_CODES } from '@/lib/product-data';
 import { usePhotoUpload } from '@/hooks/usePhotoUpload';
@@ -321,7 +322,7 @@ export default function NewMultiAnalysisPageContent() {
             toast.success('Análisis eliminado');
             router.push('/');
         } catch (error) {
-            console.error('Error deleting analysis:', error);
+            logger.error('Error deleting analysis:', error);
             toast.error('Error al eliminar el análisis');
             setIsDeleting(false); // Resume if failed
         }
@@ -373,7 +374,7 @@ export default function NewMultiAnalysisPageContent() {
                         console.log(`✅ ${photosToDelete.length} photos deleted successfully`);
                         toast.success(`${photosToDelete.length} fotos eliminadas`);
                     } catch (error) {
-                        console.error('❌ Error deleting photos:', error);
+                        logger.error('❌ Error deleting photos:', error);
                         toast.error('Error al eliminar algunas fotos');
                     }
                 }
@@ -431,7 +432,7 @@ export default function NewMultiAnalysisPageContent() {
 
             toast.success('Metadatos actualizados y carpetas sincronizadas');
         } catch (error) {
-            console.error('Error updating metadata:', error);
+            logger.error('Error updating metadata:', error);
             toast.error('Error al actualizar metadatos');
         }
     };
@@ -638,7 +639,7 @@ export default function NewMultiAnalysisPageContent() {
                 router.refresh();
             }, 1000);
         } catch (error) {
-            console.error('Error completing analysis:', error);
+            logger.error('Error completing analysis:', error);
             toast.error('Error al completar el análisis');
         }
     };
@@ -924,7 +925,7 @@ export default function NewMultiAnalysisPageContent() {
                                             await saveDocument('EN_PROGRESO');
                                             toast.success('Edición habilitada');
                                         } catch (error) {
-                                            console.error('Error enabling editing:', error);
+                                            logger.error('Error enabling editing:', error);
                                             toast.error('Error al habilitar edición');
                                         }
                                     }}

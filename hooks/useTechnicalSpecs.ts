@@ -91,16 +91,16 @@ export function useTechnicalSpecs() {
         const specs = getSpecs(code);
         if (!specs) return { isValid: true };
 
-        const validSize = specs.sizes.find(s =>
+        const validSize = specs.sizes?.find(s =>
             (s.sizeMp && s.sizeMp.toLowerCase() === size.toLowerCase()) ||
             (s.sizeMarked && s.sizeMarked.toLowerCase() === size.toLowerCase())
         );
 
         if (!validSize) {
-            const validSizesList = specs.sizes
+            const validSizesList = specs.sizes ?
                 .map(s => s.sizeMarked || s.sizeMp)
-                .filter(Boolean)
-                .join(', ');
+                    .filter(Boolean)
+                    .join(', ') || '';
 
             return {
                 isValid: false,
@@ -117,7 +117,7 @@ export function useTechnicalSpecs() {
         const specs = getSpecs(code);
         if (!specs) return { isValid: true };
 
-        const sizeSpec = specs.sizes.find(s =>
+        const sizeSpec = specs.sizes?.find(s =>
             (s.sizeMp && s.sizeMp.toLowerCase() === size.toLowerCase()) ||
             (s.sizeMarked && s.sizeMarked.toLowerCase() === size.toLowerCase())
         );
@@ -145,7 +145,7 @@ export function useTechnicalSpecs() {
         const specs = getSpecs(code);
         if (!specs) return { isValid: true };
 
-        const sizeSpec = specs.sizes.find(s =>
+        const sizeSpec = specs.sizes?.find(s =>
             (s.sizeMp && s.sizeMp.toLowerCase() === size.toLowerCase()) ||
             (s.sizeMarked && s.sizeMarked.toLowerCase() === size.toLowerCase())
         );
