@@ -25,6 +25,8 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
     onBack,
     onOpenSpecs
 }) => {
+    const isOnline = useNetworkStatus();
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -41,20 +43,30 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
                         <ArrowLeft size={20} />
                     </button>
                     <div className="h-5 w-px bg-slate-800"></div>
-                    <h1 className="text-sm font-semibold text-slate-100">
-                        {isRemuestreo ? (
-                            <span className="text-lg font-bold text-yellow-300">REMUESTREO</span>
-                        ) : productType === 'CONTROL_PESOS' ? (
-                            <span className="text-lg font-bold">CONTROL DE PESOS</span>
-                        ) : (
-                            <>
-                                Análisis de Calidad {' '}
-                                <span className="text-slate-300">
-                                    {productType === 'ENTERO' ? 'Entero' : productType === 'COLA' ? 'Cola' : 'Valor Agregado'}
-                                </span>
-                            </>
+
+                    <div className="flex flex-col">
+                        <h1 className="text-sm font-semibold text-slate-100">
+                            {isRemuestreo ? (
+                                <span className="text-lg font-bold text-yellow-300">REMUESTREO</span>
+                            ) : productType === 'CONTROL_PESOS' ? (
+                                <span className="text-lg font-bold">CONTROL DE PESOS</span>
+                            ) : (
+                                <>
+                                    Análisis de Calidad {' '}
+                                    <span className="text-slate-300">
+                                        {productType === 'ENTERO' ? 'Entero' : productType === 'COLA' ? 'Cola' : 'Valor Agregado'}
+                                    </span>
+                                </>
+                            )}
+                        </h1>
+
+                        {!isOnline && (
+                            <div className="flex items-center gap-1.5 text-red-500 bg-red-100/10 px-2 py-0.5 rounded-full animate-pulse self-start mt-0.5 border border-red-500/50">
+                                <WifiOff size={12} />
+                                <span className="text-[10px] uppercase font-black tracking-wider">OFFLINE</span>
+                            </div>
                         )}
-                    </h1>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
