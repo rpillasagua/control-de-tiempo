@@ -10,7 +10,7 @@ interface AnalystColorSelectorProps {
 }
 
 // Colores disponibles en orden
-const AVAILABLE_COLORS: AnalystColor[] = ['red', 'blue', 'green', 'yellow'];
+const AVAILABLE_COLORS: AnalystColor[] = ['red', 'blue', 'green', 'yellow', 'pink'];
 
 export default function AnalystColorSelector({ selectedColor, onSelect }: AnalystColorSelectorProps) {
     return (
