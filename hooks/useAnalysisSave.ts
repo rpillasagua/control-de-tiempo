@@ -224,10 +224,17 @@ export const useAnalysisSave = ({
         const result = validateAnalysisData(document);
         if (!result.success) {
             const errors = getValidationErrors(result.error);
-            console.error('🔴 VALIDACIÓN FALLIDA - Bloqueando guardado:', errors);
-            setSaveError(`Validación fallida: ${errors.length} errores`);
-            setIsSaving(false);
-            return;
+
+            if (finalStatus === 'COMPLETADO') {
+                console.error('🔴 VALIDACIÓN FALLIDA - Bloqueando completado:', errors);
+                setSaveError(`Faltan campos para completar: ${errors.length} errores`);
+                setIsSaving(false);
+                return;
+            } else {
+                console.warn('⚠️ Validación fallida en borrador (permitiendo guardado):', errors);
+                // Para borradores, permitimos guardar aunque falten datos
+                setSaveError(null);
+            }
         }
 
         const sanitizeForFirestore = (obj: any): any => {
