@@ -1,14 +1,5 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { PendingUploadsPanel } from '@/components/PendingUploadsPanel'; // Ensure this path is correct or adjust imports in PageContent
-import EditMetadataModal from '@/components/EditMetadataModal'; // Ensure this path is correct
-import { TechnicalSpecsModal } from '@/components/TechnicalSpecsModal'; // Ensure this path is correct. Note: It was dynamic in PageContent.
-
-// Lazy load modals if they are heavy, or import directly if moved to this component
-const DeleteConfirmationModal = dynamic(() => import('@/components/DeleteConfirmationModal'), {
-    loading: () => null
-});
 
 interface DeleteAnalysisSectionProps {
     onDelete: () => void;
