@@ -779,7 +779,7 @@ export default function NewMultiAnalysisPageContent() {
 
     return (
         <div
-            className="min-h-screen pb-20"
+            className="min-h-screen pb-20 touch-pan-y"
             {...swipeHandlers}
         >
             <FailedUploadsBanner onClick={() => setShowPendingUploads(true)} />

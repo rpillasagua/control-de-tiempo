@@ -82,6 +82,28 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
     }
   };
 
+  // Swipe handlers for tab navigation
+  const swipeHandlers = useSwipe({
+    onSwipedLeft: () => {
+      // Swipe Left -> Go to "Completados" (Right Tab)
+      if (activeTab === 'en_progreso') {
+        setActiveTab('completados');
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', 'completados');
+        window.history.replaceState({}, '', url.toString());
+      }
+    },
+    onSwipedRight: () => {
+      // Swipe Right -> Go to "En Progreso" (Left Tab)
+      if (activeTab === 'completados') {
+        setActiveTab('en_progreso');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('tab');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  });
+
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore || searchTerm) return;
 
@@ -123,7 +145,11 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   });
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6' }}>
+    <div
+      className="min-h-screen touch-pan-y"
+      style={{ backgroundColor: '#f3f4f6' }}
+      {...swipeHandlers}
+    >
       <FailedUploadsBanner onClick={() => setShowPendingUploads(true)} />
       <PendingUploadsPanel
         isOpen={showPendingUploads}
