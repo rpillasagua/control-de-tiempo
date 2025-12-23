@@ -1,7 +1,8 @@
 import React from 'react';
 import { Camera, Edit, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import ViewModeSelector, { ViewMode } from '@/components/ViewModeSelector';
+import ViewModeSelector from '@/components/ViewModeSelector';
+import { ViewMode } from '@/lib/types';
 
 interface AnalysisActionsProps {
     isGalleryMode: boolean;

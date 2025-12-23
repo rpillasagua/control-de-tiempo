@@ -31,7 +31,7 @@ const TechnicalSpecsModal = dynamic(() => import('@/components/TechnicalSpecsMod
     loading: () => null
 });
 
-import { ViewMode, useViewMode } from '@/components/ViewModeSelector';
+import { useViewMode } from '@/components/ViewModeSelector';
 import EditMetadataModal from '@/components/EditMetadataModal';
 import { AnalysisHeader } from '@/components/AnalysisHeader';
 import { AnalysisInfoCard } from '@/components/AnalysisInfoCard';
@@ -54,7 +54,8 @@ import {
     Analysis,
     PesoBrutoRegistro,
     ANALYST_COLOR_HEX,
-    PesoConFoto
+    PesoConFoto,
+    ViewMode
 } from '@/lib/types';
 import { generateId } from '@/lib/utils';
 import { useWeightInput } from '@/hooks/useWeightInput';
