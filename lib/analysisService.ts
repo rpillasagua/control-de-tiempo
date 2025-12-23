@@ -142,12 +142,19 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
       );
     } catch (error: any) {
       // Si falló por estar offline, usar setDoc directo (se encola en IndexedDB)
-      const isOfflineError = error.code === 'unavailable' ||
-        error.message?.includes('offline') ||
-        error.message?.includes('network');
+      // Usar códigos de error específicos de Firestore en lugar de string matching
+      const isOfflineError =
+        error.code === 'unavailable' ||
+        error.code === 'failed-precondition' ||
+        error.code === 'deadline-exceeded' ||
+        error.code === 'resource-exhausted' ||
+        (error.message && (
+          error.message.includes('Failed to get document') ||
+          error.message.includes('client is offline')
+        ));
 
       if (isOfflineError) {
-        console.log('🌐 App seems offline, falling back to standard setDoc (local queue)');
+        logger.log('🌐 Offline detected, falling back to setDoc (will sync when online)');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await setDoc(analysisRef, analysisToSave as any);
         logger.log('✅ Análisis guardado localmente (Offline Mode):', analysis.codigo);

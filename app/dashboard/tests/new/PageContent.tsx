@@ -55,7 +55,8 @@ import {
     PesoBrutoRegistro,
     ANALYST_COLOR_HEX,
     PesoConFoto,
-    ViewMode
+    ViewMode,
+    QualityAnalysis
 } from '@/lib/types';
 import { generateId } from '@/lib/utils';
 import { useWeightInput } from '@/hooks/useWeightInput';
@@ -89,7 +90,7 @@ export default function NewMultiAnalysisPageContent() {
     };
 
     const [sections, setSections] = useState<{ weights: boolean; uniformity: boolean; defects: boolean } | undefined>(undefined);
-    const [remuestreoConfig, setRemuestreoConfig] = useState<any>(null);
+    const [remuestreoConfig, setRemuestreoConfig] = useState<QualityAnalysis['remuestreoConfig']>(null);
 
     // Derived state for Remuestreo Active Fields
     const isRemuestreo = productType === 'REMUESTREO';
