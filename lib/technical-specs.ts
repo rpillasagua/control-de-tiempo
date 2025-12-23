@@ -59530,7 +59530,7 @@ export const TECHNICAL_SPECS: Record<string, ProductSpec> = {
                 "brand": "SIN MARCA",
                 "destination": "PAISES BAJOS Mercado EUROPA",
                 "version": 4,
-                "productType": "ENTERO",
+                "productType": "VALOR_AGREGADO",
                 "freezingMethod": "BRINE",
                 "certification": "ASC",
                 "color": "A2/A3 Color Marcado A2/A3",
