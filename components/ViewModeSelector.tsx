@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
-
-export type ViewMode = 'SUELTA' | 'COMPACTA';
+import { ViewMode } from '@/lib/types';
 
 interface ViewModeSelectorProps {
   viewMode: ViewMode;

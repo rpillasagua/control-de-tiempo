@@ -77,7 +77,7 @@ export const SHIFT_LABELS: Record<WorkShift, string> = {
 /**
  * Modos de visualización
  */
-export type ViewMode = 'NORMAL' | 'COMPACTA';
+export type ViewMode = 'SUELTA' | 'COMPACTA';
 
 // ============================================
 // DEFECTOS POR TIPO DE PRODUCTO
