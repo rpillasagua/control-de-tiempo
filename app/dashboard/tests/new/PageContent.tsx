@@ -131,6 +131,20 @@ export default function NewMultiAnalysisPageContent() {
 
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Mobile Gestures for Analysis Switching
+    const swipeHandlers = useSwipe({
+        onSwipedLeft: () => {
+            if (activeAnalysisIndex < analyses.length - 1) {
+                setActiveAnalysisIndex(prev => prev + 1);
+            }
+        },
+        onSwipedRight: () => {
+            if (activeAnalysisIndex > 0) {
+                setActiveAnalysisIndex(prev => prev - 1);
+            }
+        }
+    });
+
     // Hooks
     const {
         isSaving,
@@ -761,19 +775,7 @@ export default function NewMultiAnalysisPageContent() {
         );
     }
 
-    // Mobile Gestures for Analysis Switching
-    const swipeHandlers = useSwipe({
-        onSwipedLeft: () => {
-            if (activeAnalysisIndex < analyses.length - 1) {
-                setActiveAnalysisIndex(prev => prev + 1);
-            }
-        },
-        onSwipedRight: () => {
-            if (activeAnalysisIndex > 0) {
-                setActiveAnalysisIndex(prev => prev - 1);
-            }
-        }
-    });
+
 
     return (
         <div
