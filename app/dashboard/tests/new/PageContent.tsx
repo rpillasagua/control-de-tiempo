@@ -511,6 +511,29 @@ export default function NewMultiAnalysisPageContent() {
                                 setOriginalShift(data.shift);
                                 setOriginalAnalystColor(data.analystColor);
 
+                                // Restore missing setters
+                                setCodigo(data.codigo);
+                                setLote(data.lote);
+                                setTalla(data.talla || '');
+                                setAnalystColor(data.analystColor);
+                                setGlobalPesoBruto(data.globalPesoBruto || {});
+                                setBasicsCompleted(true);
+                                setOriginalCreatedAt(data.createdAt);
+
+                                // Backfill IDs if missing (migration)
+                                const analysesWithIds = data.analyses.map((a: Analysis) => ({
+                                    ...a,
+                                    id: a.id || generateId()
+                                }));
+
+                                // 🔥 FIX: Prevent unnecessary re-renders (and UI jumps) if data hasn't changed
+                                setAnalyses((prev) => {
+                                    if (JSON.stringify(prev) === JSON.stringify(analysesWithIds)) {
+                                        return prev;
+                                    }
+                                    return analysesWithIds;
+                                });
+
                                 if (data.status === 'COMPLETADO') {
                                     setIsCompleted(true);
                                 }
