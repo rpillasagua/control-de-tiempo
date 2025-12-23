@@ -79,7 +79,7 @@ const nextConfig = {
   serverExternalPackages: ['pdf-parse'],
 
   // Configuración para SPA + PWA
-  // output: 'export', // Exportar como SPA estática
+  output: 'export', // Exportar como SPA estática
 
   images: {
     unoptimized: true, // Requerido para export estático

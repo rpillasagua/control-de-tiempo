@@ -11,7 +11,7 @@
     "dev:https": "local-ssl-proxy --source 8443 --target 8080 --cert certs/localhost.crt --key certs/localhost.key",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:https\"",
     "build": "next build",
-    "build:spa": "next build && npm run postbuild",
+    "build:spa": "next build",
     "build:pwa": "npm run build:spa && echo '✓ SPA + PWA build completada en carpeta out/'",
     "build:vercel": "next build",
     "start": "npx serve out -s -p ${PORT:-8080}",
