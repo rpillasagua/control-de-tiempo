@@ -297,7 +297,12 @@ export default function NewMultiAnalysisPageContent() {
         setRemuestreoConfig(data.remuestreoConfig); // 🔥 FIX: Properly initialize Remuestreo Config state
         setBasicsCompleted(true);
         setAnalyses([{ id: generateId(), numero: 1 }]);
-        setAnalysisId(generateId());
+
+        const newId = generateId();
+        setAnalysisId(newId);
+
+        // Update URL to include the new ID so back button works correctly
+        window.history.replaceState(null, '', `/dashboard/tests/new?id=${newId}`);
     };
 
     // Handle full analysis deletion
@@ -739,11 +744,11 @@ export default function NewMultiAnalysisPageContent() {
             <div className="min-h-screen p-4">
                 <div className="max-w-4xl mx-auto">
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => router.back()}
                         className="flex items-center gap-2 px-4 py-2.5 mb-6 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-lg transition-all border border-slate-800 hover:border-slate-700"
                     >
                         <ArrowLeft size={20} />
-                        <span className="font-medium">Volver al Dashboard</span>
+                        <span className="font-medium">Volver</span>
                     </button>
 
                     <InitialForm
