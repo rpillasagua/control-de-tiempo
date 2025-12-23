@@ -1,24 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, CheckCircle2, Hash, Package, Ruler, Building2, Tag, Box, Edit, Image as ImageIcon, FileText } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Components
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
-import { Label } from '@/components/ui';
 import { Textarea } from '@/components/ui';
 
 // Existing Components
 import ProductTypeSelector from '@/components/ProductTypeSelector';
 import InitialForm from '@/components/InitialForm';
 import AnalysisTabs from '@/components/AnalysisTabs';
-import PhotoCapture from '@/components/PhotoCapture';
 import ControlPesosBrutos from '@/components/ControlPesosBrutos';
-import DefectSelector from '@/components/DefectSelector';
 // import { WeightInputRow } from '@/components/WeightInputRow'; // Currently unused
 import { PendingUploadsPanel } from '@/components/PendingUploadsPanel';
 import FailedUploadsBanner from '@/components/FailedUploadsBanner';
@@ -34,8 +31,21 @@ const TechnicalSpecsModal = dynamic(() => import('@/components/TechnicalSpecsMod
     loading: () => null
 });
 
-import ViewModeSelector, { ViewMode, useViewMode } from '@/components/ViewModeSelector';
+import { ViewMode, useViewMode } from '@/components/ViewModeSelector';
 import EditMetadataModal from '@/components/EditMetadataModal';
+import { AnalysisHeader } from '@/components/AnalysisHeader';
+import { AnalysisInfoCard } from '@/components/AnalysisInfoCard';
+import { AnalysisActions } from '@/components/AnalysisActions';
+import { useAnalysisSubscription } from '@/hooks/useAnalysisSubscription';
+import { useAnalysisCalculations } from '@/hooks/useAnalysisCalculations';
+import { WeightsSection } from '@/components/WeightsSection';
+import { GlobalWeightCard } from '@/components/GlobalWeightCard';
+import { ConteoCard } from '@/components/ConteoCard';
+import { UniformityCard } from '@/components/UniformityCard';
+import { DefectsCard } from '@/components/DefectsCard';
+import { CompleteAnalysisCard } from '@/components/CompleteAnalysisCard';
+import { DeleteAnalysisSection } from '@/components/DeleteAnalysisSection';
+import { analysisReducer, initialState } from '@/reducers/analysisReducer';
 
 // Types and Utils
 import {
@@ -64,7 +74,18 @@ export default function NewMultiAnalysisPageContent() {
     const [productType, setProductType] = useState<ProductType | null>(null);
     const [basicsCompleted, setBasicsCompleted] = useState(false);
     const [analysisId, setAnalysisId] = useState<string | null>(null);
-    const [analyses, setAnalyses] = useState<Analysis[]>([]);
+
+    // Replaced useState for analyses and active index with useReducer
+    const [{ analyses, activeAnalysisIndex }, dispatch] = useReducer(analysisReducer, initialState);
+
+    // Compat wrapper for hooks that expect setAnalyses
+    const setAnalyses = (args: Analysis[] | ((prev: Analysis[]) => Analysis[])) => {
+        if (typeof args === 'function') {
+            dispatch({ type: 'SET_ANALYSES_FUNCTIONAL', payload: args });
+        } else {
+            dispatch({ type: 'SET_ANALYSES', payload: args });
+        }
+    };
 
     const [sections, setSections] = useState<{ weights: boolean; uniformity: boolean; defects: boolean } | undefined>(undefined);
     const [remuestreoConfig, setRemuestreoConfig] = useState<any>(null);
@@ -76,8 +97,6 @@ export default function NewMultiAnalysisPageContent() {
     const showUniformity = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && remuestreoConfig?.activeFields?.uniformidad);
     const showConteo = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && remuestreoConfig?.activeFields?.conteo);
     const showDefects = (!isRemuestreo && productType !== 'CONTROL_PESOS') || (isRemuestreo && remuestreoConfig?.activeFields?.defectos);
-
-    const [activeAnalysisIndex, setActiveAnalysisIndex] = useState(0);
 
     // Global Fields
     const [codigo, setCodigo] = useState('');
@@ -135,12 +154,12 @@ export default function NewMultiAnalysisPageContent() {
     const swipeHandlers = useSwipe({
         onSwipedLeft: () => {
             if (activeAnalysisIndex < analyses.length - 1) {
-                setActiveAnalysisIndex(prev => prev + 1);
+                dispatch({ type: 'SET_ACTIVE_INDEX', payload: activeAnalysisIndex + 1 });
             }
         },
         onSwipedRight: () => {
             if (activeAnalysisIndex > 0) {
-                setActiveAnalysisIndex(prev => prev - 1);
+                dispatch({ type: 'SET_ACTIVE_INDEX', payload: activeAnalysisIndex - 1 });
             }
         }
     });
@@ -206,53 +225,13 @@ export default function NewMultiAnalysisPageContent() {
     const specs = getSpecs(codigo);
     const sizeSpec = specs?.sizes.find(s => s.sizeMp === talla);
 
-    // Calcular ratio de uniformidad
-    // Calcular ratio de uniformidad
-    const uniformityRatio = React.useMemo(() => {
-        const analysis = currentAnalysis as any;
-        const grandes = analysis.uniformidad?.grandes?.valor;
-        const pequenos = analysis.uniformidad?.pequenos?.valor;
-        if (!grandes || !pequenos || pequenos === 0) return null;
-        return grandes / pequenos;
-    }, [currentAnalysis]);
-
-    // Validar uniformidad
-    const uniformityValidation = React.useMemo(() => {
-        if (!uniformityRatio || !sizeSpec?.uniformity) {
-            return { isValid: true, message: '' };
-        }
-        const isValid = uniformityRatio <= sizeSpec.uniformity;
-        return {
-            isValid,
-            message: isValid
-                ? `✓ Dentro (≤ ${sizeSpec.uniformity.toFixed(2)})`
-                : `⚠️ Fuera (límite: ${sizeSpec.uniformity.toFixed(2)})`
-        };
-    }, [uniformityRatio, sizeSpec]);
-
-    // Validar conteo
-    const conteoValidation = React.useMemo(() => {
-        const analysis = currentAnalysis as any;
-        const conteo = analysis.conteo;
-        if (!conteo || !sizeSpec?.countFinal) return { isValid: true, message: '' };
-        const match = sizeSpec.countFinal.match(/(\d+)-(\d+)/);
-        if (!match) return { isValid: true, message: '' };
-        const [, min, max] = [null, parseInt(match[1]), parseInt(match[2])];
-        const isValid = conteo >= min && conteo <= max;
-        return {
-            isValid,
-            message: isValid ? `✓ Rango OK (${sizeSpec.countFinal})` : `⚠️ Fuera (${sizeSpec.countFinal})`
-        };
-    }, [currentAnalysis, sizeSpec]);
-
-    // Calcular Glaseo ((Congelado - Neto) / Neto * 100)
-    const calculatedGlazing = React.useMemo(() => {
-        const analysis = currentAnalysis as any;
-        const net = analysis.pesoNeto?.valor;
-        const frozen = analysis.pesoCongelado?.valor;
-        if (!net || !frozen || net === 0) return null;
-        return ((frozen - net) / net) * 100;
-    }, [currentAnalysis]);
+    // Hooks Analysis Calculations (Uniformity, Specs, Glazing)
+    const {
+        uniformityRatio,
+        uniformityValidation,
+        conteoValidation,
+        calculatedGlazing
+    } = useAnalysisCalculations(currentAnalysis, sizeSpec);
 
 
     // Prevenir cierre de pestaña si hay subidas en progreso
@@ -271,7 +250,16 @@ export default function NewMultiAnalysisPageContent() {
 
     // Helper Functions
     const updateAnalysisAtIndex = (index: number, updates: Partial<Analysis>) => {
-        setAnalyses((prev: Analysis[]) => prev.map((a: Analysis, i: number) => i === index ? { ...a, ...updates } : a));
+        // We merge with current because dispatch expects full Analysis or we modify reducer to accept partial
+        // But reducer takes "Analysis" in payload for UPDATE_ANALYSIS in my design? 
+        // Let's check: { type: 'UPDATE_ANALYSIS'; payload: { index: number; analysis: Analysis } }
+        // So we need to construct the full analysis here
+        const current = analyses[index];
+        if (!current) return;
+        dispatch({
+            type: 'UPDATE_ANALYSIS',
+            payload: { index, analysis: { ...current, ...updates } }
+        });
     };
 
     const updateCurrentAnalysis = (updates: Partial<Analysis>) => {
@@ -299,8 +287,8 @@ export default function NewMultiAnalysisPageContent() {
             id: generateId(),
             numero: analyses.length + 1,
         };
-        setAnalyses((prev: Analysis[]) => [...prev, newAnalysis]);
-        setActiveAnalysisIndex(analyses.length);
+        dispatch({ type: 'ADD_ANALYSIS', payload: newAnalysis });
+        // dispatch auto-sets active index in reducer
     };
 
     const handleInitialFormComplete = (data: any) => {
@@ -311,13 +299,14 @@ export default function NewMultiAnalysisPageContent() {
         setSections(data.sections);
         setRemuestreoConfig(data.remuestreoConfig); // 🔥 FIX: Properly initialize Remuestreo Config state
         setBasicsCompleted(true);
-        setAnalyses([{ id: generateId(), numero: 1 }]);
 
-        const newId = generateId();
-        setAnalysisId(newId);
+        const initialId = generateId();
+        dispatch({ type: 'SET_ANALYSES', payload: [{ id: initialId, numero: 1 }] });
+
+        setAnalysisId(initialId);
 
         // Update URL to include the new ID so back button works correctly
-        window.history.replaceState(null, '', `/dashboard/tests/new?id=${newId}`);
+        window.history.replaceState(null, '', `/dashboard/tests/new?id=${initialId}`);
     };
 
     // Handle full analysis deletion
@@ -398,7 +387,7 @@ export default function NewMultiAnalysisPageContent() {
 
                 // Adjust active index if needed
                 if (activeAnalysisIndex >= updatedAnalyses.length) {
-                    setActiveAnalysisIndex(Math.max(0, updatedAnalyses.length - 1));
+                    dispatch({ type: 'SET_ACTIVE_INDEX', payload: Math.max(0, updatedAnalyses.length - 1) });
                 }
 
                 toast.success(`Análisis #${index + 1} eliminado`);
@@ -450,118 +439,33 @@ export default function NewMultiAnalysisPageContent() {
         isUploadingRef.current = uploadingPhotos.size > 0;
     }, [uploadingPhotos.size]);
 
-    // Load initial data effect with real-time subscription
-    useEffect(() => {
-        let unsubscribe: (() => void) | undefined;
-        let unsubscribeAuth: (() => void) | undefined;
-
-        const setupSubscription = async () => {
-            const { auth } = await import('@/lib/firebase');
-            const { onAuthStateChanged } = await import('firebase/auth');
-
-            // Wait for Firebase Auth to be ready
-            if (!auth) {
-                console.error('Firebase Auth not initialized in client');
-                setIsLoading(false);
-                return;
-            }
-
-            unsubscribeAuth = onAuthStateChanged(auth, async (user: any) => {
-                if (!user) {
-                    console.log('⏳ Esperando autenticación de Firebase...');
-                    return;
-                }
-
-                // If prior subscription exists, clean it up before re-subscribing (though auth change shouldn't happen often)
-                if (unsubscribe) {
-                    unsubscribe();
-                    unsubscribe = undefined;
-                }
-
-                const id = searchParams.get('id');
-                if (id) {
-                    try {
-                        const { subscribeToAnalysis } = await import('@/lib/analysisService');
-                        console.log('✅ Usuario autenticado, suscribiendo al análisis:', id);
-
-                        unsubscribe = subscribeToAnalysis(id, (data) => {
-                            if (data) {
-                                // 🛡️ RACE CONDITION FIX: Ignore updates while uploading photos
-                                if (isUploadingRef.current) {
-                                    console.log('🛡️ Skipping snapshot update during photo upload to prevent data loss');
-                                    return;
-                                }
-
-                                // 🛡️ IGNORE SELF-TRIGGERED SNAPSHOTS
-                                if (ignoreNextSnapshotRef.current) {
-                                    console.log('🛡️ Ignoring snapshot triggered by local photo upload');
-                                    ignoreNextSnapshotRef.current = false;
-                                    return;
-                                }
-
-                                // Mark this as a remote update to prevent auto-save
-                                markAsRemoteUpdate();
-
-                                setAnalysisId(data.id);
-                                setProductType(data.productType);
-                                setSections(data.sections);
-                                setRemuestreoConfig(data.remuestreoConfig);
-                                setOriginalCreatedBy(data.createdBy);
-                                setOriginalDate(data.date);
-                                setOriginalShift(data.shift);
-                                setOriginalAnalystColor(data.analystColor);
-
-                                // Restore missing setters
-                                setCodigo(data.codigo);
-                                setLote(data.lote);
-                                setTalla(data.talla || '');
-                                setAnalystColor(data.analystColor);
-                                setGlobalPesoBruto(data.globalPesoBruto || {});
-                                setBasicsCompleted(true);
-                                setOriginalCreatedAt(data.createdAt);
-
-                                // Backfill IDs if missing (migration)
-                                const analysesWithIds = data.analyses.map((a: Analysis) => ({
-                                    ...a,
-                                    id: a.id || generateId()
-                                }));
-
-                                // 🔥 FIX: Prevent unnecessary re-renders (and UI jumps) if data hasn't changed
-                                setAnalyses((prev) => {
-                                    if (JSON.stringify(prev) === JSON.stringify(analysesWithIds)) {
-                                        return prev;
-                                    }
-                                    return analysesWithIds;
-                                });
-
-                                if (data.status === 'COMPLETADO') {
-                                    setIsCompleted(true);
-                                }
-                            } else {
-                                toast.error('Análisis no encontrado');
-                                router.push('/');
-                            }
-                            setIsLoading(false);
-                        });
-
-                    } catch (error) {
-                        console.error('Error setting up analysis subscription:', error);
-                        // toast.error('Error al cargar el análisis'); // Removing to avoid spam if auth is flickering
-                        setIsLoading(false);
-                    }
-                } else {
-                    setIsLoading(false);
-                }
-            });
-        };
-
-        setupSubscription();
-
-        return () => {
-            if (unsubscribe) unsubscribe();
-            if (unsubscribeAuth) unsubscribeAuth();
-        };
-    }, [searchParams, router]);
+    // Subscription Hook
+    useAnalysisSubscription(
+        searchParams.get('id'),
+        isUploadingRef,
+        ignoreNextSnapshotRef,
+        {
+            setAnalysisId,
+            setProductType,
+            setSections,
+            setRemuestreoConfig,
+            setOriginalCreatedBy,
+            setOriginalDate,
+            setOriginalShift,
+            setOriginalAnalystColor,
+            setCodigo,
+            setLote,
+            setTalla,
+            setAnalystColor,
+            setGlobalPesoBruto,
+            setBasicsCompleted,
+            setOriginalCreatedAt,
+            setAnalyses,
+            setIsCompleted,
+            setIsLoading,
+            markAsRemoteUpdate
+        }
+    );
 
     // Handler for pesos brutos
     const handlePesosBrutosChange = (registros: PesoBrutoRegistro[]) => {
@@ -802,81 +706,23 @@ export default function NewMultiAnalysisPageContent() {
 
             <div className="max-w-7xl mx-auto space-y-6 p-4">
                 {/* Minimalist Header */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => router.back()}
-                                className="p-2.5 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-300 hover:scale-110 border-2 border-slate-200 hover:border-slate-300"
-                                style={{
-                                    borderRadius: '14px',
-                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
-                                }}
-                                title="Volver"
-                            >
-                                <ArrowLeft size={20} />
-                            </button>
-                            <div className="h-5 w-px bg-slate-800"></div>
-                            <h1 className="text-sm font-semibold text-slate-100">
-                                {isRemuestreo ? (
-                                    <span className="text-lg font-bold text-yellow-300">REMUESTREO</span>
-                                ) : productType === 'CONTROL_PESOS' ? (
-                                    <span className="text-lg font-bold">CONTROL DE PESOS</span>
-                                ) : (
-                                    <>
-                                        Análisis de Calidad {' '}
-                                        <span className="text-slate-300">
-                                            {productType === 'ENTERO' ? 'Entero' : productType === 'COLA' ? 'Cola' : 'Valor Agregado'}
-                                        </span>
-                                    </>
-                                )}
-                            </h1>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setShowSpecsModal(true)}
-                                className="flex items-center gap-2 px-3 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-200 hover:text-indigo-100 rounded-lg border border-indigo-500/30 transition-all"
-                                title="Ver Ficha Técnica"
-                            >
-                                <FileText size={18} />
-                                <span className="hidden sm:inline font-medium">Ficha</span>
-                            </button>
-                            <div
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
-                                style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
-                            >
-                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                                <span>Muestra {activeAnalysisIndex + 1}/{analyses.length}</span>
-                            </div>
-
-                            <div
-                                className="w-5 h-5 rounded-full border border-slate-700 shadow-sm"
-                                style={{ backgroundColor: analystColor ? ANALYST_COLOR_HEX[analystColor] : '#0ea5e9' }}
-                                title={`Color del analista: ${analystColor}`}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Alerta de Doble Análisis - Solo para códigos específicos */}
-                    {codigo && DOUBLE_ANALYSIS_CODES.includes(codigo) && (
-                        <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg animate-pulse mb-6">
-                            <span className="text-xl">⚠️</span>
-                            <div className="flex flex-col">
-                                <span className="font-bold text-amber-600 text-sm">DOBLE ANÁLISIS REQUERIDO</span>
-                                <span className="text-amber-600/90 text-xs">
-                                    Verificar fotos y datos con ficha técnica y fotos de cliente.
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {/* Extracted Header Component */}
+                <AnalysisHeader
+                    productType={productType}
+                    isRemuestreo={isRemuestreo}
+                    codigo={codigo}
+                    analystColor={analystColor}
+                    activeAnalysisIndex={activeAnalysisIndex}
+                    totalAnalyses={analyses.length}
+                    onBack={() => router.back()}
+                    onOpenSpecs={() => setShowSpecsModal(true)}
+                />
 
                 {/* Analysis Tabs */}
                 <AnalysisTabs
                     analysesCount={analyses.length}
                     activeTab={activeAnalysisIndex}
-                    onTabChange={setActiveAnalysisIndex}
+                    onTabChange={(index) => dispatch({ type: 'SET_ACTIVE_INDEX', payload: index })}
                     onAddAnalysis={handleAddAnalysis}
                     analystColor={analystColor!}
                 />
@@ -904,101 +750,23 @@ export default function NewMultiAnalysisPageContent() {
                 {/* Current Analysis Form */}
                 <div className="space-y-6">
                     {/* Appearance Selector & Actions */}
-                    <div className="flex justify-end gap-2">
-                        <button
-                            onClick={() => setIsGalleryMode(!isGalleryMode)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${isGalleryMode
-                                ? 'bg-purple-100 text-purple-700 border-purple-200'
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                }`}
-                            title={isGalleryMode ? "Modo Galería Activo" : "Activar Modo Galería"}
-                        >
-                            <ImageIcon size={16} />
-                            <span className="hidden sm:inline">{isGalleryMode ? 'Galería' : 'Cámara'}</span>
-                        </button>
-
-                        <button
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="flex items-center gap-2 px-3 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium transition-all"
-                        >
-                            <Edit size={16} />
-                            <span className="hidden sm:inline">Editar Info</span>
-                        </button>
-
-                        <ViewModeSelector viewMode={viewMode} onModeChange={setViewMode} />
-                    </div>
+                    <AnalysisActions
+                        isGalleryMode={isGalleryMode}
+                        setIsGalleryMode={setIsGalleryMode}
+                        onEditInfo={() => setIsEditModalOpen(true)}
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                    />
 
                     {/* Información del Producto - Estilo DailyReportCard */}
-                    {(clientName || brandName || masterInfo || codigo || lote || talla) && (
-                        <div
-                            className="bg-white p-5"
-                            style={{
-                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                                borderRadius: '14px'
-                            }}
-                        >
-                            {/* Grid de toda la información */}
-                            <div className="grid grid-cols-3 gap-4">
-                                {/* Código */}
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <Hash className="w-4 h-4 text-blue-600" />
-                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Código</div>
-                                    </div>
-                                    <div className="text-sm font-bold text-slate-900 ml-5">{codigo}</div>
-                                </div>
-
-                                {/* Lote */}
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <Package className="w-4 h-4 text-indigo-600" />
-                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Lote</div>
-                                    </div>
-                                    <div className="text-sm font-bold text-slate-900 ml-5">{lote}</div>
-                                </div>
-
-                                {/* Talla */}
-                                {talla && (
-                                    <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center gap-1.5">
-                                            <Ruler className="w-4 h-4 text-purple-600" />
-                                            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Talla</div>
-                                        </div>
-                                        <div className="text-sm font-bold text-slate-900 ml-5">{talla}</div>
-                                    </div>
-                                )}
-
-                                {/* Cliente */}
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <Building2 className="w-4 h-4 text-slate-600" />
-                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Cliente</div>
-                                    </div>
-                                    <div className="text-sm font-medium text-slate-900 ml-5">{clientName}</div>
-                                </div>
-
-                                {/* Marca */}
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <Tag className="w-4 h-4 text-slate-600" />
-                                        <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Marca</div>
-                                    </div>
-                                    <div className="text-sm font-medium text-slate-900 ml-5">{brandName}</div>
-                                </div>
-
-                                {/* Presentación */}
-                                {masterInfo && (
-                                    <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center gap-1.5">
-                                            <Box className="w-4 h-4 text-slate-600" />
-                                            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Presentación</div>
-                                        </div>
-                                        <div className="text-sm font-medium text-slate-900 ml-5">{masterInfo}</div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <AnalysisInfoCard
+                        codigo={codigo}
+                        lote={lote}
+                        talla={talla}
+                        clientName={clientName}
+                        brandName={brandName}
+                        masterInfo={masterInfo}
+                    />
 
 
                     {/* Alerta de Error de Validación */}
@@ -1011,52 +779,17 @@ export default function NewMultiAnalysisPageContent() {
                     }
 
                     {/* GLOBAL PESO BRUTO (Solo para códigos especiales) */}
-                    {
-                        isDualBag && (productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') && (
-                            <Card className="border-blue-200 bg-blue-50/30">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-blue-800">
-                                        ⚖️ Peso Bruto Global (Cartón)
-                                        <span className="text-xs font-normal bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                                            Aplica a todos los análisis
-                                        </span>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <Label className="text-blue-900">Peso Bruto Cartón ({weightUnit.toLowerCase()})</Label>
-                                                {globalPesoBruto.valor && (
-                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                value={globalPesoBruto.valor || ''}
-                                                onChange={(e) => setGlobalPesoBruto(prev => ({ ...prev, valor: parseFloat(e.target.value) || undefined }))}
-                                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <PhotoCapture
-                                                label="Foto Peso Bruto Global"
-                                                photoUrl={globalPesoBruto.fotoUrl}
-                                                onPhotoCapture={handleGlobalPesoBrutoPhoto}
-                                                isUploading={uploadingPhotos.has('global-pesoBruto')}
-                                                context={{ analysisId: analysisId || '', field: 'global-pesoBruto', analysisIndex: undefined }}
-                                                forceGalleryMode={isGalleryMode}
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )
-                    }
+                    <GlobalWeightCard
+                        isDualBag={isDualBag}
+                        productType={productType}
+                        weightUnit={weightUnit}
+                        globalPesoBruto={globalPesoBruto}
+                        onGlobalWeightChange={(val) => setGlobalPesoBruto(prev => ({ ...prev, valor: val }))}
+                        handleGlobalPesoBrutoPhoto={handleGlobalPesoBrutoPhoto}
+                        isUploading={uploadingPhotos.has('global-pesoBruto')}
+                        analysisId={analysisId || ''}
+                        isGalleryMode={isGalleryMode}
+                    />
 
                     {/* Control de Pesos Brutos (Solo para CONTROL_PESOS) */}
                     {
@@ -1075,411 +808,73 @@ export default function NewMultiAnalysisPageContent() {
                     }
 
                     {/* Content Grid - 1 Col in Compact, 2 Cols in Standard on Desktop */}
-                    {/* Content Grid - Flex Col in Compact, 2 Cols Grid in Standard on Desktop */}
                     <div className={`${viewMode === 'COMPACTA' ? 'flex flex-col gap-6' : 'grid grid-cols-1 md:grid-cols-2 gap-6 items-start'}`}>
                         {/* Pesos Section */}
-                        {
-                            ((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (isRemuestreo && showWeights)) && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>⚖️ Control de Pesos</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                                        <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-4' : 'space-y-6 md:space-y-4'}>
-                                            {/* Peso Bruto */}
-                                            {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoBruto) && !isDualBag && (
-                                                <div className="space-y-2 min-w-0">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label className="text-sm font-medium">
-                                                            {viewMode === 'COMPACTA' ? `Peso Bruto` : `Peso Bruto (${weightUnit})`}
-                                                        </Label>
-                                                        {currentAnalysis.pesoBruto?.valor && (
-                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="0"
-                                                        value={currentAnalysis.pesoBruto?.valor || ''}
-                                                        onChange={(e) => handleWeightChange('pesoBruto', parseFloat(e.target.value))}
-                                                        className="text-center font-medium"
-                                                    />
-                                                    {/* Validation Message */}
-                                                    {weightValidationResults.pesoBruto.message && currentAnalysis.pesoBruto?.valor && (
-                                                        <div className={`text-xs leading-tight break-words ${weightValidationResults.pesoBruto.isValid
-                                                            ? 'text-green-600'
-                                                            : 'text-red-600'
-                                                            }`}>
-                                                            {weightValidationResults.pesoBruto.message}
-                                                        </div>
-                                                    )}
-                                                    <PhotoCapture
-                                                        key={`pesoBruto-${activeAnalysisIndex}`}
-                                                        label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Bruto"}
-                                                        modalTitle="Peso Bruto"
-                                                        photoUrl={currentAnalysis.pesoBruto?.fotoUrl}
-                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoBruto', file)}
-                                                        isUploading={isFieldUploading('pesoBruto')}
-                                                        context={{ analysisId: analysisId || '', field: 'pesoBruto', analysisIndex: activeAnalysisIndex }}
-                                                        forceGalleryMode={isGalleryMode}
-                                                    />
-                                                </div>
-                                            )}
-
-
-                                            {/* Peso Congelado */}
-                                            {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoCongelado) && (
-                                                <div className="space-y-2 min-w-0">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label className="text-sm font-medium">
-                                                            {viewMode === 'COMPACTA' ? `Peso Congelado` : `Peso Congelado (${weightUnit})`}
-                                                        </Label>
-                                                        {currentAnalysis.pesoCongelado?.valor && (
-                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="0"
-                                                        value={currentAnalysis.pesoCongelado?.valor || ''}
-                                                        onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
-                                                        className="text-center font-medium"
-                                                    />
-                                                    <PhotoCapture
-                                                        key={`pesoCongelado-${activeAnalysisIndex}`}
-                                                        label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Congelado"}
-                                                        modalTitle="Peso Congelado"
-                                                        photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
-                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
-                                                        isUploading={isFieldUploading('pesoCongelado')}
-                                                        context={{ analysisId: analysisId || '', field: 'pesoCongelado', analysisIndex: activeAnalysisIndex }}
-                                                        forceGalleryMode={isGalleryMode}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {/* Campos específicos para VALOR_AGREGADO */}
-                                            {productType === 'VALOR_AGREGADO' && (
-                                                <>
-                                                    {/* Peso Submuestra */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label className="text-sm">
-                                                                {viewMode === 'COMPACTA' ? `Peso Submuestra` : `Peso Submuestra (${weightUnit})`}
-                                                            </Label>
-                                                            {currentAnalysis.pesoSubmuestra?.valor && (
-                                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            value={currentAnalysis.pesoSubmuestra?.valor || ''}
-                                                            onChange={(e) => handleWeightChange('pesoSubmuestra', parseFloat(e.target.value))}
-                                                        />
-                                                        <PhotoCapture
-                                                            key={`pesoSubmuestra-${activeAnalysisIndex}`}
-                                                            label="Foto Peso Submuestra"
-                                                            modalTitle="Peso Submuestra"
-                                                            photoUrl={currentAnalysis.pesoSubmuestra?.fotoUrl}
-                                                            onPhotoCapture={(file) => handlePhotoCapture('pesoSubmuestra', file)}
-                                                            isUploading={isFieldUploading('pesoSubmuestra')}
-                                                            context={{ analysisId: analysisId || '', field: 'pesoSubmuestra', analysisIndex: activeAnalysisIndex }}
-                                                            forceGalleryMode={isGalleryMode}
-                                                        />
-                                                    </div>
-
-                                                    {/* Peso Sin Glaseo */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label className="text-sm">
-                                                                {viewMode === 'COMPACTA' ? `Peso Sin Glaseo` : `Peso Sin Glaseo (${weightUnit})`}
-                                                            </Label>
-                                                            {currentAnalysis.pesoSinGlaseo?.valor && (
-                                                                <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                    <CheckCircle2 className="w-3 h-3 text-white" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            value={currentAnalysis.pesoSinGlaseo?.valor || ''}
-                                                            onChange={(e) => handleWeightChange('pesoSinGlaseo', parseFloat(e.target.value))}
-                                                        />
-                                                        <PhotoCapture
-                                                            key={`pesoSinGlaseo-${activeAnalysisIndex}`}
-                                                            label="Foto Peso Sin Glaseo"
-                                                            modalTitle="Peso Sin Glaseo"
-                                                            photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
-                                                            onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
-                                                            isUploading={isFieldUploading('pesoSinGlaseo')}
-                                                            context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo', analysisIndex: activeAnalysisIndex }}
-                                                            forceGalleryMode={isGalleryMode}
-                                                        />
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            {/* Peso Neto */}
-                                            {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoNeto) && (
-                                                <div className="space-y-2 min-w-0">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label className="text-sm font-medium">
-                                                            {viewMode === 'COMPACTA' ? `Peso Neto` : `Peso Neto (${weightUnit})`}
-                                                        </Label>
-                                                        {currentAnalysis.pesoNeto?.valor && (
-                                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="0"
-                                                        value={currentAnalysis.pesoNeto?.valor || ''}
-                                                        onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
-                                                        className="text-center font-medium"
-                                                    />
-                                                    {/* Validation Message */}
-                                                    {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
-                                                        <div className={`text-xs font-medium ${weightValidationResults.pesoNeto.isValid
-                                                            ? 'text-green-600'
-                                                            : 'text-red-600'
-                                                            }`}>
-                                                            {weightValidationResults.pesoNeto.message}
-                                                        </div>
-                                                    )}
-                                                    <PhotoCapture
-                                                        key={`pesoNeto-${activeAnalysisIndex}`}
-                                                        label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Neto"}
-                                                        modalTitle="Peso Neto"
-                                                        photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
-                                                        onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
-                                                        isUploading={isFieldUploading('pesoNeto')}
-                                                        context={{ analysisId: analysisId || '', field: 'pesoNeto', analysisIndex: activeAnalysisIndex }}
-                                                        forceGalleryMode={isGalleryMode}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {/* Calculated Glazing Display */}
-                                            {calculatedGlazing !== null && (
-                                                <div className="col-span-full bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between">
-                                                    <span className="text-sm font-medium text-blue-800">% de glaseo</span>
-                                                    <span className="text-lg font-bold text-blue-700">
-                                                        {calculatedGlazing.toFixed(2)}%
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        }
+                        <WeightsSection
+                            currentAnalysis={currentAnalysis}
+                            activeAnalysisIndex={activeAnalysisIndex}
+                            analysisId={analysisId || ''}
+                            productType={productType}
+                            weightUnit={weightUnit}
+                            isRemuestreo={isRemuestreo}
+                            remuestreoConfig={remuestreoConfig}
+                            isDualBag={isDualBag}
+                            viewMode={viewMode}
+                            isGalleryMode={isGalleryMode}
+                            handleWeightChange={handleWeightChange}
+                            handlePhotoCapture={handlePhotoCapture}
+                            isFieldUploading={isFieldUploading}
+                            weightValidationResults={weightValidationResults}
+                            calculatedGlazing={calculatedGlazing}
+                            showWeights={showWeights}
+                        />
 
                         {/* Conteo Section */}
-                        {
-                            showConteo && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>🔢 Conteo</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-4 md:p-6">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <Label className="flex-1">
-                                                Número de piezas
-                                            </Label>
-                                            <div className="flex items-center gap-3">
-                                                {currentAnalysis.conteo && (
-                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                                <Input
-                                                    type="number"
-                                                    placeholder="0"
-                                                    value={currentAnalysis.conteo || ''}
-                                                    onChange={(e) => {
-                                                        const count = parseInt(e.target.value) || undefined;
-                                                        setAnalyses(prev => {
-                                                            const updated = [...prev];
-                                                            updated[activeAnalysisIndex] = {
-                                                                ...updated[activeAnalysisIndex],
-                                                                conteo: count
-                                                            };
-                                                            return updated;
-                                                        });
-                                                    }}
-                                                    className={`w-[80px] text-center font-bold ${!conteoValidation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                                />
-                                            </div>
-                                        </div>
-                                        {!conteoValidation.isValid && (
-                                            <p className="text-red-500 text-sm mt-2 font-medium text-right">
-                                                {conteoValidation.message}
-                                            </p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            )
-                        }
+                        <ConteoCard
+                            showConteo={showConteo}
+                            conteo={currentAnalysis.conteo}
+                            onConteoChange={(value) => {
+                                updateCurrentAnalysis({
+                                    conteo: value
+                                });
+                            }}
+                            validation={conteoValidation}
+                        />
 
                         {/* Uniformidad */}
-                        {
-                            showUniformity && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>📏 Uniformidad</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-4 md:p-6">
-                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                            {/* Grandes */}
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label>
-                                                        Grandes (kg)
-                                                    </Label>
+                        <UniformityCard
+                            showUniformity={showUniformity}
+                            uniformidad={currentAnalysis.uniformidad}
+                            onUniformityChange={(field, value) => {
+                                updateCurrentAnalysis({
+                                    uniformidad: {
+                                        ...currentAnalysis.uniformidad,
+                                        [field]: { ...currentAnalysis.uniformidad?.[field], valor: value }
+                                    }
+                                });
+                            }}
+                            handlePhotoCapture={handlePhotoCapture}
+                            isFieldUploading={isFieldUploading}
+                            analysisId={analysisId || ''}
+                            activeAnalysisIndex={activeAnalysisIndex}
+                            isGalleryMode={isGalleryMode}
+                            uniformityRatio={uniformityRatio}
+                            validation={uniformityValidation}
+                        />
 
-                                                    {currentAnalysis.uniformidad?.grandes?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    value={currentAnalysis.uniformidad?.grandes?.valor || ''}
-                                                    onChange={(e) => {
-                                                        const val = parseFloat(e.target.value);
-                                                        updateCurrentAnalysis({
-                                                            uniformidad: {
-                                                                ...currentAnalysis.uniformidad,
-                                                                grandes: { ...currentAnalysis.uniformidad?.grandes, valor: isNaN(val) ? undefined : val }
-                                                            }
-                                                        });
-                                                    }}
-                                                />
-                                                <PhotoCapture
-                                                    label="Foto Grandes"
-                                                    modalTitle="Uniformidad Grandes"
-                                                    photoUrl={currentAnalysis.uniformidad?.grandes?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad_grandes', file)}
-                                                    isUploading={isFieldUploading('uniformidad_grandes')}
-                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_grandes', analysisIndex: activeAnalysisIndex }}
-                                                    forceGalleryMode={isGalleryMode}
-                                                />
-                                            </div>
-
-                                            {/* Pequeños */}
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label>
-                                                        Pequeños (kg)
-                                                    </Label>
-                                                    {currentAnalysis.uniformidad?.pequenos?.valor && (
-                                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                            <CheckCircle2 className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    value={currentAnalysis.uniformidad?.pequenos?.valor || ''}
-                                                    onChange={(e) => {
-                                                        const val = parseFloat(e.target.value);
-                                                        updateCurrentAnalysis({
-                                                            uniformidad: {
-                                                                ...currentAnalysis.uniformidad,
-                                                                pequenos: { ...currentAnalysis.uniformidad?.pequenos, valor: isNaN(val) ? undefined : val }
-                                                            }
-                                                        });
-                                                    }}
-                                                />
-                                                <PhotoCapture
-                                                    label="Foto Pequeños"
-                                                    modalTitle="Uniformidad Pequeños"
-                                                    photoUrl={currentAnalysis.uniformidad?.pequenos?.fotoUrl}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('uniformidad_pequenos', file)}
-                                                    isUploading={isFieldUploading('uniformidad_pequenos')}
-                                                    context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos', analysisIndex: activeAnalysisIndex }}
-                                                    forceGalleryMode={isGalleryMode}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                                            <Label className="flex-1 font-semibold text-slate-900">Ratio de Uniformidad</Label>
-                                            <div className="flex items-center gap-3">
-                                                {uniformityRatio && (
-                                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                                <div className="text-2xl font-bold text-slate-700">
-                                                    {typeof uniformityRatio === 'number' ? uniformityRatio.toFixed(2) : '0.00'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {!uniformityValidation.isValid && (
-                                            <span className="text-xs text-red-500 font-medium mt-1 text-center max-w-[150px] block ml-auto">
-                                                {uniformityValidation.message}
-                                            </span>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            )
-                        }
-
-                        {/* Defectos de Calidad */}
-                        {
-                            showDefects && (
-                                <Card>
-                                    <CardContent className="pt-6">
-                                        <DefectSelector
-                                            productType={productType}
-                                            selectedDefects={currentAnalysis.defectos || {}}
-                                            onDefectsChange={handleDefectsChange}
-                                            validationResults={defectValidationResults}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )
-                        }
-                        {
-                            showDefects && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>📸 Foto de Calidad General</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div>
-                                            <div className="w-full">
-                                                <PhotoCapture
-                                                    key={`fotoCalidad-${activeAnalysisIndex}`}
-                                                    label="Foto General"
-                                                    photoUrl={currentAnalysis.fotoCalidad}
-                                                    onPhotoCapture={(file) => handlePhotoCapture('fotoCalidad', file)}
-                                                    isUploading={isFieldUploading('fotoCalidad')}
-                                                    context={{ analysisId: analysisId || '', field: 'fotoCalidad', analysisIndex: activeAnalysisIndex }}
-                                                    forceGalleryMode={isGalleryMode}
-                                                />
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        }
+                        {/* Defectos de Calidad & Foto General */}
+                        <DefectsCard
+                            showDefects={showDefects}
+                            productType={productType}
+                            currentAnalysis={currentAnalysis}
+                            onDefectsChange={(defects) => updateCurrentAnalysis({ defectos: defects })}
+                            validationResults={defectValidationResults}
+                            handlePhotoCapture={handlePhotoCapture}
+                            isFieldUploading={isFieldUploading}
+                            analysisId={analysisId || ''}
+                            activeAnalysisIndex={activeAnalysisIndex}
+                            isGalleryMode={isGalleryMode}
+                        />
 
 
 

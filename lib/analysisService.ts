@@ -101,43 +101,61 @@ export const saveAnalysis = async (analysis: QualityAnalysis): Promise<void> => 
 
     // Usar transacción para verificar timestamp antes de guardar
     // ✅ FIX #13: Transaction with retry
-    await withFirestoreRetry(() =>
-      runTransaction(db, async (transaction) => {
-        const doc = await transaction.get(analysisRef);
+    // ✅ FIX #14: Offline Fallback (Transactions fail offline, so we fallback to setDoc)
+    try {
+      await withFirestoreRetry(() =>
+        runTransaction(db, async (transaction) => {
+          const doc = await transaction.get(analysisRef);
 
-        if (doc.exists()) {
-          // Documento existe - verificar timestamp
-          const existingData = doc.data();
-          const existingTimestamp = existingData?.updatedAt;
+          if (doc.exists()) {
+            // Documento existe - verificar timestamp
+            const existingData = doc.data();
+            const existingTimestamp = existingData?.updatedAt;
 
-          // Convertir timestamp del análisis a Firestore Timestamp para comparación
-          const analysisTimestamp = analysis.updatedAt
-            ? (typeof analysis.updatedAt === 'string'
-              ? Timestamp.fromDate(new Date(analysis.updatedAt))
-              : analysis.updatedAt)
-            : newTimestamp;
+            // Convertir timestamp del análisis a Firestore Timestamp para comparación
+            const analysisTimestamp = analysis.updatedAt
+              ? (typeof analysis.updatedAt === 'string'
+                ? Timestamp.fromDate(new Date(analysis.updatedAt))
+                : analysis.updatedAt)
+              : newTimestamp;
 
-          // Solo sobrescribir si la versión local es más nueva o igual
-          // (igual permite actualizaciones del mismo dispositivo)
-          const serverTimeMs = getTimestampMillis(existingTimestamp);
-          const localTimeMs = getTimestampMillis(analysis.updatedAt || newTimestamp);
+            // Solo sobrescribir si la versión local es más nueva o igual
+            // (igual permite actualizaciones del mismo dispositivo)
+            const serverTimeMs = getTimestampMillis(existingTimestamp);
+            const localTimeMs = getTimestampMillis(analysis.updatedAt || newTimestamp);
 
-          if (serverTimeMs > 0 && serverTimeMs > localTimeMs) {
-            logger.warn('⚠️ Servidor tiene versión más nueva, abortando guardado para evitar sobrescritura:', {
-              local: localTimeMs,
-              server: serverTimeMs,
-              diff: serverTimeMs - localTimeMs
-            });
-            throw new Error('STALE_DATA: El servidor tiene una versión más reciente');
+            if (serverTimeMs > 0 && serverTimeMs > localTimeMs) {
+              logger.warn('⚠️ Servidor tiene versión más nueva, abortando guardado para evitar sobrescritura:', {
+                local: localTimeMs,
+                server: serverTimeMs,
+                diff: serverTimeMs - localTimeMs
+              });
+              throw new Error('STALE_DATA: El servidor tiene una versión más reciente');
+            }
+
+            logger.log('✅ Timestamp verificado, procediendo con actualización');
           }
 
-          logger.log('✅ Timestamp verificado, procediendo con actualización');
-        }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          transaction.set(analysisRef, analysisToSave as any);
+        })
+      );
+    } catch (error: any) {
+      // Si falló por estar offline, usar setDoc directo (se encola en IndexedDB)
+      const isOfflineError = error.code === 'unavailable' ||
+        error.message?.includes('offline') ||
+        error.message?.includes('network');
 
+      if (isOfflineError) {
+        console.log('🌐 App seems offline, falling back to standard setDoc (local queue)');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        transaction.set(analysisRef, analysisToSave as any);
-      })
-    );
+        await setDoc(analysisRef, analysisToSave as any);
+        logger.log('✅ Análisis guardado localmente (Offline Mode):', analysis.codigo);
+        return;
+      }
+
+      throw error;
+    }
 
     logger.log('✅ Análisis guardado:', analysis.codigo);
   } catch (error) {

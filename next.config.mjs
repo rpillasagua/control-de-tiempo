@@ -53,19 +53,7 @@ const withPWA = withPWAInit({
         }
       }
     },
-    // 🔄 BACKGROUND SYNC: Reintentos automáticos de uploads de fotos
-    {
-      urlPattern: /^https:\/\/www\.googleapis\.com\/upload\/drive\/.*/i,
-      handler: 'NetworkOnly',
-      options: {
-        backgroundSync: {
-          name: 'photo-upload-queue',
-          options: {
-            maxRetentionTime: 24 * 60 // Reintentar por 24 horas
-          }
-        }
-      }
-    }
+
   ]
 });
 

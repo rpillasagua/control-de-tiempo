@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Plus, Camera, Edit2, Check } from 'lucide-react';
 import { PesoBrutoRegistro } from '@/lib/types';
 import { PesoItem } from './PesoItem';
@@ -18,7 +18,9 @@ interface ControlPesosBrutosProps {
   forceGalleryMode?: boolean;
 }
 
-export default function ControlPesosBrutos({
+// using default export allows cleaner memo usage in React Fast Refresh dev environments but wrapping it works too
+// We need to name the component inside memo for better devtools debugging
+const ControlPesosBrutos = React.memo<ControlPesosBrutosProps>(({
   registros,
   onChange,
   onPhotoCapture,
@@ -28,7 +30,7 @@ export default function ControlPesosBrutos({
   unit = 'KG',
   analysisId,
   forceGalleryMode = false
-}: ControlPesosBrutosProps) {
+}) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
@@ -170,4 +172,6 @@ export default function ControlPesosBrutos({
       )}
     </div>
   );
-}
+});
+
+export default ControlPesosBrutos;

@@ -74,6 +74,11 @@ export const SHIFT_LABELS: Record<WorkShift, string> = {
   NOCHE: 'Turno Noche (7:10 PM - 7:10 AM)'
 };
 
+/**
+ * Modos de visualización
+ */
+export type ViewMode = 'NORMAL' | 'COMPACTA';
+
 // ============================================
 // DEFECTOS POR TIPO DE PRODUCTO
 // ============================================
