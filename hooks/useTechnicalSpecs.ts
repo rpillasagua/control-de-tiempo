@@ -97,10 +97,10 @@ export function useTechnicalSpecs() {
         );
 
         if (!validSize) {
-            const validSizesList = specs.sizes ?
+            const validSizesList = (specs.sizes || [])
                 .map(s => s.sizeMarked || s.sizeMp)
-                    .filter(Boolean)
-                    .join(', ') || '';
+                .filter(Boolean)
+                .join(', ');
 
             return {
                 isValid: false,
