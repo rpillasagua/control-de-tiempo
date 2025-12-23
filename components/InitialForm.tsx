@@ -200,6 +200,12 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
         let mainPart = trimmed.split('-')[0].trim().replace(/\s*VA\s*$/, '');
         let yearPart = trimmed.includes('-') ? trimmed.split('-')[1].trim() : '25';
 
+        // Limpiar 'VA' de yearPart también (por si viene como "25 VA")
+        yearPart = yearPart.replace(/\s*VA\s*$/, '');
+
+        // Si yearPart está vacío después de limpiar, usar '25' por defecto
+        if (!yearPart) yearPart = '25';
+
         // Si mainPart es numérico, hacer padding a 7 dígitos
         if (/^\d+$/.test(mainPart)) {
             mainPart = mainPart.padStart(7, '0');
