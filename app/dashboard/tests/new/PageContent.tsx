@@ -54,6 +54,7 @@ import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { useTechnicalSpecs } from '@/hooks/useTechnicalSpecs';
 import { useDefectCalculation } from '@/hooks/useDefectCalculation';
 import { useWeightValidation } from '@/hooks/useWeightValidation';
+import { useSwipe } from '@/hooks/useSwipe';
 // import { TechnicalSpecsViewer } from '@/components/TechnicalSpecsViewer';
 
 export default function NewMultiAnalysisPageContent() {
@@ -760,8 +761,25 @@ export default function NewMultiAnalysisPageContent() {
         );
     }
 
+    // Mobile Gestures for Analysis Switching
+    const swipeHandlers = useSwipe({
+        onSwipedLeft: () => {
+            if (activeAnalysisIndex < analyses.length - 1) {
+                setActiveAnalysisIndex(prev => prev + 1);
+            }
+        },
+        onSwipedRight: () => {
+            if (activeAnalysisIndex > 0) {
+                setActiveAnalysisIndex(prev => prev - 1);
+            }
+        }
+    });
+
     return (
-        <div className="min-h-screen pb-20">
+        <div
+            className="min-h-screen pb-20"
+            {...swipeHandlers}
+        >
             <FailedUploadsBanner onClick={() => setShowPendingUploads(true)} />
             {/* Sync Status Indicator */}
             <div className="fixed top-4 right-4 z-50">

@@ -11,6 +11,7 @@ import { PendingUploadsPanel } from './PendingUploadsPanel';
 import { retryPhotoUploadStandalone } from '@/lib/retryUploadService';
 import { PendingPhoto, photoStorageService } from '@/lib/photoStorageService';
 import dynamic from 'next/dynamic';
+import { useSwipe } from '@/hooks/useSwipe';
 
 const TechnicalSpecsModal = dynamic(() => import('./TechnicalSpecsModal'), { loading: () => null });
 
