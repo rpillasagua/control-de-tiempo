@@ -506,22 +506,6 @@ export default function NewMultiAnalysisPageContent() {
                                 setProductType(data.productType);
                                 setSections(data.sections);
                                 setRemuestreoConfig(data.remuestreoConfig);
-                                setCodigo(data.codigo);
-                                setLote(data.lote);
-                                setTalla(data.talla || '');
-                                setAnalystColor(data.analystColor);
-
-                                // Backfill IDs if missing (migration)
-                                const analysesWithIds = data.analyses.map(a => ({
-                                    ...a,
-                                    id: a.id || generateId()
-                                }));
-                                setAnalyses(analysesWithIds);
-
-                                setGlobalPesoBruto(data.globalPesoBruto || {});
-                                setBasicsCompleted(true);
-
-                                setOriginalCreatedAt(data.createdAt);
                                 setOriginalCreatedBy(data.createdBy);
                                 setOriginalDate(data.date);
                                 setOriginalShift(data.shift);

@@ -21,9 +21,16 @@ export const useSwipe = ({ onSwipedLeft, onSwipedRight, onSwipedUp, onSwipedDown
     const verticalEnd = useRef<number | null>(null);
 
     // Minimum distance required for a swipe
-    const minSwipeDistance = 50;
+    const minSwipeDistance = 75;
 
     const onTouchStart = (e: TouchEvent) => {
+        const target = e.target as HTMLElement;
+        // Ignorar si el toque se origina en un elemento interactivo o de formulario
+        if (target.closest('button, input, textarea, select, .no-swipe')) {
+            touchStart.current = null;
+            return;
+        }
+
         touchEnd.current = null;
         verticalEnd.current = null;
         touchStart.current = e.targetTouches[0].clientX;
