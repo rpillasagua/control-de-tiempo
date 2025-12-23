@@ -198,13 +198,16 @@ export default function InitialForm({ onComplete, initialData }: InitialFormProp
 
         // Limpiar mainPart de 'VA' si lo tiene pegado o separado
         let mainPart = trimmed.split('-')[0].trim().replace(/\s*VA\s*$/, '');
-        let yearPart = trimmed.includes('-') ? trimmed.split('-')[1].trim() : '25';
+
+        // Si no hay guión, usar el año actual (últimos 2 dígitos)
+        const currentYear = new Date().getFullYear().toString().slice(-2);
+        let yearPart = trimmed.includes('-') ? trimmed.split('-')[1].trim() : currentYear;
 
         // Limpiar 'VA' de yearPart también (por si viene como "25 VA")
         yearPart = yearPart.replace(/\s*VA\s*$/, '');
 
-        // Si yearPart está vacío después de limpiar, usar '25' por defecto
-        if (!yearPart) yearPart = '25';
+        // Si yearPart está vacío después de limpiar, usar año actual
+        if (!yearPart) yearPart = currentYear;
 
         // Si mainPart es numérico, hacer padding a 7 dígitos
         if (/^\d+$/.test(mainPart)) {
