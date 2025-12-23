@@ -243,20 +243,22 @@ export interface PesoBrutoRegistro {
  * Colores disponibles para identificar análisis por analista
  * Máximo 4 analistas por turno
  */
-export type AnalystColor = 'red' | 'blue' | 'green' | 'yellow';
+export type AnalystColor = 'red' | 'blue' | 'green' | 'yellow' | 'pink';
 
 export const ANALYST_COLOR_LABELS: Record<AnalystColor, string> = {
   red: 'Rojo',
   blue: 'Azul',
   green: 'Verde',
-  yellow: 'Amarillo'
+  yellow: 'Amarillo',
+  pink: 'Rosado'
 };
 
 export const ANALYST_COLOR_HEX: Record<AnalystColor, string> = {
   red: '#ef4444',
   blue: '#3b82f6',
   green: '#22c55e',
-  yellow: '#eab308'
+  yellow: '#eab308',
+  pink: '#ec4899'
 };
 
 // ============================================

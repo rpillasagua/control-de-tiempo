@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, FileText, CheckCircle, Plus, Ruler, QrCode, Loader2, Calendar } from 'lucide-react';
 import { QualityAnalysis, PRODUCT_TYPE_LABELS, ANALYST_COLOR_HEX } from '@/lib/types';
 import DailyReportCard from './DailyReportCard';
@@ -24,7 +24,10 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
   const [analyses, setAnalyses] = useState<QualityAnalysis[]>(initialAnalyses);
   const [searchTerm, setSearchTerm] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'completados' | 'en_progreso'>('en_progreso');
+  const activeTabParam = useSearchParams().get('tab');
+  const [activeTab, setActiveTab] = useState<'completados' | 'en_progreso'>(
+    (activeTabParam === 'completados' || activeTabParam === 'en_progreso') ? activeTabParam : 'en_progreso'
+  );
   const [showPendingUploads, setShowPendingUploads] = useState(false);
 
   const [showSpecsModal, setShowSpecsModal] = useState(false);
@@ -226,7 +229,12 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
           <div className="flex justify-center" style={{ marginTop: '12px', marginBottom: '16px' }}>
             <div className="flex items-center gap-1 glass p-1 rounded-full shadow-md">
               <button
-                onClick={() => setActiveTab('en_progreso')}
+                onClick={() => {
+                  setActiveTab('en_progreso');
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('tab');
+                  window.history.replaceState({}, '', url.toString());
+                }}
                 className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'en_progreso'
                   ? 'gradient-blue text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
@@ -236,7 +244,12 @@ export default function AnalysisDashboard({ initialAnalyses, initialLastDoc }: A
                 En Progreso
               </button>
               <button
-                onClick={() => setActiveTab('completados')}
+                onClick={() => {
+                  setActiveTab('completados');
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'completados');
+                  window.history.replaceState({}, '', url.toString());
+                }}
                 className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${activeTab === 'completados'
                   ? 'gradient-blue text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'

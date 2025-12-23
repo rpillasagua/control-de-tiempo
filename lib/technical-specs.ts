@@ -86198,4 +86198,69 @@ export const TECHNICAL_SPECS: Record<string, ProductSpec> = {
                         }
                 ]
         },
+        "00485": {
+                "code": "00485",
+                "description": "00485 - FROZEN VANNAMEI SHRIMP PYD - TON",
+                "client": "INTEROCEAN SEAFOOD TRADER INC",
+                "brand": "COSTAR",
+                "destination": "UNITED STATES Mercado EEUU",
+                "version": 3,
+                "productType": "VALOR_AGREGADO",
+                "freezingMethod": "IQF",
+                "certification": "CONVENCIONAL",
+                "color": "A1/A2/A3/A4",
+                "preservative": "METABISULFITO DE SODIO (E223)",
+                "overweightPct": "1%",
+                "glazingRatio": 5,
+                "glazingUnit": "%",
+                "sizes": [
+                        {
+                                "sizeMp": "16-20",
+                                "countMp": "17-19",
+                                "countFinal": "18-20",
+                                "sizeMarked": "16-20",
+                                "uniformity": 1.45
+                        },
+                        {
+                                "sizeMp": "21-25",
+                                "countMp": "22-24",
+                                "countFinal": "23-25",
+                                "sizeMarked": "21-25",
+                                "uniformity": 1.45
+                        }
+                ],
+                "defects": [
+                        { "defect": "MUDADO", "limit": "4%" },
+                        { "defect": "MANCHAS_NEGRAS_LEVES", "limit": "15%" },
+                        { "defect": "MANCHAS_NEGRAS_FUERTES", "limit": "5%" },
+                        { "defect": "RESIDUOS_DE_HEPATOPANCREAS", "limit": "3%" },
+                        { "defect": "QUEBRADO", "limit": "3%" },
+                        { "defect": "DESHIDRATADO", "limit": "10%" },
+                        { "defect": "SEMIROSADO", "limit": "3%" },
+                        { "defect": "ROSADO", "limit": "0%" },
+                        { "defect": "MELANOSIS", "limit": "0%" },
+                        { "defect": "RESIDUAL_DE_SULFITO", "limit": "30-100 ppm" },
+                        { "defect": "VARIACION_DE_COLOR", "limit": "A2, A3" },
+                        { "defect": "MALTRATADO", "limit": "0%" },
+                        { "defect": "SIN_TELSON", "limit": "3%" },
+                        { "defect": "RESTOS_DE_VENAS", "limit": "6%" },
+                        { "defect": "CASCARA_APARTE", "limit": "7%" },
+                        { "defect": "CORTE_IRREGULAR", "limit": "6%" },
+                        { "defect": "CORTE_LARGO", "limit": "6%" },
+                        { "defect": "CORTE_PROFUNDO", "limit": "6%" },
+                        { "defect": "FALTA_DE_CORTE", "limit": "6%" },
+                        { "defect": "PATAS_Y_CASCARAS", "limit": "4%" },
+                        { "defect": "LOMO_DANADO", "limit": "N/A" },
+                        { "defect": "ROJOS", "limit": "0%" },
+                        { "defect": "PEGADOS_Y_AGRUPADOS", "limit": "3%" },
+                        { "defect": "DEFECTOS_TOTALES", "limit": "30%" }
+                ],
+                "packing": "5 Und * 2 Lb",
+                "netWeightUnit": "LB",
+                "netWeight": 2.00,
+                "grossWeightUnit": "LB",
+                "grossWeight": 2.17,
+                "grossWeightMastersUnit": "LB",
+                "grossWeightMasters": 11.60
+        },
 };
