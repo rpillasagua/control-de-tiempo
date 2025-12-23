@@ -4,47 +4,55 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { CheckCircle2 } from 'lucide-react';
 import PhotoCapture from '@/components/PhotoCapture';
-import { Analysis, ProductType, ViewMode } from '@/lib/types';
+import { ViewMode } from '@/lib/types';
+import { useAnalysisContext } from '@/context/AnalysisContext';
+import { PRODUCT_DATA } from '@/lib/product-data';
 
 interface WeightsSectionProps {
-    currentAnalysis: Analysis;
-    activeAnalysisIndex: number;
-    analysisId: string;
-    productType: ProductType | null;
-    weightUnit: string;
-    isRemuestreo: boolean;
-    remuestreoConfig: any;
-    isDualBag: boolean;
-    viewMode: ViewMode;
-    isGalleryMode: boolean;
     handleWeightChange: (field: string, value: number) => void;
     handlePhotoCapture: (field: string, file: File) => void;
     isFieldUploading: (field: string) => boolean;
     weightValidationResults: any;
     calculatedGlazing: number | null;
-    showWeights: boolean; // Prop to control visibility logic derived in parent
+    viewMode: ViewMode;
+    isGalleryMode: boolean;
 }
 
 export const WeightsSection = React.memo<WeightsSectionProps>(({
-    currentAnalysis,
-    activeAnalysisIndex,
-    analysisId,
-    productType,
-    weightUnit,
-    isRemuestreo,
-    remuestreoConfig,
-    isDualBag,
-    viewMode,
-    isGalleryMode,
     handleWeightChange,
     handlePhotoCapture,
     isFieldUploading,
     weightValidationResults,
     calculatedGlazing,
-    showWeights
+    viewMode,
+    isGalleryMode
 }) => {
-    // Visibility logic is handled by parent or passed via showWeights
-    // But we also check isDualBag here as per original code
+    const {
+        currentAnalysis,
+        activeAnalysisIndex,
+        analysisId,
+        productType,
+        isRemuestreo,
+        remuestreoConfig,
+        codigo
+    } = useAnalysisContext();
+
+    // Derived Logic
+    const productInfo = PRODUCT_DATA[codigo];
+    const weightUnit = productInfo?.unit || 'LB';
+    const isDualBag = false; // logic placeholder
+
+    // Visibility Logic (Replicated from Parent or Moved here)
+    // Parent "showWeights" prop logic was: 
+    // !isRemuestreo || (activeFields?.pesoBruto ...)
+    // We can replicate it here easily:
+    const showWeights = !isRemuestreo || (
+        remuestreoConfig?.activeFields?.pesoBruto ||
+        remuestreoConfig?.activeFields?.pesoNeto ||
+        remuestreoConfig?.activeFields?.pesoCongelado ||
+        remuestreoConfig?.activeFields?.pesoSubmuestra ||
+        remuestreoConfig?.activeFields?.pesoGlaseo
+    );
 
     if (!((productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO') || (isRemuestreo && showWeights))) {
         return null;

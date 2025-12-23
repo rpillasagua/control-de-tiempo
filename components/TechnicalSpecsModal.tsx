@@ -31,7 +31,7 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
 
     return createPortal(
         <div
-            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-[3px] animate-fade-in p-4"
+            className="fixed inset-0 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm animate-fade-in p-4"
             style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
             <style jsx global>{`
@@ -50,12 +50,13 @@ export default function TechnicalSpecsModal({ isOpen, onClose, code }: Technical
 
             {/* Modal Content */}
             <div
-                className="bg-white w-[95%] max-w-4xl max-h-[90vh] rounded-[24px] flex flex-col overflow-hidden"
+                className="bg-white w-[95%] max-w-4xl max-h-[90vh] rounded-[24px] flex flex-col overflow-hidden shadow-2xl"
                 style={{
                     zIndex: 2,
                     position: 'relative',
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                    animation: 'floatUp 0.3s ease-out'
+                    backgroundColor: '#ffffff', // 👈 FORCED OPACITY: Ensure 100% solid white
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', // Stronger shadow
+                    animation: 'floatUp 0.3s ease-out forwards' // Ensure it stays at opacity 1
                 }}
             >
                 {/* Header */}

@@ -1,31 +1,30 @@
 import React from 'react';
 import { ArrowLeft, FileText, WifiOff } from 'lucide-react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { AnalystColor, ProductType, ANALYST_COLOR_HEX } from '@/lib/types';
+import { ANALYST_COLOR_HEX } from '@/lib/types';
 import { DOUBLE_ANALYSIS_CODES } from '@/lib/product-data';
+import { useAnalysisContext } from '@/context/AnalysisContext';
 
 interface AnalysisHeaderProps {
-    productType: ProductType | null;
-    isRemuestreo: boolean;
-    codigo: string;
-    analystColor: AnalystColor | null;
-    activeAnalysisIndex: number;
-    totalAnalyses: number;
     onBack: () => void;
     onOpenSpecs: () => void;
 }
 
 export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
-    productType,
-    isRemuestreo,
-    codigo,
-    analystColor,
-    activeAnalysisIndex,
-    totalAnalyses,
     onBack,
     onOpenSpecs
 }) => {
     const isOnline = useNetworkStatus();
+    const {
+        productType,
+        isRemuestreo,
+        codigo,
+        analystColor,
+        activeAnalysisIndex,
+        analyses
+    } = useAnalysisContext();
+
+    const totalAnalyses = analyses.length;
 
     return (
         <div className="space-y-4">

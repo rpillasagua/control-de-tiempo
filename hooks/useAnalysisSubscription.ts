@@ -15,17 +15,17 @@ import { subscribeToAnalysis } from '@/lib/analysisService';
 export interface AnalysisSetters {
     setAnalysisId: (id: string) => void;
     setProductType: (type: ProductType) => void;
-    setSections: (sections: any) => void;
-    setRemuestreoConfig: (config: any) => void;
+    setSections: (sections: { weights: boolean; uniformity: boolean; defects: boolean } | undefined) => void;
+    setRemuestreoConfig: (config: QualityAnalysis['remuestreoConfig']) => void;
     setOriginalCreatedBy: (by: string) => void;
     setOriginalDate: (date: string) => void;
-    setOriginalShift: (shift: any) => void;
+    setOriginalShift: (shift: 'DIA' | 'NOCHE' | null) => void;
     setOriginalAnalystColor: (color: AnalystColor) => void;
     setCodigo: (code: string) => void;
     setLote: (lote: string) => void;
     setTalla: (talla: string) => void;
     setAnalystColor: (color: AnalystColor) => void;
-    setGlobalPesoBruto: (weight: any) => void;
+    setGlobalPesoBruto: (weight: any) => void; // Keep any here if PesoConFoto import is tricky, but preferably strict
     setBasicsCompleted: (completed: boolean) => void;
     setOriginalCreatedAt: (date: string) => void;
     // Using simple function type for setAnalyses to avoid React type complexity in import
