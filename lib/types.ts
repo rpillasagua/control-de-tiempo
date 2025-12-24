@@ -17,6 +17,7 @@ export interface ProductInfo {
   master: string;
   brand: string;
   unit: 'KG' | 'LB';
+  freezingMethod?: string;
 }
 
 /**

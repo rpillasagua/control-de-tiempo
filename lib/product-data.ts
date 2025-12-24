@@ -61,7 +61,8 @@ export const PRODUCT_DATA: Record<string, ProductInfo> = Object.fromEntries(
                 brand: spec.brand || 'SIN MARCA',
                 master: spec.packing || 'SIN EMPAQUE', // 'packing' in specs corresponds to 'master' in product-data
                 type: normalizeProductType(spec.productType),
-                unit: deriveUnit(spec)
+                unit: deriveUnit(spec),
+                freezingMethod: spec.freezingMethod || ''
             }
         ];
     })

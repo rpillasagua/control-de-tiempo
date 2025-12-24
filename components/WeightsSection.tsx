@@ -109,40 +109,41 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                     )}
 
 
-                    {/* Peso Congelado */}
-                    {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoCongelado) && (
-                        <div className="space-y-2 min-w-0">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium">
-                                    {viewMode === 'COMPACTA' ? `Peso Congelado` : `Peso Congelado (${weightUnit})`}
-                                </Label>
-                                {currentAnalysis.pesoCongelado?.valor && (
-                                    <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                    </div>
-                                )}
+                    {/* Peso Congelado - Hidden for BLOCK FROZEN */}
+                    {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoCongelado) &&
+                        !productInfo?.freezingMethod?.toUpperCase().includes('BLOCK') && (
+                            <div className="space-y-2 min-w-0">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium">
+                                        {viewMode === 'COMPACTA' ? `Peso Congelado` : `Peso Congelado (${weightUnit})`}
+                                    </Label>
+                                    {currentAnalysis.pesoCongelado?.valor && (
+                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                        </div>
+                                    )}
+                                </div>
+                                <Input
+                                    type="number"
+                                    placeholder="0"
+                                    value={currentAnalysis.pesoCongelado?.valor || ''}
+                                    onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
+                                    className="text-center font-medium"
+                                    disabled={isCompleted}
+                                />
+                                <PhotoCapture
+                                    key={`pesoCongelado-${activeAnalysisIndex}`}
+                                    label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Congelado"}
+                                    modalTitle="Peso Congelado"
+                                    photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
+                                    onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
+                                    isUploading={isFieldUploading('pesoCongelado')}
+                                    context={{ analysisId: analysisId || '', field: 'pesoCongelado', analysisIndex: activeAnalysisIndex }}
+                                    forceGalleryMode={isGalleryMode}
+                                    readOnly={isCompleted}
+                                />
                             </div>
-                            <Input
-                                type="number"
-                                placeholder="0"
-                                value={currentAnalysis.pesoCongelado?.valor || ''}
-                                onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
-                                className="text-center font-medium"
-                                disabled={isCompleted}
-                            />
-                            <PhotoCapture
-                                key={`pesoCongelado-${activeAnalysisIndex}`}
-                                label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Congelado"}
-                                modalTitle="Peso Congelado"
-                                photoUrl={currentAnalysis.pesoCongelado?.fotoUrl}
-                                onPhotoCapture={(file) => handlePhotoCapture('pesoCongelado', file)}
-                                isUploading={isFieldUploading('pesoCongelado')}
-                                context={{ analysisId: analysisId || '', field: 'pesoCongelado', analysisIndex: activeAnalysisIndex }}
-                                forceGalleryMode={isGalleryMode}
-                                readOnly={isCompleted}
-                            />
-                        </div>
-                    )}
+                        )}
 
                     {/* Campos específicos para VALOR_AGREGADO */}
                     {productType === 'VALOR_AGREGADO' && (
