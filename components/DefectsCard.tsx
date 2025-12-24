@@ -37,6 +37,9 @@ export const DefectsCard = React.memo<DefectsCardProps>(({
     return (
         <>
             <Card>
+                <CardHeader>
+                    <CardTitle>⚠️ Registro de Defectos</CardTitle>
+                </CardHeader>
                 <CardContent className="pt-6">
                     <DefectSelector
                         productType={productType}
