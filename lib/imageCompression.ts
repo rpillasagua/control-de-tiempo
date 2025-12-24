@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression';
+import { logger } from './logger';
 
 interface CompressionOptions {
     maxSizeMB?: number;
@@ -28,7 +29,7 @@ export async function compressImage(
     const compressionOptions = { ...defaultOptions, ...options };
 
     try {
-        console.log(`📦 Compressing image: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+        logger.log(`📦 Compressing image: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
         // Create a promise that rejects after a timeout (e.g., 10 seconds)
         const timeoutPromise = new Promise<never>((_, reject) => {
@@ -41,28 +42,28 @@ export async function compressImage(
             timeoutPromise
         ]);
 
-        console.log(
+        logger.log(
             `✅ Compression complete: ${compressedFile.name} (${(compressedFile.size / 1024 / 1024).toFixed(2)} MB) - ${((1 - compressedFile.size / file.size) * 100).toFixed(1)}% reduction`
         );
 
         return compressedFile;
     } catch (error) {
-        console.error('❌ Error compressing image:', error);
+        logger.error('❌ Error compressing image:', error);
 
         // If it failed with WebWorker, try without it (fallback for some mobile devices)
         if (compressionOptions.useWebWorker) {
-            console.warn('⚠️ Retrying compression without WebWorker...');
+            logger.warn('⚠️ Retrying compression without WebWorker...');
             try {
                 const fallbackOptions = { ...compressionOptions, useWebWorker: false };
                 const compressedFile = await imageCompression(file, fallbackOptions);
                 return compressedFile;
             } catch (retryError) {
-                console.error('❌ Error in fallback compression:', retryError);
+                logger.error('❌ Error in fallback compression:', retryError);
             }
         }
 
         // If all fails, return the original file
-        console.warn('⚠️ Returning original file due to compression error');
+        logger.warn('⚠️ Returning original file due to compression error');
         return file;
     }
 }

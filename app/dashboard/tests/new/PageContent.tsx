@@ -133,7 +133,9 @@ function AnalysisContent() {
     }>({
         title: 'Eliminar Análisis',
         description: 'Esta acción eliminará el análisis permanentemente',
-        action: async () => { }
+        action: async () => {
+            logger.warn('deleteModalConfig action called without being set');
+        }
     });
     const { viewMode, setViewMode } = useViewMode();
     const [isCompleted, setIsCompleted] = useState(false);
@@ -159,12 +161,7 @@ function AnalysisContent() {
     const showWeights = !isRemuestreo || (remuestreoConfig?.activeFields?.pesoBruto || remuestreoConfig?.activeFields?.pesoNeto || remuestreoConfig?.activeFields?.pesoCongelado || remuestreoConfig?.activeFields?.pesoSubmuestra || remuestreoConfig?.activeFields?.pesoGlaseo);
     // Note: Other visibility flags are derived inside components or used locally
 
-    // Update derived ref
-    useEffect(() => {
-        // We need to sync this if we want to use it
-        // But uploadingPhotos is returned by usePhotoUpload
-        // We'll update it below after calling the hook
-    }, []);
+    // Update derived ref - Removed empty useEffect (was not needed)
 
     // ----------------------------------------------------------------------
     // Hooks
@@ -320,9 +317,8 @@ function AnalysisContent() {
 
     const updateCurrentAnalysis = (updates: Partial<Analysis>) => {
         if (updates.pesoNeto || updates.pesoCongelado) {
-            const analysis = currentAnalysis as any;
-            const netWeight = updates.pesoNeto?.valor ?? analysis.pesoNeto?.valor;
-            const frozenWeight = updates.pesoCongelado?.valor ?? analysis.pesoCongelado?.valor;
+            const netWeight = updates.pesoNeto?.valor ?? currentAnalysis?.pesoNeto?.valor;
+            const frozenWeight = updates.pesoCongelado?.valor ?? currentAnalysis?.pesoCongelado?.valor;
 
             if (typeof netWeight === 'number' && typeof frozenWeight === 'number' && frozenWeight !== 0) {
                 if (netWeight !== 0) {

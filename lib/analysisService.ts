@@ -201,7 +201,7 @@ export const updateAnalysis = async (
 
         // Si hubo cambios reales, sincronizar carpetas en Drive
         if (oldCode !== newCode || oldBatch !== newBatch) {
-          console.log(`🔄 Detectado cambio de metadatos. Iniciando sincronización de carpetas...`);
+          logger.log(`🔄 Detectado cambio de metadatos. Iniciando sincronización de carpetas...`);
 
           // Ejecutar en background para no bloquear la UI demasiado tiempo
           // (Aunque idealmente debería ser await si queremos garantizar consistencia antes de guardar)
@@ -210,7 +210,7 @@ export const updateAnalysis = async (
             const { googleDriveService } = await import('./googleDriveService');
             await googleDriveService.syncAnalysisFolders(oldCode, oldBatch, newCode, newBatch, analysisId);
           } catch (driveError) {
-            console.error('❌ Error sincronizando carpetas de Drive (no crítico):', driveError);
+            logger.error('❌ Error sincronizando carpetas de Drive (no crítico):', driveError);
             // Continuamos con el guardado de Firestore
           }
         }
@@ -458,7 +458,7 @@ export const getAnalysesByProductionDay = async (date: string): Promise<QualityA
       return getTimestampMillis(b.createdAt) - getTimestampMillis(a.createdAt);
     });
 
-    console.log(`📊 Reporte Producción ${date}: ${analyses.length} análisis encontrados`);
+    logger.log(`📊 Reporte Producción ${date}: ${analyses.length} análisis encontrados`);
 
     return analyses;
   } catch (error) {
@@ -536,16 +536,16 @@ export const getAnalysesByShift = async (
       }
     });
 
-    console.log(`🔍 Filtering by shift: '${shift}'`);
+    logger.log(`🔍 Filtering by shift: '${shift}'`);
     const analyses = Array.from(analysesMap.values()).filter(a => {
       const match = a.shift === shift;
       if (!match) {
-        console.log(`⚠️ Excluding analysis ${a.codigo} (Shift: ${a.shift})`);
+        logger.log(`⚠️ Excluding analysis ${a.codigo} (Shift: ${a.shift})`);
       }
       return match;
     });
 
-    console.log(`📊 Reporte ${date} ${shift}: ${analyses.length} análisis encontrados (Rango: ${snapshotRange.size}, Explícito: ${snapshotExplicit.size})`);
+    logger.log(`📊 Reporte ${date} ${shift}: ${analyses.length} análisis encontrados (Rango: ${snapshotRange.size}, Explícito: ${snapshotExplicit.size})`);
 
     return analyses;
   } catch (error) {
@@ -562,16 +562,16 @@ export const deleteAnalysis = async (analysisId: string): Promise<void> => {
     throw new Error('Firestore no está configurado');
   }
 
-  console.log(`🗑️ Service: deleteAnalysis called for ID: ${analysisId}`);
+  logger.log(`🗑️ Service: deleteAnalysis called for ID: ${analysisId}`);
 
   try {
     // 1. Obtener datos del análisis para saber qué carpeta borrar
     const analysis = await getAnalysisById(analysisId);
-    console.log('📄 Analysis data retrieved:', analysis ? 'Found' : 'Not found');
+    logger.log('📄 Analysis data retrieved:', analysis ? 'Found' : 'Not found');
 
     if (analysis && analysis.codigo && analysis.lote) {
       // Intentar borrar carpeta de Drive (no bloqueante - se ejecuta en background)
-      console.log(`🔄 Attempting to delete Drive folder for: ${analysis.codigo}/${analysis.lote}`);
+      logger.log(`🔄 Attempting to delete Drive folder for: ${analysis.codigo}/${analysis.lote}`);
 
       // Ejecutar en background sin bloquear la eliminación de Firestore
       (async () => {
@@ -579,25 +579,25 @@ export const deleteAnalysis = async (analysisId: string): Promise<void> => {
           const { googleDriveService } = await import('./googleDriveService');
           await googleDriveService.initialize();
           await googleDriveService.deleteAnalysisFolder(analysis.codigo, analysis.lote);
-          console.log('✅ Drive folder deleted successfully');
+          logger.log('✅ Drive folder deleted successfully');
         } catch (driveError) {
-          console.warn('⚠️ Drive deletion failed (non-critical):', driveError);
+          logger.warn('⚠️ Drive deletion failed (non-critical):', driveError);
         }
       })();
     } else {
-      console.warn('⚠️ No se pudo obtener datos del análisis para borrar fotos (o faltan codigo/lote)');
+      logger.warn('⚠️ No se pudo obtener datos del análisis para borrar fotos (o faltan codigo/lote)');
     }
 
     // 2. Borrar documento de Firestore (SIEMPRE ejecutar inmediatamente)
     const analysisRef = getAnalysisRef(analysisId);
-    console.log(`🔥 Deleting Firestore document at path: ${analysisRef.path}`);
+    logger.log(`🔥 Deleting Firestore document at path: ${analysisRef.path}`);
     await deleteDoc(analysisRef);
 
     logger.log('✅ Análisis eliminado de Firestore:', analysisId);
-    console.log(`✅ Service: deleteAnalysis completed successfully for ID: ${analysisId}`);
+    logger.log(`✅ Service: deleteAnalysis completed successfully for ID: ${analysisId}`);
   } catch (error) {
     logger.error('❌ Error eliminando análisis:', error);
-    console.error(`❌ Service: deleteAnalysis FAILED for ID: ${analysisId}`, error);
+    logger.error(`❌ Service: deleteAnalysis FAILED for ID: ${analysisId}`, error);
 
     // Re-throw para que el UI pueda manejarlo
     throw new Error(`Error al eliminar análisis: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -698,7 +698,7 @@ export const saveAnalysisPhotoUrl = async (
           const hintItem = analyses[analysisIndexHint];
           if (hintItem && !hintItem.id) {
             // Found legacy item! Migrate it.
-            console.log(`⚠️ Migrating legacy analysis item at index ${analysisIndexHint} with new ID ${analysisItemId}`);
+            logger.log(`⚠️ Migrating legacy analysis item at index ${analysisIndexHint} with new ID ${analysisItemId}`);
             analyses[analysisIndexHint].id = analysisItemId;
             analysisIndex = analysisIndexHint;
             needsArrayUpdate = true;

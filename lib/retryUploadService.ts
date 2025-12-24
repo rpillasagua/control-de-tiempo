@@ -1,12 +1,13 @@
 import { toast } from 'sonner';
 import { PendingPhoto, photoStorageService } from '@/lib/photoStorageService';
 import { uploadWithRetry, generateId } from '@/lib/utils';
+import { logger } from './logger';
 
 /**
  * Retries a photo upload without updating local React state (for use in Dashboard)
  */
 export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
-    console.log(`🔄 STANDALONE RETRY - ID: ${photo.id}, Field: ${photo.field}`);
+    logger.log(`🔄 STANDALONE RETRY - ID: ${photo.id}, Field: ${photo.field}`);
 
     try {
         // Update status to uploading
@@ -38,7 +39,7 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
             driveFileName = `${photo.field}_analysis${(analysisIndex ?? 0) + 1}`;
         }
 
-        console.log(`🚀 Uploading to Drive: ${driveFileName}`);
+        logger.log(`🚀 Uploading to Drive: ${driveFileName}`);
 
         // Convert Blob to File
         const fileToUpload = new File([photo.file], photo.fileName || driveFileName, { type: photo.file.type });
@@ -54,7 +55,7 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
             user?.email
         ));
 
-        console.log('✅ Upload successful:', url);
+        logger.log('✅ Upload successful:', url);
 
         // Update Firestore
         if (photo.field === 'global-pesoBruto') {
@@ -76,13 +77,13 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
 
             let fieldPath = photo.field;
             if (photo.field.startsWith('pesobruto-')) {
-                const pbIndex = targetAnalysis.pesosBrutos?.findIndex((r: any) => r.id === photo.field.replace('pesobruto-', ''));
+                const pbIndex = targetAnalysis.pesosBrutos?.findIndex((r: { id: string }) => r.id === photo.field.replace('pesobruto-', ''));
 
                 if (pbIndex !== undefined && pbIndex !== -1) {
                     fieldPath = `pesosBrutos.${pbIndex}.fotoUrl`;
                     await saveAnalysisPhotoUrl(analysisId, analysisItemId, targetIndex, fieldPath, url);
                 } else {
-                    console.warn('Could not find peso bruto record index');
+                    logger.warn('Could not find peso bruto record index');
                 }
 
             } else {
@@ -101,7 +102,7 @@ export const retryPhotoUploadStandalone = async (photo: PendingPhoto) => {
         toast.success('Foto subida exitosamente');
 
     } catch (error) {
-        console.error('Error retrying photo:', error);
+        logger.error('Error retrying photo:', error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         await photoStorageService.updatePhotoStatus(photo.id, 'error', undefined, errorMessage);
         toast.error('Falló el reintento de subida');

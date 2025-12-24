@@ -35,10 +35,11 @@ class Logger {
         // Errores siempre se muestran (incluso en producción)
         console.error(this.formatMessage('error', ...args), ...args);
 
-        // TODO: Enviar a servicio de tracking (Sentry, LogRocket, etc)
-        // if (!isDev && typeof window !== 'undefined') {
-        //   window.Sentry?.captureException(args[0]);
-        // }
+        // 📊 ERROR TRACKING: Uncomment to send errors to Sentry/LogRocket
+        // To enable: 1) npm install @sentry/nextjs, 2) configure sentry.client.config.ts, 3) uncomment below
+        if (!isDev && typeof window !== 'undefined' && (window as any).Sentry) {
+            (window as any).Sentry.captureException(args[0]);
+        }
     }
 
     group(label: string): void {

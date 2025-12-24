@@ -2,6 +2,7 @@
  * Photo Storage Service
  * Manages local storage of photos using IndexedDB before uploading to Firebase/Drive
  */
+import { logger } from './logger';
 
 interface PendingPhoto {
     id: string;
@@ -36,13 +37,13 @@ class PhotoStorageService {
             const request = indexedDB.open(this.dbName, this.version);
 
             request.onerror = () => {
-                console.error('❌ Error opening IndexedDB:', request.error);
+                logger.error('❌ Error opening IndexedDB:', request.error);
                 reject(request.error);
             };
 
             request.onsuccess = () => {
                 this.db = request.result;
-                console.log('✅ IndexedDB initialized successfully');
+                logger.log('✅ IndexedDB initialized successfully');
                 resolve();
             };
 
@@ -58,7 +59,7 @@ class PhotoStorageService {
                     objectStore.createIndex('status', 'status', { unique: false });
                     objectStore.createIndex('timestamp', 'timestamp', { unique: false });
 
-                    console.log('✅ Object store created');
+                    logger.log('✅ Object store created');
                 }
             };
         });
@@ -112,12 +113,12 @@ class PhotoStorageService {
             const request = objectStore.put(pendingPhoto);
 
             request.onsuccess = () => {
-                console.log('📁 Photo saved locally:', photo.id);
+                logger.log('📁 Photo saved locally:', photo.id);
                 resolve(pendingPhoto.id);
             };
 
             request.onerror = () => {
-                console.error('❌ Error saving photo locally:', request.error);
+                logger.error('❌ Error saving photo locally:', request.error);
                 reject(request.error);
             };
         });
@@ -158,7 +159,7 @@ class PhotoStorageService {
                 const putRequest = objectStore.put(updatedPhoto);
 
                 putRequest.onsuccess = () => {
-                    console.log(`📝 Photo status updated: ${id} -> ${status}`);
+                    logger.log(`📝 Photo status updated: ${id} -> ${status}`);
                     resolve();
                 };
 
@@ -272,7 +273,7 @@ class PhotoStorageService {
             const request = objectStore.delete(id);
 
             request.onsuccess = () => {
-                console.log('🗑️ Photo deleted from local storage:', id);
+                logger.log('🗑️ Photo deleted from local storage:', id);
                 resolve();
             };
 
@@ -309,7 +310,7 @@ class PhotoStorageService {
 
                     cursor.continue();
                 } else {
-                    console.log(`🧹 Cleaned up ${deletedCount} old photos`);
+                    logger.log(`🧹 Cleaned up ${deletedCount} old photos`);
                     resolve(deletedCount);
                 }
             };
@@ -425,7 +426,7 @@ class PhotoStorageService {
 
         if (photosToDelete.length === 0) return;
 
-        console.log(`🧹 Cleaning up ${photosToDelete.length} old photos for ${field} (Index: ${analysisIndex})`);
+        logger.log(`🧹 Cleaning up ${photosToDelete.length} old photos for ${field} (Index: ${analysisIndex})`);
 
         const transaction = db.transaction([this.storeName], 'readwrite');
         const objectStore = transaction.objectStore(this.storeName);
@@ -483,7 +484,7 @@ class PhotoStorageService {
         });
 
         if (idsToDelete.length > 0) {
-            console.log(`🧹 Found ${idsToDelete.length} duplicates to clean up`);
+            logger.log(`🧹 Found ${idsToDelete.length} duplicates to clean up`);
             const transaction = db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
 
@@ -532,12 +533,12 @@ class PhotoStorageService {
             };
 
             transaction.oncomplete = () => {
-                if (count > 0) console.log(`🔄 Reset ${count} stuck uploads to error status`);
+                if (count > 0) logger.log(`🔄 Reset ${count} stuck uploads to error status`);
                 resolve(count);
             };
 
             transaction.onerror = () => {
-                console.error('❌ Error resetting stuck uploads:', transaction.error);
+                logger.error('❌ Error resetting stuck uploads:', transaction.error);
                 reject(transaction.error);
             };
         });

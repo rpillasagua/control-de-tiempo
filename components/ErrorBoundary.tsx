@@ -29,10 +29,11 @@ class ErrorBoundary extends Component<Props, State> {
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         logger.error('Uncaught error:', error, errorInfo);
 
-        // TODO: Enviar a servicio de tracking
-        // if (typeof window !== 'undefined') {
-        //   window.Sentry?.captureException(error, { contexts: { react: errorInfo } });
-        // }
+        // 📊 ERROR TRACKING: Uncomment to send errors to Sentry
+        // To enable: 1) npm install @sentry/nextjs, 2) configure sentry.client.config.ts, 3) uncomment below
+        if (typeof window !== 'undefined' && (window as any).Sentry) {
+            (window as any).Sentry.captureException(error, { contexts: { react: errorInfo } });
+        }
     }
 
     private handleReset = () => {

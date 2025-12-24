@@ -50,9 +50,9 @@ export function useDefectCalculation(
         // User Rule:
         // Cola: 16-20, 21-25, 26-30, 31-35... (Start is NOT multiple of 10)
         // Entero: 10-20, 20-30, 30-40... (Start IS multiple of 10)
-        const isColaBased = (s: any, pType: ProductType | null) => {
+        const isColaBased = (s: { sizes?: Array<{ sizeMarked?: string; sizeMp?: string }> } | null, pType: ProductType | null): boolean => {
             if (pType === 'COLA') return true;
-            if (pType === 'VALOR_AGREGADO' && s?.sizes?.length > 0) {
+            if (pType === 'VALOR_AGREGADO' && s?.sizes?.length && s.sizes.length > 0) {
                 const firstSize = s.sizes[0].sizeMarked || s.sizes[0].sizeMp || '';
                 const match = firstSize.match(/^(\d+)-/);
                 if (match) {

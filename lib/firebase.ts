@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { setLogLevel } from 'firebase/app';
+import { logger } from './logger';
 
 // 🔇 Configurar nivel de log de Firebase para suprimir warnings offline
 if (typeof window !== 'undefined') {
@@ -51,7 +52,7 @@ const firebaseConfig = {
 
 // Debug: Log Firebase config en desarrollo
 if (typeof window !== 'undefined' && window.location.hostname.includes('localhost')) {
-  console.log('Firebase Config:', {
+  logger.log('Firebase Config:', {
     apiKey: firebaseConfig.apiKey.substring(0, 10) + '...',
     authDomain: firebaseConfig.authDomain,
     projectId: firebaseConfig.projectId
@@ -81,32 +82,32 @@ if (isFirebaseConfigured) {
       if (typeof window !== 'undefined' && db) {
         enableIndexedDbPersistence(db).catch((err: any) => {
           if (err.code === 'failed-precondition') {
-            console.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
+            logger.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
           } else if (err.code === 'unimplemented') {
-            console.log('⚠️ Persistencia Firestore: No soportada en este navegador');
+            logger.log('⚠️ Persistencia Firestore: No soportada en este navegador');
           } else {
             // Silently ignore all other persistence errors
-            console.log('ℹ️ Persistencia Firestore: Inicializada previamente');
+            logger.log('ℹ️ Persistencia Firestore: Inicializada previamente');
           }
         });
       }
 
-      console.log('✅ Firebase Firestore inicializado correctamente');
-      console.log('📊 Proyecto:', firebaseConfig.projectId);
-      console.log('🌐 Modo offline habilitado (persistencia local)');
-      console.log('📝 Nota: Las fotos se guardan en Google Drive, no en Firebase Storage');
+      logger.log('✅ Firebase Firestore inicializado correctamente');
+      logger.log('📊 Proyecto:', firebaseConfig.projectId);
+      logger.log('🌐 Modo offline habilitado (persistencia local)');
+      logger.log('📝 Nota: Las fotos se guardan en Google Drive, no en Firebase Storage');
     } else {
       // Use existing app
       app = getApps()[0];
       db = getFirestore(app);
-      console.log('ℹ️ Usando instancia de Firebase existente');
+      logger.log('ℹ️ Usando instancia de Firebase existente');
     }
   } catch (error) {
-    console.error('❌ Firebase no pudo inicializarse:', error);
-    console.warn('⚠️ La app funcionará sin base de datos.');
+    logger.error('❌ Firebase no pudo inicializarse:', error);
+    logger.warn('⚠️ La app funcionará sin base de datos.');
   }
 } else {
-  console.error('❌ Firebase NO está configurado. Configura las variables de entorno en .env.local');
+  logger.error('❌ Firebase NO está configurado. Configura las variables de entorno en .env.local');
 }
 
 // Solo exportamos db y auth - storage ya no se usa

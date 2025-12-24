@@ -698,8 +698,14 @@ const addValidationsToAnalyses = (analyses: FlattenedAnalysis[]): FlattenedAnaly
             ? '✓ OK'
             : `⚠️ ${validPesoNeto.message || 'Error'}`;
 
-        // TODO: Add count validation when useTechnicalSpecs is available in server-side context
-        const validationConteo = '✓ OK';
+        // ⚠️ Count validation not implemented in server-side context
+        // REASON: useTechnicalSpecs hook requires React context which is not available in Node.js
+        // SOLUTION OPTIONS:
+        // 1. Extract technical specs logic to a pure function
+        // 2. Pass validation results from client-side before generating report
+        // 3. Duplicate tech specs validation logic for server-side (not recommended)
+        // For now, we mark all count validations as OK in reports
+        const validationConteo = '\u2713 OK';
 
         const hasValidationIssues = !validPesoBruto.isValid || !validPesoNeto.isValid;
 
