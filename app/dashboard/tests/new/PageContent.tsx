@@ -737,12 +737,6 @@ function AnalysisContent() {
                         isGalleryMode={isGalleryMode}
                     />
 
-                    <CompleteAnalysisCard
-                        isCompleted={isCompleted}
-                        onComplete={handleCompleteAnalysis}
-                        onEnableEdit={async () => setIsCompleted(false)}
-                        analysisId={analysisId}
-                    />
 
                     <ObservationsCard
                         observations={currentAnalysis.observations}
@@ -750,10 +744,18 @@ function AnalysisContent() {
                         isCompleted={isCompleted}
                     />
 
+                    <CompleteAnalysisCard
+                        isCompleted={isCompleted}
+                        onComplete={handleCompleteAnalysis}
+                        onEnableEdit={async () => setIsCompleted(false)}
+                        analysisId={analysisId}
+                    />
+
                     <DeleteAnalysisSection
                         onDelete={handleSmartDelete}
                         uploadingPhotosCount={uploadingPhotos.size}
                     />
+
                 </div>
             </div>
 
