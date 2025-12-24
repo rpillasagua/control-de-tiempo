@@ -86263,4 +86263,116 @@ export const TECHNICAL_SPECS: Record<string, ProductSpec> = {
                 "grossWeightMastersUnit": "LB",
                 "grossWeightMasters": 11.60
         },
+        "00534": {
+                "code": "00534",
+                "description": "00534 - FROZEN VANNAMEI SHRIMP HOSO PUROCONGO",
+                "client": "Comercial de Mariscos Sirley S.L.",
+                "brand": "GOLDEN SHRIMP",
+                "destination": "Calle Virgen 6, Algemesi, 46680, Valencia España Mercado EUROPA COCEDERO",
+                "version": 4,
+                "productType": "ENTERO",
+                "freezingMethod": "BRINE",
+                "certification": "ASC",
+                "color": "A4",
+                "preservative": "METABISULFITO DE SODIO (E223)",
+                "overweightPct": "2%",
+                "glazingRatio": 5,
+                "glazingUnit": "%",
+                "sizes": [
+                        {
+                                "sizeMp": "10-20",
+                                "countMp": "14-16",
+                                "countFinal": "14-16",
+                                "sizeMarked": "10-20",
+                                "uniformity": 1.30
+                        },
+                        {
+                                "sizeMp": "20-30",
+                                "countMp": "24-26",
+                                "countFinal": "24-26",
+                                "sizeMarked": "20-30",
+                                "uniformity": 1.30
+                        },
+                        {
+                                "sizeMp": "30-40",
+                                "countMp": "34-36",
+                                "countFinal": "34-36",
+                                "sizeMarked": "30-40",
+                                "uniformity": 1.30
+                        },
+                        {
+                                "sizeMp": "40-50",
+                                "countMp": "44-46",
+                                "countFinal": "44-46",
+                                "sizeMarked": "40-50",
+                                "uniformity": 1.30
+                        },
+                        {
+                                "sizeMp": "50-60",
+                                "countMp": "54-56",
+                                "countFinal": "54-56",
+                                "sizeMarked": "50-60",
+                                "uniformity": 1.30
+                        },
+                        {
+                                "sizeMp": "60-70",
+                                "countMp": "64-66",
+                                "countFinal": "64-66",
+                                "sizeMarked": "60-70",
+                                "uniformity": 1.35
+                        },
+                        {
+                                "sizeMp": "70-80",
+                                "countMp": "74-76",
+                                "countFinal": "74-76",
+                                "sizeMarked": "70-80",
+                                "uniformity": 1.40
+                        },
+                        {
+                                "sizeMp": "80-100",
+                                "countMp": "88-91",
+                                "countFinal": "88-91",
+                                "sizeMarked": "80-100",
+                                "uniformity": 1.40
+                        }
+                ],
+                "defects": [
+                        { "defect": "CABEZA_ROJA_FUERTE", "limit": "40%" },
+                        { "defect": "CABEZA_NARANJA", "limit": "40%" },
+                        { "defect": "CABEZA_FLOJA", "limit": "100%" },
+                        { "defect": "CABEZA_DESCOLGADA", "limit": "5%" },
+                        { "defect": "BRANQUIAS_OSCURAS_LEVES", "limit": "15%" },
+                        { "defect": "BRANQUIAS_OSCURAS_FUERTES", "limit": "5%" },
+                        { "defect": "BRANQUIAS_AMARILLAS_LEVES", "limit": "0%" },
+                        { "defect": "BRANQUIAS_AMARILLAS_FUERTES", "limit": "0%" },
+                        { "defect": "HEMOLINFAS_LEVES", "limit": "100%" },
+                        { "defect": "HEMOLINFAS_FUERTES", "limit": "100%" },
+                        { "defect": "HEPATO_REGADO", "limit": "7%" },
+                        { "defect": "HEPATO_REVENTADO", "limit": "10%" },
+                        { "defect": "FLACIDO", "limit": "15%" },
+                        { "defect": "MUDADO", "limit": "5%" },
+                        { "defect": "MANCHAS_NEGRAS_LEVES", "limit": "15%" },
+                        { "defect": "DEFORMES_LEVES", "limit": "5%" },
+                        { "defect": "DEFORMES_FUERTES", "limit": "3%" },
+                        { "defect": "HONGO_BUCAL_LEVE", "limit": "30%" },
+                        { "defect": "HONGO_BUCAL_FUERTE", "limit": "15%" },
+                        { "defect": "SABOR_TIERRA_FUERTE", "limit": "0%" },
+                        { "defect": "SABOR_TIERRA_LEVE", "limit": "20%" },
+                        { "defect": "SABOR_CHOCLO_LEVE", "limit": "10%" },
+                        { "defect": "SABOR_CHOCLO_FUERTE", "limit": "0%" },
+                        { "defect": "SABOR_GALLINAZA_LEVE", "limit": "20%" },
+                        { "defect": "SABOR_GALLINAZA_FUERTE", "limit": "0%" },
+                        { "defect": "SABOR_COMBUSTIBLE", "limit": "0%" },
+                        { "defect": "RESIDUAL_DE_SULFITO", "limit": "60-120 ppm" },
+                        { "defect": "VARIACION_DE_COLOR", "limit": "N/A" },
+                        { "defect": "DEFECTOS_TOTALES", "limit": "20%" }
+                ],
+                "packing": "2 Und * 12 Kg",
+                "netWeightUnit": "KG",
+                "netWeight": 12.00,
+                "grossWeightUnit": "KG",
+                "grossWeight": 12.75,
+                "grossWeightMastersUnit": "KG",
+                "grossWeightMasters": 26.53
+        }
 };
