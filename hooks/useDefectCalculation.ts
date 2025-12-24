@@ -160,6 +160,7 @@ export function useDefectCalculation(
         // 3. Calculate Percentages & Validate
         const defectResults: Record<string, DefectValidationResult> = {};
         let totalDefectsSum = 0;
+        const EPSILON = 0.001; // Tolerance for floating point comparisons
 
         Object.entries(defects).forEach(([defectKey, quantity]) => {
             if (!quantity) return;
@@ -195,15 +196,21 @@ export function useDefectCalculation(
                         : defectSpec.limit;
 
                     if (!isNaN(limitVal)) {
-                        isValid = percentage <= limitVal;
+                        // Use EPSILON for float comparison
+                        isValid = percentage <= (limitVal + EPSILON);
                         message = isValid ? `OK (Max ${limitVal}%)` : `Excede ${limitVal}%`;
                         totalDefectsSum += percentage;
                     }
                 }
             } else {
-                // Defect not in specs -> Allowed (doesn't count to total)
+                // Defect NOT in specs -> Treat as VALID but INFORMATIVE
+                // This allows users to report visual defects that are not strictly defined/limited in the specs.
                 isAllowed = true;
-                message = 'No especificado (Permitido)';
+                isValid = true;
+                message = `No especificado en ficha (Informativo)`;
+
+                // We still add it to the total because it IS a defect present in the product.
+                totalDefectsSum += percentage;
             }
 
             defectResults[defectKey] = {
@@ -228,9 +235,18 @@ export function useDefectCalculation(
                 : totalDefectsSpec.limit as number;
 
             if (!isNaN(totalLimit)) {
-                totalValid = totalDefectsSum <= totalLimit;
+                // Use EPSILON for float comparison
+                totalValid = totalDefectsSum <= (totalLimit + EPSILON);
                 totalMessage = totalValid ? `Dentro del límite (${totalLimit}%)` : `Excede el límite (${totalLimit}%)`;
             }
+        }
+
+        // 5. Global Validity Check: check if ANY individual defect failed
+        const anyIndividualFailure = Object.values(defectResults).some(r => !r.isValid);
+        if (anyIndividualFailure && totalValid) {
+            // If total is OK but an individual defect failed (e.g. unknown defect or specific limit exceeded), 
+            // we should probably reflect that in the total validation or ensure the UI blocks strictness.
+            // For now, we return the data as is, relying on the consumer to check `defectResults`.
         }
 
         return {

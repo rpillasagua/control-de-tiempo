@@ -66,5 +66,7 @@ export const DEFECT_NORMALIZATION_MAP: Record<string, string> = {
 };
 
 export function getNormalizedDefectKey(systemKey: string): string {
-    return DEFECT_NORMALIZATION_MAP[systemKey] || systemKey;
+    if (!systemKey) return systemKey;
+    const cleanKey = systemKey.trim().toUpperCase();
+    return DEFECT_NORMALIZATION_MAP[cleanKey] || systemKey;
 }

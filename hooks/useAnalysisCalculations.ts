@@ -5,12 +5,13 @@ export const useAnalysisCalculations = (
     currentAnalysis: Analysis | undefined,
     sizeSpec: any
 ) => {
+    const EPSILON = 0.001;
+
     // Calcular ratio de uniformidad
     const uniformityRatio = useMemo(() => {
         if (!currentAnalysis) return null;
-        const analysis = currentAnalysis as any;
-        const grandes = analysis.uniformidad?.grandes?.valor;
-        const pequenos = analysis.uniformidad?.pequenos?.valor;
+        const grandes = currentAnalysis.uniformidad?.grandes?.valor;
+        const pequenos = currentAnalysis.uniformidad?.pequenos?.valor;
         if (!grandes || !pequenos || pequenos === 0) return null;
         return grandes / pequenos;
     }, [currentAnalysis]);
@@ -20,7 +21,8 @@ export const useAnalysisCalculations = (
         if (!uniformityRatio || !sizeSpec?.uniformity) {
             return { isValid: true, message: '' };
         }
-        const isValid = uniformityRatio <= sizeSpec.uniformity;
+        // Use EPSILON for float comparison
+        const isValid = uniformityRatio <= (sizeSpec.uniformity + EPSILON);
         return {
             isValid,
             message: isValid
@@ -32,10 +34,13 @@ export const useAnalysisCalculations = (
     // Validar conteo
     const conteoValidation = useMemo(() => {
         if (!currentAnalysis) return { isValid: true, message: '' };
-        const analysis = currentAnalysis as any;
-        const conteo = analysis.conteo;
+        const conteo = currentAnalysis.conteo;
+
         if (!conteo || !sizeSpec?.countFinal) return { isValid: true, message: '' };
-        const match = sizeSpec.countFinal.match(/(\d+)-(\d+)/);
+
+        // More robust regex: allows "10-20", "10/20", "10 to 20", "10 20"
+        const match = sizeSpec.countFinal.toString().match(/(\d+)[\s\-\/a-zA-Z]+(\d+)/);
+
         if (!match) return { isValid: true, message: '' };
         const [, min, max] = [null, parseInt(match[1]), parseInt(match[2])];
         const isValid = conteo >= min && conteo <= max;
@@ -48,9 +53,8 @@ export const useAnalysisCalculations = (
     // Calcular Glaseo ((Congelado - Neto) / Neto * 100)
     const calculatedGlazing = useMemo(() => {
         if (!currentAnalysis) return null;
-        const analysis = currentAnalysis as any;
-        const net = analysis.pesoNeto?.valor;
-        const frozen = analysis.pesoCongelado?.valor;
+        const net = currentAnalysis.pesoNeto?.valor;
+        const frozen = currentAnalysis.pesoCongelado?.valor;
         if (!net || !frozen || net === 0) return null;
         return ((frozen - net) / net) * 100;
     }, [currentAnalysis]);

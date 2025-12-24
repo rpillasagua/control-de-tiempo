@@ -18,15 +18,20 @@ interface WeightValidationResult {
     actual?: number;
 }
 
+const EPSILON = 0.001;
+
 /**
  * Extract number of units from packing string
  * Examples:
  *   "10 Und * 4 Lb" -> 10
  *   "1 Und * 12 Kg" -> 1
  *   "6 Und * 2 Kg" -> 6
+ *   "10 Units" -> 10
+ *   "10 pcs" -> 10
  */
 function extractUnitsFromPacking(packing: string): number {
-    const match = packing.match(/^(\d+)\s*Und/i);
+    // Regex matches starts with number, followed by space (optional), then "U", "Und", "Unit", "Pcs" (case insensitive)
+    const match = packing.match(/^(\d+)\s*(?:Und|Units|Unit|U|Pcs)/i);
     return match ? parseInt(match[1], 10) : 1;
 }
 
@@ -134,7 +139,8 @@ export function validateGrossWeight(
     const lowerLimitKg = lowerLimitGrams / 1000;
     const upperLimitKg = upperLimitGrams / 1000;
 
-    if (pesoBrutoGrams > upperLimitGrams) {
+    // Use EPSILON for loose checks
+    if (pesoBrutoGrams > (upperLimitGrams + EPSILON)) {
         return {
             isValid: false,
             message: `PESO BRUTO alto (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
@@ -144,7 +150,7 @@ export function validateGrossWeight(
     }
 
 
-    if (pesoBrutoGrams < lowerLimitGrams) {
+    if (pesoBrutoGrams < (lowerLimitGrams - EPSILON)) {
         return {
             isValid: false,
             message: `PESO BRUTO bajo (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
@@ -202,7 +208,8 @@ export function validateNetWeight(
     const lowerLimitKg = baseNetWeightGrams / 1000;
     const upperLimitKg = upperLimitGrams / 1000;
 
-    if (pesoNetoGrams > upperLimitGrams) {
+    // Use EPSILON
+    if (pesoNetoGrams > (upperLimitGrams + EPSILON)) {
         return {
             isValid: false,
             message: `PESO NETO alto (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
@@ -211,7 +218,7 @@ export function validateNetWeight(
         };
     }
 
-    if (pesoNetoGrams < baseNetWeightGrams) {
+    if (pesoNetoGrams < (baseNetWeightGrams - EPSILON)) {
         return {
             isValid: false,
             message: `PESO NETO bajo (${formatWeight(actualKg, displayUnit)} ${displayUnit === 'LB' ? 'Lb' : 'Kg'}) (Límite: ${formatWeight(lowerLimitKg, displayUnit)}-${formatWeight(upperLimitKg, displayUnit)} ${displayUnit === 'LB' ? 'LB' : 'KG'})`,
