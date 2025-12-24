@@ -107,7 +107,7 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
     };
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/95 backdrop-blur-sm animate-fade-in">
             <style jsx global>{`
                 @keyframes floatUp {
                     from { transform: translateY(20px); opacity: 0; }
@@ -119,7 +119,8 @@ export default function NewProductModal({ isOpen, onClose, onSubmit, initialCode
                 className={`bg-white w-[95%] ${step === 'review' ? 'max-w-4xl h-[90vh]' : 'max-w-[340px] max-h-[90vh]'} p-[25px] rounded-[24px] relative text-left overflow-y-auto transition-all duration-300`}
                 style={{
                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                    animation: 'floatUp 0.3s ease-out'
+                    animation: 'floatUp 0.3s ease-out',
+                    backgroundColor: '#ffffff'
                 }}
             >
                 {step === 'select' ? (
