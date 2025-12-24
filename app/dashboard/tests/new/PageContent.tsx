@@ -696,6 +696,14 @@ function AnalysisContent() {
                         isCompleted={isCompleted}
                     />
 
+                    <ConteoCard
+                        showConteo={true}
+                        conteo={currentAnalysis.conteo}
+                        onConteoChange={(val) => updateCurrentAnalysis({ conteo: val })}
+                        validation={conteoValidation}
+                        isCompleted={isCompleted}
+                    />
+
                     <UniformityCard
                         showUniformity={true}
                         uniformidad={currentAnalysis.uniformidad}
@@ -714,14 +722,6 @@ function AnalysisContent() {
                         isGalleryMode={isGalleryMode}
                         uniformityRatio={uniformityRatio}
                         validation={uniformityValidation}
-                        isCompleted={isCompleted}
-                    />
-
-                    <ConteoCard
-                        showConteo={true}
-                        conteo={currentAnalysis.conteo}
-                        onConteoChange={(val) => updateCurrentAnalysis({ conteo: val })}
-                        validation={conteoValidation}
                         isCompleted={isCompleted}
                     />
 
