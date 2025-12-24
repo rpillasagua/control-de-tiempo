@@ -196,7 +196,7 @@ export const PendingUploadsPanel = ({
     });
 
     const panelContent = (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/95 backdrop-blur-[3px] animate-fade-in">
             <style jsx global>{`
                 @keyframes floatUp {
                     from { transform: translateY(20px); opacity: 0; }

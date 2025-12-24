@@ -196,7 +196,7 @@ export default function PhotoCapture({ label, modalTitle, photoUrl, onPhotoCaptu
       {/* Modal para ver imagen en grande - Usando Portal para evitar clipping */}
       {showModal && photoUrl && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl p-4 animate-fade-in"
           onClick={handleCloseModal}
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >

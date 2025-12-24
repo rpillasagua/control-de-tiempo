@@ -208,7 +208,7 @@ export default function EditMetadataModal({ isOpen, onClose, onSave, initialData
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-in fade-in duration-200"
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/95 backdrop-blur-[3px] animate-in fade-in duration-200"
             style={{
                 position: 'fixed',
                 top: 0,

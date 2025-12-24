@@ -60,7 +60,7 @@ export default function DeleteConfirmationModal({
     const isConfirmEnabled = confirmText.toLowerCase() === 'confirmar';
 
     return createPortal(
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-[3px] animate-fade-in" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/95 backdrop-blur-[3px] animate-fade-in" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
             <style jsx global>{`
                 @keyframes floatUp {
                     from { transform: translateY(20px); opacity: 0; }
