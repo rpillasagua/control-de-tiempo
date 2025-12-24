@@ -63,7 +63,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                 <CardTitle>⚖️ Control de Pesos</CardTitle>
             </CardHeader>
             <CardContent className={viewMode === 'COMPACTA' ? 'p-4 space-y-4' : 'p-6 space-y-6 md:p-4 md:space-y-4'}>
-                <div className={viewMode === 'COMPACTA' ? 'grid grid-cols-3 gap-4' : 'space-y-6 md:space-y-4'}>
+                <div className={viewMode === 'COMPACTA' ? (productInfo?.freezingMethod?.toUpperCase().includes('BLOCK') ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-3 gap-4') : 'space-y-6 md:space-y-4'}>
                     {/* Peso Bruto */}
                     {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoBruto) && !isDualBag && (
                         <div className="space-y-2 min-w-0">
@@ -148,7 +148,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                     {/* Campos específicos para VALOR_AGREGADO */}
                     {productType === 'VALOR_AGREGADO' && (
                         <>
-                            {/* Peso Submuestra */}
+                            {/* Peso Submuestra - Normal Grid Item */}
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-sm">
@@ -180,42 +180,93 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 />
                             </div>
 
-                            {/* Peso Sin Glaseo */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-sm">
-                                        {viewMode === 'COMPACTA' ? `Peso Sin Glaseo` : `Peso Sin Glaseo (${weightUnit})`}
-                                    </Label>
-                                    {currentAnalysis.pesoSinGlaseo?.valor && (
-                                        <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
-                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                            {/* Centered Row Wrapper for Last 2 Items */}
+                            <div className={`col-span-3 flex justify-center gap-4 ${viewMode !== 'COMPACTA' ? 'flex-col md:flex-row' : ''}`}>
+                                {/* Peso Sin Glaseo */}
+                                <div
+                                    className="space-y-3 min-w-0 flex-none"
+                                    style={viewMode === 'COMPACTA' ? { width: 'calc((100% - 2rem) / 3)' } : { width: '100%' }}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm">
+                                            {viewMode === 'COMPACTA' ? `Peso Sin Glaseo` : `Peso Sin Glaseo (${weightUnit})`}
+                                        </Label>
+                                        {currentAnalysis.pesoSinGlaseo?.valor && (
+                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={currentAnalysis.pesoSinGlaseo?.valor || ''}
+                                        onChange={(e) => handleWeightChange('pesoSinGlaseo', parseFloat(e.target.value))}
+                                        disabled={isCompleted}
+                                    />
+                                    <PhotoCapture
+                                        key={`pesoSinGlaseo-${activeAnalysisIndex}`}
+                                        label="Foto Peso Sin Glaseo"
+                                        modalTitle="Peso Sin Glaseo"
+                                        photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
+                                        onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
+                                        isUploading={isFieldUploading('pesoSinGlaseo')}
+                                        context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo', analysisIndex: activeAnalysisIndex }}
+                                        forceGalleryMode={isGalleryMode}
+                                        readOnly={isCompleted}
+                                    />
+                                </div>
+
+                                {/* Peso Neto (Moved here for VA) */}
+                                <div
+                                    className="space-y-2 min-w-0 flex-none"
+                                    style={viewMode === 'COMPACTA' ? { width: 'calc((100% - 2rem) / 3)' } : { width: '100%' }}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm font-medium">
+                                            {viewMode === 'COMPACTA' ? `Peso Neto` : `Peso Neto (${weightUnit})`}
+                                        </Label>
+                                        {currentAnalysis.pesoNeto?.valor && (
+                                            <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
+                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={currentAnalysis.pesoNeto?.valor || ''}
+                                        onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
+                                        className="text-center font-medium"
+                                        disabled={isCompleted}
+                                    />
+                                    {/* Validation Message */}
+                                    {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
+                                        <div className={`text-xs font-medium ${weightValidationResults.pesoNeto.isValid
+                                            ? 'text-green-600'
+                                            : 'text-red-600'
+                                            }`}>
+                                            {weightValidationResults.pesoNeto.message}
                                         </div>
                                     )}
+                                    <PhotoCapture
+                                        key={`pesoNeto-${activeAnalysisIndex}`}
+                                        label={viewMode === 'COMPACTA' ? "Cámara" : "Foto Peso Neto"}
+                                        modalTitle="Peso Neto"
+                                        photoUrl={currentAnalysis.pesoNeto?.fotoUrl}
+                                        onPhotoCapture={(file) => handlePhotoCapture('pesoNeto', file)}
+                                        isUploading={isFieldUploading('pesoNeto')}
+                                        context={{ analysisId: analysisId || '', field: 'pesoNeto', analysisIndex: activeAnalysisIndex }}
+                                        forceGalleryMode={isGalleryMode}
+                                        readOnly={isCompleted}
+                                    />
                                 </div>
-                                <Input
-                                    type="number"
-                                    placeholder="0"
-                                    value={currentAnalysis.pesoSinGlaseo?.valor || ''}
-                                    onChange={(e) => handleWeightChange('pesoSinGlaseo', parseFloat(e.target.value))}
-                                    disabled={isCompleted}
-                                />
-                                <PhotoCapture
-                                    key={`pesoSinGlaseo-${activeAnalysisIndex}`}
-                                    label="Foto Peso Sin Glaseo"
-                                    modalTitle="Peso Sin Glaseo"
-                                    photoUrl={currentAnalysis.pesoSinGlaseo?.fotoUrl}
-                                    onPhotoCapture={(file) => handlePhotoCapture('pesoSinGlaseo', file)}
-                                    isUploading={isFieldUploading('pesoSinGlaseo')}
-                                    context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo', analysisIndex: activeAnalysisIndex }}
-                                    forceGalleryMode={isGalleryMode}
-                                    readOnly={isCompleted}
-                                />
                             </div>
                         </>
                     )}
 
-                    {/* Peso Neto */}
-                    {(!isRemuestreo || remuestreoConfig?.activeFields?.pesoNeto) && (
+                    {/* Peso Neto - Normal Render for Non-VA */}
+                    {productType !== 'VALOR_AGREGADO' && (!isRemuestreo || remuestreoConfig?.activeFields?.pesoNeto) && (
                         <div className="space-y-2 min-w-0">
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-medium">
