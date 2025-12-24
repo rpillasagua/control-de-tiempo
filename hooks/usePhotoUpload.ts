@@ -101,8 +101,11 @@ export const usePhotoUpload = ({
                 const tipo = field.split('_')[1] as 'grandes' | 'pequenos';
                 oldUrl = targetAnalysis.uniformidad?.[tipo]?.fotoUrl;
             } else {
-                const currentFieldValue = targetAnalysis[field as keyof Analysis] as any;
-                oldUrl = currentFieldValue?.fotoUrl;
+                // Type-safe access to Analysis fields that may have fotoUrl
+                const currentFieldValue = targetAnalysis[field as keyof Analysis];
+                if (currentFieldValue && typeof currentFieldValue === 'object' && 'fotoUrl' in currentFieldValue) {
+                    oldUrl = (currentFieldValue as { fotoUrl?: string }).fotoUrl;
+                }
             }
 
             const url = await uploadWithRetry(() => googleDriveService.uploadAnalysisPhoto(
@@ -609,8 +612,11 @@ export const usePhotoUpload = ({
                     const tipo = photo.field.split('_')[1] as 'grandes' | 'pequenos';
                     oldUrl = targetAnalysis.uniformidad?.[tipo]?.fotoUrl;
                 } else {
-                    const currentFieldValue = targetAnalysis[photo.field as keyof Analysis] as any;
-                    oldUrl = currentFieldValue?.fotoUrl;
+                    // Type-safe access to Analysis fields that may have fotoUrl
+                    const currentFieldValue = targetAnalysis[photo.field as keyof Analysis];
+                    if (currentFieldValue && typeof currentFieldValue === 'object' && 'fotoUrl' in currentFieldValue) {
+                        oldUrl = (currentFieldValue as { fotoUrl?: string }).fotoUrl;
+                    }
                 }
                 driveFileName = `${photo.field}_analysis${targetIndex + 1}`;
             }

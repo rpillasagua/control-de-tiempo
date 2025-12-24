@@ -101,8 +101,7 @@ export default function DefectSelector({
     if (isDifferent) {
       setSelectedItems(newItems);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDefects]);
+  }, [selectedDefects, productType]);
 
   const notifyParent = (items: DefectItem[]) => {
     const newSelectedDefects: { [key: string]: number } = {};
@@ -176,7 +175,7 @@ export default function DefectSelector({
         )}
       </div>
 
-      <div className="relative" ref={searchInputRef as any}>
+      <div className="relative" ref={searchInputRef}>
         <div className="flex items-center bg-[#F3F4F6] rounded-[12px] px-[16px] py-[12px] border-2 border-transparent transition-all focus-within:bg-white focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]">
           <span className="mr-[10px] text-[18px]">🔍</span>
           <input
