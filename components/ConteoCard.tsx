@@ -13,13 +13,15 @@ interface ConteoCardProps {
         isValid: boolean;
         message: string;
     };
+    isCompleted?: boolean;
 }
 
 export const ConteoCard = React.memo<ConteoCardProps>(({
     showConteo,
     conteo,
     onConteoChange,
-    validation
+    validation,
+    isCompleted = false
 }) => {
     if (!showConteo) return null;
 
@@ -45,6 +47,7 @@ export const ConteoCard = React.memo<ConteoCardProps>(({
                             value={conteo || ''}
                             onChange={(e) => onConteoChange(parseInt(e.target.value) || undefined)}
                             className={`w-[80px] text-center font-bold ${!validation.isValid ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            disabled={isCompleted}
                         />
                     </div>
                 </div>

@@ -668,6 +668,7 @@ function AnalysisContent() {
                         isUploading={uploadingPhotos.has('global-pesoBruto')}
                         analysisId={analysisId || ''}
                         isGalleryMode={isGalleryMode}
+                        isCompleted={isCompleted}
                     />
 
                     {productType === 'CONTROL_PESOS' && (
@@ -680,6 +681,7 @@ function AnalysisContent() {
                             unit={weightUnit}
                             analysisId={analysisId || ''}
                             viewMode={viewMode === 'COMPACTA' ? 'COMPACTA' : 'SUELTA'}
+                            isCompleted={isCompleted}
                         />
                     )}
 
@@ -691,6 +693,7 @@ function AnalysisContent() {
                         calculatedGlazing={calculatedGlazing}
                         viewMode={viewMode}
                         isGalleryMode={isGalleryMode}
+                        isCompleted={isCompleted}
                     />
 
                     <UniformityCard
@@ -711,6 +714,7 @@ function AnalysisContent() {
                         isGalleryMode={isGalleryMode}
                         uniformityRatio={uniformityRatio}
                         validation={uniformityValidation}
+                        isCompleted={isCompleted}
                     />
 
                     <ConteoCard
@@ -718,6 +722,7 @@ function AnalysisContent() {
                         conteo={currentAnalysis.conteo}
                         onConteoChange={(val) => updateCurrentAnalysis({ conteo: val })}
                         validation={conteoValidation}
+                        isCompleted={isCompleted}
                     />
 
                     <DefectsCard
@@ -731,6 +736,7 @@ function AnalysisContent() {
                         analysisId={analysisId || ''}
                         activeAnalysisIndex={activeAnalysisIndex}
                         isGalleryMode={isGalleryMode}
+                        isCompleted={isCompleted}
                     />
 
 

@@ -16,6 +16,7 @@ interface GlobalWeightCardProps {
     isUploading: boolean;
     analysisId: string;
     isGalleryMode: boolean;
+    isCompleted?: boolean;
 }
 
 export const GlobalWeightCard: React.FC<GlobalWeightCardProps> = ({
@@ -27,7 +28,8 @@ export const GlobalWeightCard: React.FC<GlobalWeightCardProps> = ({
     handleGlobalPesoBrutoPhoto,
     isUploading,
     analysisId,
-    isGalleryMode
+    isGalleryMode,
+    isCompleted = false
 }) => {
     if (!isDualBag || !(productType === 'ENTERO' || productType === 'COLA' || productType === 'VALOR_AGREGADO')) {
         return null;
@@ -61,6 +63,7 @@ export const GlobalWeightCard: React.FC<GlobalWeightCardProps> = ({
                             value={globalPesoBruto.valor || ''}
                             onChange={(e) => onGlobalWeightChange(parseFloat(e.target.value) || undefined)}
                             className="border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
+                            disabled={isCompleted}
                         />
                     </div>
                     <div className="space-y-3">
@@ -71,6 +74,7 @@ export const GlobalWeightCard: React.FC<GlobalWeightCardProps> = ({
                             isUploading={isUploading}
                             context={{ analysisId: analysisId || '', field: 'global-pesoBruto', analysisIndex: undefined }}
                             forceGalleryMode={isGalleryMode}
+                            readOnly={isCompleted}
                         />
                     </div>
                 </div>

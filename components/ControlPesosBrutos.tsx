@@ -16,6 +16,7 @@ interface ControlPesosBrutosProps {
   unit?: 'KG' | 'LB';
   analysisId: string;
   forceGalleryMode?: boolean;
+  isCompleted?: boolean;
 }
 
 // using default export allows cleaner memo usage in React Fast Refresh dev environments but wrapping it works too
@@ -29,60 +30,50 @@ const ControlPesosBrutos = React.memo<ControlPesosBrutosProps>(({
   viewMode = 'COMPACTA',
   unit = 'KG',
   analysisId,
-  forceGalleryMode = false
+  forceGalleryMode = false,
+  isCompleted = false
 }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const isCompact = viewMode === 'COMPACTA';
 
-  // Uso de useCallback para estabilizar funciones
   const agregarRegistro = useCallback(() => {
+    if (isCompleted) return;
     const nuevoRegistro: PesoBrutoRegistro = {
       id: crypto.randomUUID(), // Mejor que Date.now()
       peso: 0,
       timestamp: new Date().toISOString()
     };
     onChange([...registros, nuevoRegistro]);
-  }, [registros, onChange]);
-
-  const manejarEliminacion = async (id: string) => {
-    const registro = registros.find(r => r.id === id);
-    if (!registro) return;
-
-    // UX: Confirmación simple
-    if (!window.confirm('¿Estás seguro de eliminar este peso y su foto?')) return;
-
-    try {
-      setDeletingIds(prev => new Set(prev).add(id));
-
-      // Delegamos la lógica "sucia" (borrar de Drive) al padre mediante prop
-      await onDeleteRequest(registro);
-
-      // Actualizamos el estado local
-      onChange(registros.filter(r => r.id !== id));
-    } catch (error) {
-      console.error("Error al eliminar", error);
-      alert("Hubo un error al eliminar el registro");
-    } finally {
-      setDeletingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-    }
-  };
+  }, [registros, onChange, isCompleted]);
 
   const actualizarPeso = useCallback((id: string, valor: number) => {
+    if (isCompleted) return;
     onChange(registros.map(r =>
       r.id === id ? { ...r, peso: valor } : r
     ));
-  }, [registros, onChange]);
+  }, [registros, onChange, isCompleted]);
 
-  // Memoizamos el cálculo total
-  const totalPeso = useMemo(() =>
-    registros.reduce((sum, r) => sum + (r.peso || 0), 0),
-    [registros]);
+  const manejarEliminacion = useCallback(async (registroId: string) => {
+    if (isCompleted) return;
+    const registro = registros.find(r => r.id === registroId);
+    if (!registro) return;
 
-  const isCompact = viewMode === 'COMPACTA';
+    setDeletingIds(prev => new Set(prev).add(registroId));
+    try {
+      await onDeleteRequest(registro);
+    } catch (error) {
+      console.error("Error al eliminar registro:", error);
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(registroId);
+        return next;
+      });
+    }
+  }, [registros, onDeleteRequest, isCompleted]);
+
+  const totalPeso = useMemo(() => registros.reduce((acc, curr) => acc + (Number(curr.peso) || 0), 0), [registros]);
 
   return (
     <div className={`${isCompact ? 'space-y-3' : 'space-y-4'} ${isCompact ? 'p-3' : 'p-6'} glass-panel rounded-2xl`}>
@@ -92,47 +83,36 @@ const ControlPesosBrutos = React.memo<ControlPesosBrutosProps>(({
           Control de Pesos Brutos
         </h3>
         <div className="flex items-center gap-2">
-          {registros.length > 0 && (
+          {registros.length > 0 && !isCompleted && (
             <button
-              type="button"
               onClick={() => setIsEditMode(!isEditMode)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isEditMode
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
+              className={`p-2 rounded-xl transition-all ${isEditMode ? 'bg-red-500/20 text-red-300' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
+              title={isEditMode ? "Terminar edición" : "Editar lista"}
             >
-              {isEditMode ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Finalizar</span>
-                </>
-              ) : (
-                <>
-                  <Edit2 className="w-4 h-4" />
-                  <span>Editar</span>
-                </>
-              )}
+              {isEditMode ? <Check className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
             </button>
           )}
-          <button
-            type="button"
-            onClick={agregarRegistro}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 text-sm font-semibold hover:scale-105 active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            Agregar Peso
-          </button>
+          {!isCompleted && (
+            <button
+              type="button"
+              onClick={agregarRegistro}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 text-sm font-semibold hover:scale-105 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              Agregar Peso
+            </button>
+          )}
         </div>
       </div>
 
       {/* List Section */}
       {registros.length === 0 ? (
         <div className="text-center py-10 text-gray-400 border-2 border-dashed border-white/10 rounded-xl bg-white/5">
-          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Camera className="w-8 h-8 text-gray-500" />
+          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
+            <Plus className="w-6 h-6 text-gray-500" />
           </div>
-          <p className="text-sm font-medium text-gray-300">No hay registros de peso bruto</p>
-          <p className="text-xs mt-1 text-gray-500">Haz clic en "Agregar Peso" para comenzar</p>
+          <p className="font-medium">No hay registros</p>
+          {!isCompleted && <p className="text-xs mt-1 text-gray-500">Haz clic en "Agregar Peso" para comenzar</p>}
         </div>
       ) : (
         <div className={isCompact ? 'grid grid-cols-2 md:grid-cols-3 gap-3' : 'space-y-4'}>
@@ -141,7 +121,7 @@ const ControlPesosBrutos = React.memo<ControlPesosBrutosProps>(({
               key={registro.id}
               index={index}
               registro={registro}
-              isEditMode={isEditMode}
+              isEditMode={!isCompleted && isEditMode}
               isCompact={isCompact}
               isUploading={isPhotoUploading(registro.id)}
               isDeleting={deletingIds.has(registro.id)}
@@ -150,12 +130,12 @@ const ControlPesosBrutos = React.memo<ControlPesosBrutosProps>(({
               onPhotoCapture={onPhotoCapture}
               analysisId={analysisId}
               forceGalleryMode={forceGalleryMode}
+              disabled={isCompleted}
             />
           ))}
         </div>
       )}
 
-      {/* Footer/Totals Section */}
       {registros.length > 0 && (
         <div className="pt-4 border-t border-white/10 mt-2">
           <div className="flex items-center justify-between text-sm">

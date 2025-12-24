@@ -20,13 +20,15 @@ interface DefectSelectorProps {
   selectedDefects: { [key: string]: number };
   onDefectsChange: (defects: { [key: string]: number }) => void;
   validationResults?: DefectCalculationResult;
+  readOnly?: boolean;
 }
 
 export default function DefectSelector({
   productType,
   selectedDefects,
   onDefectsChange,
-  validationResults
+  validationResults,
+  readOnly = false
 }: DefectSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -34,200 +36,139 @@ export default function DefectSelector({
   const [isEditMode, setIsEditMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const getDefectosForProductType = () => {
-    switch (productType) {
-      case 'ENTERO': return DEFECTOS_ENTERO;
-      case 'COLA': return DEFECTOS_COLA;
-      case 'VALOR_AGREGADO': return DEFECTOS_VALOR_AGREGADO;
-      default: return [];
-    }
-  };
-
-  const normalizeText = (text: string) => {
-    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  };
-
-  const availableDefects = getDefectosForProductType().filter(
-    (defecto: string) => !selectedItems.some(item => item.key === defecto)
-  );
-
-  const filteredSuggestions = availableDefects.filter((defecto: string) => {
-    const label = DEFECTO_LABELS[defecto] || '';
-    const normalizedLabel = normalizeText(label);
-    const normalizedSearch = normalizeText(searchTerm);
-    return normalizedLabel.includes(normalizedSearch);
-  });
-
-  // Sincronizar cambios del padre hacia local (ej. cambiar de análisis)
+  // Load selected defects into local state
   useEffect(() => {
-    // Obtener el orden canónico de los defectos
-    const canonicalDefects = getDefectosForProductType();
+    const items: DefectItem[] = Object.entries(selectedDefects).map(([key, value]) => ({
+      key,
+      label: DEFECTO_LABELS[key as keyof typeof DEFECTO_LABELS] || key,
+      quantity: value
+    }));
+    setSelectedItems(items);
+  }, [selectedDefects]);
 
-    // Crear un mapa de los defectos seleccionados para acceso rápido
-    const selectedMap = new Map(Object.entries(selectedDefects));
-
-    const newItems: DefectItem[] = [];
-
-    // 1. Agregar defectos en el orden canónico
-    canonicalDefects.forEach(key => {
-      if (selectedMap.has(key)) {
-        const quantity = selectedMap.get(key);
-        newItems.push({
-          key,
-          label: DEFECTO_LABELS[key] || key,
-          quantity: (quantity === 0 || quantity === undefined) ? '' : quantity
-        });
-        selectedMap.delete(key); // Remover para saber cuáles sobran
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
       }
-    });
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    // 2. Agregar cualquier defecto extra que no esté en la lista canónica (legacy/custom)
-    selectedMap.forEach((quantity, key) => {
-      newItems.push({
-        key,
-        label: DEFECTO_LABELS[key] || key,
-        quantity: (quantity === 0 || quantity === undefined) ? '' : quantity
-      });
-    });
+  const getDefectOptions = () => {
+    let options: readonly string[] = [];
+    if (productType === 'ENTERO') options = DEFECTOS_ENTERO;
+    else if (productType === 'COLA') options = DEFECTOS_COLA;
+    else if (productType === 'VALOR_AGREGADO') options = DEFECTOS_VALOR_AGREGADO;
 
-    // Verificar si hay cambios reales para evitar re-renders infinitos
-    const isDifferent =
-      newItems.length !== selectedItems.length ||
-      newItems.some((item, index) => {
-        const current = selectedItems[index];
-        return !current || item.key !== current.key || (item.quantity !== current.quantity && item.quantity !== '' && current.quantity !== 0);
-      });
-
-    if (isDifferent) {
-      setSelectedItems(newItems);
-    }
-  }, [selectedDefects, productType]);
-
-  const notifyParent = (items: DefectItem[]) => {
-    const newSelectedDefects: { [key: string]: number } = {};
-    items.forEach(item => {
-      const quantity = item.quantity === '' ? 0 : item.quantity;
-      newSelectedDefects[item.key] = quantity;
-    });
-    onDefectsChange(newSelectedDefects);
+    return options.filter(key =>
+      !selectedItems.some(item => item.key === key) &&
+      (DEFECTO_LABELS[key as keyof typeof DEFECTO_LABELS] || key).toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   const handleAddDefect = (key: string) => {
-    const label = DEFECTO_LABELS[key] || key;
-    const newItem: DefectItem = { key, label, quantity: '' };
-    const newItems = [...selectedItems, newItem];
-    setSelectedItems(newItems);
+    if (readOnly) return;
+    const newDefects = { ...selectedDefects, [key]: 0 };
+    onDefectsChange(newDefects);
     setSearchTerm('');
     setShowSuggestions(false);
-    notifyParent(newItems);
   };
 
   const handleRemoveDefect = (key: string) => {
-    const newItems = selectedItems.filter(item => item.key !== key);
-    setSelectedItems(newItems);
-    notifyParent(newItems);
+    if (readOnly) return;
+    const { [key]: _, ...rest } = selectedDefects;
+    onDefectsChange(rest);
+    if (Object.keys(rest).length === 0) setIsEditMode(false);
   };
 
   const handleQuantityChange = (key: string, value: string) => {
-    const numValue = value === '' ? '' : parseInt(value);
-    if (value !== '' && isNaN(numValue as number)) return;
-
-    const newItems = selectedItems.map(item =>
-      item.key === key ? { ...item, quantity: numValue as number | '' } : item
-    );
-    setSelectedItems(newItems);
-    notifyParent(newItems);
+    if (readOnly) return;
+    const numValue = value === '' ? 0 : parseInt(value, 10);
+    if (!isNaN(numValue)) {
+      onDefectsChange({ ...selectedDefects, [key]: numValue });
+    }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[22px] font-[800] text-[#111827] flex items-center gap-2">
-          <span className="text-2xl">🐛</span>
-          Defectos de Calidad
-        </h3>
-        {selectedItems.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setIsEditMode(!isEditMode)}
-            className={`
-              px-4 py-3 rounded-[12px] text-[14px] font-[600] cursor-pointer flex justify-center items-center gap-2 
-              transition-all active:scale-[0.98] border-none
-              ${isEditMode
-                ? 'bg-[#10B981] text-white hover:bg-[#059669]'
-                : 'bg-[#EF4444] text-white hover:bg-[#DC2626]'
-              }
-            `}
-            style={{ boxShadow: isEditMode ? '0 4px 12px rgba(16, 185, 129, 0.3)' : '0 4px 12px rgba(239, 68, 68, 0.3)' }}
-          >
-            {isEditMode ? (
-              <>
-                <Check className="w-4 h-4" />
-                Listo
-              </>
-            ) : (
-              <>
-                <Edit2 className="w-4 h-4" />
-                Editar
-              </>
-            )}
-          </button>
-        )}
-      </div>
+      {!readOnly && (
+        <div className="flex items-center justify-between mb-4">
+          {/* Placeholder for future header if needed */}
+          <div />
 
-      <div className="relative" ref={searchInputRef}>
-        <div className="flex items-center bg-[#F3F4F6] rounded-[12px] px-[16px] py-[12px] border-2 border-transparent transition-all focus-within:bg-white focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]">
-          <span className="mr-[10px] text-[18px]">🔍</span>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            placeholder="Buscar defecto para agregar..."
-            className="border-none bg-transparent w-full text-[15px] text-[#1F2937] outline-none font-[500] placeholder-[#9CA3AF]"
-          />
+          {selectedItems.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`p-2 rounded-xl transition-all ${isEditMode ? 'bg-red-500/20 text-red-300' : 'bg-white/5 text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+              title={isEditMode ? "Terminar edición" : "Editar lista"}
+            >
+              {isEditMode ? <Check className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+            </button>
+          )}
         </div>
+      )}
 
-        {showSuggestions && searchTerm.trim() !== '' && (
-          <div className="relative z-20 w-full mt-2 bg-white rounded-[12px] border border-gray-100 max-h-60 overflow-y-auto" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
-            {filteredSuggestions.length > 0 ? (
-              <div className="p-2 space-y-1">
-                {filteredSuggestions.slice(0, 5).map((defecto: string) => (
-                  <button
-                    key={defecto}
-                    onClick={() => handleAddDefect(defecto)}
-                    className="w-full text-left px-3 py-2.5 rounded-[8px] hover:bg-blue-50 text-[14px] text-[#374151] hover:text-[#2563EB] transition-all flex items-center justify-between group font-[500]"
-                  >
-                    <span>{DEFECTO_LABELS[defecto] || defecto}</span>
-                    <Plus className="w-4 h-4 text-gray-300 group-hover:text-[#2563EB] transition-all" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="p-6 text-center">
-                <p className="text-[14px] text-[#6B7280] font-[500]">No se encontraron defectos</p>
-                <p className="text-[12px] text-[#9CA3AF] mt-1">Intenta con otro término</p>
-              </div>
+      {!readOnly && (
+        <div className="relative" ref={searchInputRef}>
+          <div className="flex items-center border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="Buscar defecto..."
+              className="w-full px-4 py-3 outline-none text-gray-700 placeholder-gray-400"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setShowSuggestions(false);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
             )}
           </div>
-        )}
 
-        {showSuggestions && (
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setShowSuggestions(false)}
-          />
-        )}
-      </div>
+          {showSuggestions && searchTerm && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
+              {getDefectOptions().map(key => (
+                <button
+                  key={key}
+                  onClick={() => handleAddDefect(key)}
+                  className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center justify-between group"
+                >
+                  <span className="text-gray-700 group-hover:text-blue-700 font-medium">
+                    {DEFECTO_LABELS[key as keyof typeof DEFECTO_LABELS] || key}
+                  </span>
+                  <Plus className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+                </button>
+              ))}
+              {getDefectOptions().length === 0 && (
+                <div className="px-4 py-3 text-gray-400 text-sm text-center italic">
+                  No se encontraron defectos
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 mt-4">
         {selectedItems.map((item) => {
-          const result = validationResults?.defectResults[item.key];
-          const isForbidden = result?.isForbidden;
-          const isValid = result?.isValid ?? true;
+          // Check if this specific defect is forbidden based on validation results
+          const isForbidden = validationResults &&
+            validationResults.defectResults &&
+            validationResults.defectResults[item.key]?.isForbidden;
 
           return (
             <div
@@ -242,24 +183,14 @@ export default function DefectSelector({
               `}
             >
               <div className="flex-1 min-w-0 mr-2">
-                <div className="text-[14px] font-[600] text-[#374151] break-words leading-tight" title={item.label}>
+                <span className={`block text-[14px] font-[600] leading-tight ${isForbidden ? 'text-red-700' : 'text-[#374151]'}`}>
                   {item.label}
-                  {result && (
-                    <div className="text-[11px] font-normal mt-0.5 flex items-center gap-1">
-                      <span className={isValid ? 'text-green-600' : 'text-red-600'}>
-                        {result.percentage.toFixed(2)}%
-                      </span>
-                      {isValid ? (
-                        <Check className="w-3 h-3 text-green-500" />
-                      ) : (
-                        <X className="w-3 h-3 text-red-500" />
-                      )}
-                      <span className="text-gray-400 text-[10px]">
-                        ({result.limitDisplay})
-                      </span>
-                    </div>
-                  )}
-                </div>
+                </span>
+                {isForbidden && (
+                  <span className="text-[10px] text-red-500 font-medium mt-1 block">
+                    ⛔ Defecto no permitido
+                  </span>
+                )}
               </div>
 
               <div className="flex-shrink-0">
@@ -270,11 +201,11 @@ export default function DefectSelector({
                   placeholder="0"
                   className="w-[50px] bg-transparent text-[16px] font-[700] text-[#1F2937] text-center focus:outline-none border-b-2 border-gray-100 focus:border-[#2563EB] transition-all placeholder-gray-300 py-1"
                   min="0"
-                  disabled={isEditMode}
+                  disabled={isEditMode || readOnly}
                 />
               </div>
 
-              {isEditMode && (
+              {isEditMode && !readOnly && (
                 <button
                   onClick={() => handleRemoveDefect(item.key)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#EF4444] text-white border-none rounded-full hover:bg-[#DC2626] transition-all"
@@ -301,11 +232,11 @@ export default function DefectSelector({
 
       {validationResults?.isApplicable && (
         <div className={`
-          mt-4 p-3 rounded-[12px] border flex justify-between items-center
-          ${validationResults.totalDefectsValidation.isValid
+              mt-4 p-3 rounded-[12px] border flex justify-between items-center
+              ${validationResults.totalDefectsValidation.isValid
             ? 'bg-green-50 border-green-200'
             : 'bg-red-50 border-red-200'}
-        `}>
+            `}>
           <div className="flex flex-col">
             <span className="text-[14px] font-[600] text-gray-700">Defectos Totales</span>
             <span className="text-[11px] text-gray-500">

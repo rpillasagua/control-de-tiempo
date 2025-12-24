@@ -14,7 +14,9 @@ interface DefectsCardProps {
     isFieldUploading: (field: string) => boolean;
     analysisId: string;
     activeAnalysisIndex: number;
+
     isGalleryMode: boolean;
+    isCompleted?: boolean;
 }
 
 export const DefectsCard = React.memo<DefectsCardProps>(({
@@ -27,7 +29,8 @@ export const DefectsCard = React.memo<DefectsCardProps>(({
     isFieldUploading,
     analysisId,
     activeAnalysisIndex,
-    isGalleryMode
+    isGalleryMode,
+    isCompleted = false
 }) => {
     if (!showDefects) return null;
 
@@ -40,6 +43,7 @@ export const DefectsCard = React.memo<DefectsCardProps>(({
                         selectedDefects={currentAnalysis.defectos || {}}
                         onDefectsChange={onDefectsChange}
                         validationResults={validationResults}
+                        readOnly={isCompleted}
                     />
                 </CardContent>
             </Card>
@@ -59,6 +63,7 @@ export const DefectsCard = React.memo<DefectsCardProps>(({
                                 isUploading={isFieldUploading('fotoCalidad')}
                                 context={{ analysisId: analysisId || '', field: 'fotoCalidad', analysisIndex: activeAnalysisIndex }}
                                 forceGalleryMode={isGalleryMode}
+                                readOnly={isCompleted}
                             />
                         </div>
                     </div>

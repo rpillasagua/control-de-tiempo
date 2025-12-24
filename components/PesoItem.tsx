@@ -17,6 +17,7 @@ interface PesoItemProps {
     isDeleting?: boolean;
     analysisId: string;
     forceGalleryMode?: boolean;
+    disabled?: boolean;
 }
 
 // Usamos memo para que solo se renderice si sus props cambian
@@ -31,7 +32,8 @@ export const PesoItem = memo(({
     onPhotoCapture,
     isDeleting,
     analysisId,
-    forceGalleryMode = false
+    forceGalleryMode = false,
+    disabled = false
 }: PesoItemProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
@@ -112,6 +114,7 @@ export const PesoItem = memo(({
                 label={`Registro #${index + 1}`}
                 value={registro.peso}
                 onChange={(val) => {
+                    if (disabled) return;
                     const numVal = parseFloat(val);
                     onUpdate(registro.id, isNaN(numVal) ? 0 : numVal);
                 }}
@@ -120,9 +123,10 @@ export const PesoItem = memo(({
                 isUploading={isUploading}
                 viewMode={isCompact ? 'COMPACTA' : 'SUELTA'}
                 error={false}
+                disabled={disabled}
             />
 
-            {isEditMode && (
+            {isEditMode && !disabled && (
                 <button
                     type="button"
                     onClick={() => onDelete(registro.id)}

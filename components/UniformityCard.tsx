@@ -20,6 +20,7 @@ interface UniformityCardProps {
         isValid: boolean;
         message: string;
     };
+    isCompleted?: boolean;
 }
 
 export const UniformityCard = React.memo<UniformityCardProps>(({
@@ -32,7 +33,8 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
     activeAnalysisIndex,
     isGalleryMode,
     uniformityRatio,
-    validation
+    validation,
+    isCompleted = false
 }) => {
     if (!showUniformity) return null;
 
@@ -62,6 +64,7 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                                 const val = parseFloat(e.target.value);
                                 onUniformityChange('grandes', isNaN(val) ? undefined : val);
                             }}
+                            disabled={isCompleted}
                         />
                         <PhotoCapture
                             label="Foto Grandes"
@@ -71,6 +74,7 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                             isUploading={isFieldUploading('uniformidad_grandes')}
                             context={{ analysisId: analysisId || '', field: 'uniformidad_grandes', analysisIndex: activeAnalysisIndex }}
                             forceGalleryMode={isGalleryMode}
+                            readOnly={isCompleted}
                         />
                     </div>
 
@@ -93,6 +97,7 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                                 const val = parseFloat(e.target.value);
                                 onUniformityChange('pequenos', isNaN(val) ? undefined : val);
                             }}
+                            disabled={isCompleted}
                         />
                         <PhotoCapture
                             label="Foto Pequeños"
@@ -102,6 +107,7 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                             isUploading={isFieldUploading('uniformidad_pequenos')}
                             context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos', analysisIndex: activeAnalysisIndex }}
                             forceGalleryMode={isGalleryMode}
+                            readOnly={isCompleted}
                         />
                     </div>
                 </div>

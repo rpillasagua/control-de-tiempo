@@ -16,6 +16,7 @@ interface WeightsSectionProps {
     calculatedGlazing: number | null;
     viewMode: ViewMode;
     isGalleryMode: boolean;
+    isCompleted: boolean;
 }
 
 export const WeightsSection = React.memo<WeightsSectionProps>(({
@@ -25,7 +26,8 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
     weightValidationResults,
     calculatedGlazing,
     viewMode,
-    isGalleryMode
+    isGalleryMode,
+    isCompleted
 }) => {
     const {
         currentAnalysis,
@@ -43,9 +45,6 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
     const isDualBag = false; // logic placeholder
 
     // Visibility Logic (Replicated from Parent or Moved here)
-    // Parent "showWeights" prop logic was: 
-    // !isRemuestreo || (activeFields?.pesoBruto ...)
-    // We can replicate it here easily:
     const showWeights = !isRemuestreo || (
         remuestreoConfig?.activeFields?.pesoBruto ||
         remuestreoConfig?.activeFields?.pesoNeto ||
@@ -84,6 +83,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 value={currentAnalysis.pesoBruto?.valor || ''}
                                 onChange={(e) => handleWeightChange('pesoBruto', parseFloat(e.target.value))}
                                 className="text-center font-medium"
+                                disabled={isCompleted}
                             />
                             {/* Validation Message */}
                             {weightValidationResults.pesoBruto.message && currentAnalysis.pesoBruto?.valor && (
@@ -103,6 +103,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 isUploading={isFieldUploading('pesoBruto')}
                                 context={{ analysisId: analysisId || '', field: 'pesoBruto', analysisIndex: activeAnalysisIndex }}
                                 forceGalleryMode={isGalleryMode}
+                                readOnly={isCompleted}
                             />
                         </div>
                     )}
@@ -127,6 +128,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 value={currentAnalysis.pesoCongelado?.valor || ''}
                                 onChange={(e) => handleWeightChange('pesoCongelado', parseFloat(e.target.value))}
                                 className="text-center font-medium"
+                                disabled={isCompleted}
                             />
                             <PhotoCapture
                                 key={`pesoCongelado-${activeAnalysisIndex}`}
@@ -137,6 +139,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 isUploading={isFieldUploading('pesoCongelado')}
                                 context={{ analysisId: analysisId || '', field: 'pesoCongelado', analysisIndex: activeAnalysisIndex }}
                                 forceGalleryMode={isGalleryMode}
+                                readOnly={isCompleted}
                             />
                         </div>
                     )}
@@ -161,6 +164,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                     placeholder="0"
                                     value={currentAnalysis.pesoSubmuestra?.valor || ''}
                                     onChange={(e) => handleWeightChange('pesoSubmuestra', parseFloat(e.target.value))}
+                                    disabled={isCompleted}
                                 />
                                 <PhotoCapture
                                     key={`pesoSubmuestra-${activeAnalysisIndex}`}
@@ -171,6 +175,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                     isUploading={isFieldUploading('pesoSubmuestra')}
                                     context={{ analysisId: analysisId || '', field: 'pesoSubmuestra', analysisIndex: activeAnalysisIndex }}
                                     forceGalleryMode={isGalleryMode}
+                                    readOnly={isCompleted}
                                 />
                             </div>
 
@@ -191,6 +196,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                     placeholder="0"
                                     value={currentAnalysis.pesoSinGlaseo?.valor || ''}
                                     onChange={(e) => handleWeightChange('pesoSinGlaseo', parseFloat(e.target.value))}
+                                    disabled={isCompleted}
                                 />
                                 <PhotoCapture
                                     key={`pesoSinGlaseo-${activeAnalysisIndex}`}
@@ -201,6 +207,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                     isUploading={isFieldUploading('pesoSinGlaseo')}
                                     context={{ analysisId: analysisId || '', field: 'pesoSinGlaseo', analysisIndex: activeAnalysisIndex }}
                                     forceGalleryMode={isGalleryMode}
+                                    readOnly={isCompleted}
                                 />
                             </div>
                         </>
@@ -225,6 +232,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 value={currentAnalysis.pesoNeto?.valor || ''}
                                 onChange={(e) => handleWeightChange('pesoNeto', parseFloat(e.target.value))}
                                 className="text-center font-medium"
+                                disabled={isCompleted}
                             />
                             {/* Validation Message */}
                             {weightValidationResults.pesoNeto.message && currentAnalysis.pesoNeto?.valor && (
@@ -244,6 +252,7 @@ export const WeightsSection = React.memo<WeightsSectionProps>(({
                                 isUploading={isFieldUploading('pesoNeto')}
                                 context={{ analysisId: analysisId || '', field: 'pesoNeto', analysisIndex: activeAnalysisIndex }}
                                 forceGalleryMode={isGalleryMode}
+                                readOnly={isCompleted}
                             />
                         </div>
                     )}
