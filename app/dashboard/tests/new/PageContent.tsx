@@ -45,6 +45,7 @@ import { UniformityCard } from '@/components/UniformityCard';
 import { DefectsCard } from '@/components/DefectsCard';
 import { CompleteAnalysisCard } from '@/components/CompleteAnalysisCard';
 import { DeleteAnalysisSection } from '@/components/DeleteAnalysisSection';
+import { ObservationsCard } from '@/components/ObservationsCard';
 
 // Types and Utils
 import {
@@ -741,6 +742,12 @@ function AnalysisContent() {
                         onComplete={handleCompleteAnalysis}
                         onEnableEdit={async () => setIsCompleted(false)}
                         analysisId={analysisId}
+                    />
+
+                    <ObservationsCard
+                        observations={currentAnalysis.observations}
+                        onObservationsChange={(value) => updateCurrentAnalysis({ observations: value })}
+                        isCompleted={isCompleted}
                     />
 
                     <DeleteAnalysisSection
