@@ -32,7 +32,7 @@ export function ObservationsCard({
                 {isCompleted && (
                     <div className="flex items-center gap-2 mt-3 p-3 bg-slate-100/80 text-slate-600 rounded-lg text-sm border border-slate-200">
                         <Lock className="w-4 h-4" />
-                        <span>Análisis completado. Observaciones bloqueadas.</span>
+                        <span>Análisis completado. Edición bloqueada.</span>
                     </div>
                 )}
             </CardContent>
