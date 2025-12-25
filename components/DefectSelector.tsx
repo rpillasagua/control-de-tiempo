@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, Edit2, Check } from 'lucide-react';
+import { X, Plus, Trash2, Check } from 'lucide-react';
+import { Search } from 'lucide-react';
 import {
   ProductType,
   DEFECTOS_ENTERO,
@@ -21,6 +22,8 @@ interface DefectSelectorProps {
   onDefectsChange: (defects: { [key: string]: number }) => void;
   validationResults?: DefectCalculationResult;
   readOnly?: boolean;
+  isEditModeExternal?: boolean;
+  onToggleEditMode?: () => void;
 }
 
 export default function DefectSelector({
@@ -28,13 +31,21 @@ export default function DefectSelector({
   selectedDefects,
   onDefectsChange,
   validationResults,
-  readOnly = false
+  readOnly = false,
+  isEditModeExternal,
+  onToggleEditMode
 }: DefectSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedItems, setSelectedItems] = useState<DefectItem[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [internalEditMode, setInternalEditMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const isEditMode = isEditModeExternal !== undefined ? isEditModeExternal : internalEditMode;
+  const setIsEditMode = (val: boolean) => {
+    if (onToggleEditMode) onToggleEditMode();
+    else setInternalEditMode(val);
+  };
 
   // Load selected defects into local state
   useEffect(() => {
@@ -94,27 +105,11 @@ export default function DefectSelector({
 
   return (
     <div className="space-y-4">
-      {!readOnly && (
-        <div className="flex items-center justify-between mb-4">
-          {/* Placeholder for future header if needed */}
-          <div />
-
-          {selectedItems.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`p-2 rounded-xl transition-all ${isEditMode ? 'bg-red-500/20 text-red-300' : 'bg-white/5 text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-              title={isEditMode ? "Terminar edición" : "Editar lista"}
-            >
-              {isEditMode ? <Check className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-            </button>
-          )}
-        </div>
-      )}
 
       {!readOnly && (
         <div className="relative" ref={searchInputRef}>
-          <div className="flex items-center border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
+          <div className="flex items-center bg-[#F3F4F6] rounded-[12px] px-[16px] py-[12px] border-2 border-transparent transition-all focus-within:bg-white focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]">
+            <Search className="mr-[10px] w-[18px] h-[18px] text-gray-500" />
             <input
               type="text"
               value={searchTerm}
@@ -123,85 +118,95 @@ export default function DefectSelector({
                 setShowSuggestions(true);
               }}
               onFocus={() => setShowSuggestions(true)}
-              placeholder="Buscar defecto..."
-              className="w-full px-4 py-3 outline-none text-gray-700 placeholder-gray-400"
+              placeholder="Buscar defecto para agregar..."
+              className="border-none bg-transparent w-full text-[15px] text-[#1F2937] outline-none font-[500] placeholder-[#9CA3AF]"
             />
-            {searchTerm && (
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setShowSuggestions(false);
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
           </div>
 
           {showSuggestions && searchTerm && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
-              {getDefectOptions().map(key => (
-                <button
-                  key={key}
-                  onClick={() => handleAddDefect(key)}
-                  className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center justify-between group"
-                >
-                  <span className="text-gray-700 group-hover:text-blue-700 font-medium">
-                    {DEFECTO_LABELS[key as keyof typeof DEFECTO_LABELS] || key}
-                  </span>
-                  <Plus className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
-                </button>
-              ))}
-              {getDefectOptions().length === 0 && (
-                <div className="px-4 py-3 text-gray-400 text-sm text-center italic">
-                  No se encontraron defectos
+            <div className="relative z-20 w-full mt-2 bg-white rounded-[12px] border border-gray-100 max-h-60 overflow-y-auto" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
+              {getDefectOptions().length > 0 ? (
+                <div className="p-2 space-y-1">
+                  {getDefectOptions().map(key => (
+                    <button
+                      key={key}
+                      onClick={() => handleAddDefect(key)}
+                      className="w-full text-left px-3 py-2.5 rounded-[8px] hover:bg-blue-50 text-[14px] text-[#374151] hover:text-[#2563EB] transition-all flex items-center justify-between group font-[500]"
+                    >
+                      <span className="text-gray-700 group-hover:text-blue-700 font-medium">
+                        {DEFECTO_LABELS[key as keyof typeof DEFECTO_LABELS] || key}
+                      </span>
+                      <Plus className="w-4 h-4 text-gray-300 group-hover:text-[#2563EB] transition-all" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-[14px] text-[#6B7280] font-[500]">No se encontraron defectos</p>
+                  <p className="text-[12px] text-[#9CA3AF] mt-1">Intenta con otro término</p>
                 </div>
               )}
             </div>
+          )}
+
+          {showSuggestions && (
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowSuggestions(false)}
+            />
           )}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 mt-4">
         {selectedItems.map((item) => {
-          // Check if this specific defect is forbidden based on validation results
+          // Validation Logic
           const itemResult = validationResults?.defectResults?.[item.key];
           const isForbidden = itemResult?.isForbidden;
+          const isValid = itemResult?.isValid ?? true;
 
           return (
             <div
               key={item.key}
               className={`
-                relative flex items-center justify-between gap-3 p-3 rounded-[12px] border transition-all
-                ${isEditMode
-                  ? 'border-red-200 bg-red-50 pr-10'
-                  : isForbidden
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-100 bg-white hover:border-blue-200'}
+                relative flex items-center justify-between gap-3 p-3 rounded-xl border transition-all
+                ${isEditMode ? 'border-red-200 bg-red-50 pr-10' : ''}
+                ${!isEditMode && (!isValid || isForbidden) ? 'border-red-600 bg-red-100' : ''}
+                ${!isEditMode && isValid && !isForbidden ? 'border-gray-100 bg-white hover:border-blue-200' : ''}
               `}
             >
-              <div className="flex-1 min-w-0 mr-2">
-                <span className={`block text-[14px] font-[600] leading-tight ${isForbidden ? 'text-red-700' : 'text-[#374151]'}`}>
-                  {item.label}
-                </span>
-                {isForbidden && (
-                  <span className="text-[10px] text-red-500 font-medium mt-1 block">
-                    ⛔ Defecto no permitido
-                  </span>
-                )}
 
-                {/* Defect Percentage and Validation */}
-                {itemResult && !isForbidden && (
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px]">
-                    <span className="font-bold text-slate-700 bg-slate-100 px-1.5 rounded">
-                      {itemResult.percentage.toFixed(2)}%
+
+              <div className="flex-1 min-w-0 mr-2">
+                <div
+                  className="text-[14px] font-[600] break-words leading-tight transition-colors duration-200"
+                  title={item.label}
+                  style={{ color: (!isValid || isForbidden) ? '#dc2626' : '#374151' }}
+                >
+                  {item.label}
+                  {isForbidden && (
+                    <span className="text-[10px] text-red-500 font-medium mt-1 block">
+                      ⛔ Defecto no permitido
                     </span>
-                    <span className={`font-medium ${itemResult.isValid ? 'text-green-600' : 'text-red-500'}`}>
-                      {itemResult.message}
-                    </span>
-                  </div>
-                )}
+                  )}
+                  {itemResult && !isForbidden && (
+                    <div className="text-[11px] font-normal mt-0.5 flex items-center gap-1">
+                      <span className={isValid ? 'text-green-600' : 'text-red-600'}>
+                        {itemResult.percentage.toFixed(2)}%
+                      </span>
+                      {isValid ? (
+                        <Check className="w-3 h-3 text-green-500" />
+                      ) : (
+                        <X className="w-3 h-3 text-red-500" />
+                      )}
+                      <span className="text-gray-400 text-[10px]">
+                        {itemResult.message.includes('OK') || itemResult.message.includes('Excede')
+                          ? `(${itemResult.limitDisplay})`
+                          : itemResult.message}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex-shrink-0">
@@ -216,16 +221,18 @@ export default function DefectSelector({
                 />
               </div>
 
-              {isEditMode && !readOnly && (
-                <button
-                  onClick={() => handleRemoveDefect(item.key)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#EF4444] text-white border-none rounded-full hover:bg-[#DC2626] transition-all"
-                  style={{ boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}
-                  title="Eliminar defecto"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              {
+                isEditMode && !readOnly && (
+                  <button
+                    onClick={() => handleRemoveDefect(item.key)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#EF4444] text-white border-none rounded-full hover:bg-[#DC2626] transition-all"
+                    style={{ boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}
+                    title="Eliminar defecto"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )
+              }
             </div>
           );
         })}
@@ -241,32 +248,34 @@ export default function DefectSelector({
         )}
       </div>
 
-      {validationResults?.isApplicable && (
-        <div className={`
+      {
+        validationResults?.isApplicable && (
+          <div className={`
               mt-4 p-3 rounded-[12px] border flex justify-between items-center
               ${validationResults.totalDefectsValidation.isValid
-            ? 'bg-green-50 border-green-200'
-            : 'bg-red-50 border-red-200'}
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'}
             `}>
-          <div className="flex flex-col">
-            <span className="text-[14px] font-[600] text-gray-700">Defectos Totales</span>
-            <span className="text-[11px] text-gray-500">
-              Base: {validationResults.totalPieces} pzs | Límite: {validationResults.totalDefectsValidation.limit}%
-            </span>
+            <div className="flex flex-col">
+              <span className="text-[14px] font-[600] text-gray-700">Defectos Totales</span>
+              <span className="text-[11px] text-gray-500">
+                Base: {validationResults.totalPieces} pzs | Límite: {validationResults.totalDefectsValidation.limit}%
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-[18px] font-[800] ${validationResults.totalDefectsValidation.isValid ? 'text-green-700' : 'text-red-700'
+                }`}>
+                {validationResults.totalDefectsPercentage.toFixed(2)}%
+              </span>
+              {validationResults.totalDefectsValidation.isValid ? (
+                <Check className="w-5 h-5 text-green-600" />
+              ) : (
+                <X className="w-5 h-5 text-red-600" />
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`text-[18px] font-[800] ${validationResults.totalDefectsValidation.isValid ? 'text-green-700' : 'text-red-700'
-              }`}>
-              {validationResults.totalDefectsPercentage.toFixed(2)}%
-            </span>
-            {validationResults.totalDefectsValidation.isValid ? (
-              <Check className="w-5 h-5 text-green-600" />
-            ) : (
-              <X className="w-5 h-5 text-red-600" />
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

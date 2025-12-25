@@ -32,13 +32,30 @@ export const DefectsCard = React.memo<DefectsCardProps>(({
     isGalleryMode,
     isCompleted = false
 }) => {
+    const [isEditMode, setIsEditMode] = React.useState(false);
+
     if (!showDefects) return null;
 
     return (
         <>
             <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle>⚠️ Registro de Defectos</CardTitle>
+                    {(!isCompleted && currentAnalysis.defectos && Object.keys(currentAnalysis.defectos).length > 0) && (
+                        <button
+                            type="button"
+                            onClick={() => setIsEditMode(!isEditMode)}
+                            className={`
+                                px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all active:scale-95
+                                ${isEditMode
+                                    ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/20'
+                                    : 'bg-red-500 text-white hover:bg-red-600 shadow-md shadow-red-500/20'
+                                }
+                            `}
+                        >
+                            {isEditMode ? 'Listo' : 'Editar'}
+                        </button>
+                    )}
                 </CardHeader>
                 <CardContent className="pt-6">
                     <DefectSelector
@@ -47,6 +64,8 @@ export const DefectsCard = React.memo<DefectsCardProps>(({
                         onDefectsChange={onDefectsChange}
                         validationResults={validationResults}
                         readOnly={isCompleted}
+                        isEditModeExternal={isEditMode}
+                        onToggleEditMode={() => setIsEditMode(!isEditMode)}
                     />
                 </CardContent>
             </Card>
