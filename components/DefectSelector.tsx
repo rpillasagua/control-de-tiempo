@@ -166,9 +166,8 @@ export default function DefectSelector({
       <div className="grid grid-cols-1 gap-3 mt-4">
         {selectedItems.map((item) => {
           // Check if this specific defect is forbidden based on validation results
-          const isForbidden = validationResults &&
-            validationResults.defectResults &&
-            validationResults.defectResults[item.key]?.isForbidden;
+          const itemResult = validationResults?.defectResults?.[item.key];
+          const isForbidden = itemResult?.isForbidden;
 
           return (
             <div
@@ -190,6 +189,18 @@ export default function DefectSelector({
                   <span className="text-[10px] text-red-500 font-medium mt-1 block">
                     ⛔ Defecto no permitido
                   </span>
+                )}
+
+                {/* Defect Percentage and Validation */}
+                {itemResult && !isForbidden && (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px]">
+                    <span className="font-bold text-slate-700 bg-slate-100 px-1.5 rounded">
+                      {itemResult.percentage.toFixed(2)}%
+                    </span>
+                    <span className={`font-medium ${itemResult.isValid ? 'text-green-600' : 'text-red-500'}`}>
+                      {itemResult.message}
+                    </span>
+                  </div>
                 )}
               </div>
 

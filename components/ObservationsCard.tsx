@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Lock } from 'lucide-react';
 
 interface ObservationsCardProps {
     observations?: string;
@@ -25,13 +26,14 @@ export function ObservationsCard({
                     value={observations || ''}
                     onChange={(e) => onObservationsChange(e.target.value)}
                     placeholder="Ingrese observaciones adicionales sobre este análisis..."
-                    className="min-h-[100px] bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500"
+                    className="min-h-[100px] resize-none"
                     disabled={isCompleted}
                 />
                 {isCompleted && (
-                    <p className="text-xs text-slate-500 mt-2">
-                        Las observaciones no se pueden editar en un análisis completado
-                    </p>
+                    <div className="flex items-center gap-2 mt-3 p-3 bg-slate-100/80 text-slate-600 rounded-lg text-sm border border-slate-200">
+                        <Lock className="w-4 h-4" />
+                        <span>Análisis completado. Observaciones bloqueadas.</span>
+                    </div>
                 )}
             </CardContent>
         </Card>

@@ -44,28 +44,31 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                 <CardTitle>📏 Uniformidad</CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-5 mb-4">
                     {/* Grandes */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 border border-slate-200 rounded-xl p-3 bg-slate-50/50 shadow-md">
                         <div className="flex items-center justify-between">
-                            <Label>Grandes (kg)</Label>
+                            <Label>📏 Grandes (kg)</Label>
                             {uniformidad?.grandes?.valor && (
                                 <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                     <CheckCircle2 className="w-3 h-3 text-white" />
                                 </div>
                             )}
                         </div>
-                        <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={uniformidad?.grandes?.valor || ''}
-                            onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                onUniformityChange('grandes', isNaN(val) ? undefined : val);
-                            }}
-                            disabled={isCompleted}
-                        />
+                        <div className="flex justify-center">
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={uniformidad?.grandes?.valor || ''}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    onUniformityChange('grandes', isNaN(val) ? undefined : val);
+                                }}
+                                className="text-center text-lg font-bold rounded-lg w-[90%]"
+                                disabled={isCompleted}
+                            />
+                        </div>
                         <PhotoCapture
                             label="Foto Grandes"
                             modalTitle="Uniformidad Grandes"
@@ -75,30 +78,34 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                             context={{ analysisId: analysisId || '', field: 'uniformidad_grandes', analysisIndex: activeAnalysisIndex }}
                             forceGalleryMode={isGalleryMode}
                             readOnly={isCompleted}
+                            compact={true}
                         />
                     </div>
 
                     {/* Pequeños */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 border border-slate-200 rounded-xl p-3 bg-slate-50/50 shadow-md">
                         <div className="flex items-center justify-between">
-                            <Label>Pequeños (kg)</Label>
+                            <Label>📏 Pequeños (kg)</Label>
                             {uniformidad?.pequenos?.valor && (
                                 <div className="bg-green-500 rounded-full p-0.5 shadow-sm">
                                     <CheckCircle2 className="w-3 h-3 text-white" />
                                 </div>
                             )}
                         </div>
-                        <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={uniformidad?.pequenos?.valor || ''}
-                            onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                onUniformityChange('pequenos', isNaN(val) ? undefined : val);
-                            }}
-                            disabled={isCompleted}
-                        />
+                        <div className="flex justify-center">
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={uniformidad?.pequenos?.valor || ''}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    onUniformityChange('pequenos', isNaN(val) ? undefined : val);
+                                }}
+                                className="text-center text-lg font-bold rounded-lg w-[90%]"
+                                disabled={isCompleted}
+                            />
+                        </div>
                         <PhotoCapture
                             label="Foto Pequeños"
                             modalTitle="Uniformidad Pequeños"
@@ -108,6 +115,7 @@ export const UniformityCard = React.memo<UniformityCardProps>(({
                             context={{ analysisId: analysisId || '', field: 'uniformidad_pequenos', analysisIndex: activeAnalysisIndex }}
                             forceGalleryMode={isGalleryMode}
                             readOnly={isCompleted}
+                            compact={true}
                         />
                     </div>
                 </div>
