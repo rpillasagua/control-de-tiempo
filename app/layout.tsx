@@ -62,6 +62,17 @@ export default function RootLayout({
         </ErrorBoundary>
         <Toaster />
         <OfflinePhotoSync />
+        {/* Force kill any stuck generic Service Workers to bypass aggressive caching during this debug phase */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for(let registration of registrations) {
+                registration.unregister();
+                console.log('SW desinstalado para forzar actualización de caché.');
+              }
+            });
+          }
+        ` }} />
         <ServiceWorkerManager />
       </body>
     </html>
