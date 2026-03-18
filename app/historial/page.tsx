@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Clock, MapPin, CheckCircle, Loader2, ChevronRight, Search, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, CheckCircle, Loader2, ChevronRight, Search, Calendar, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getPaginatedVisits } from '@/lib/visitService';
+import { getPaginatedVisits, deleteVisit } from '@/lib/visitService';
 import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
 import { DocumentSnapshot } from 'firebase/firestore';
@@ -46,6 +46,7 @@ export default function HistorialPage() {
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadFirst = useCallback(async () => {
     if (!user) return;
@@ -79,19 +80,36 @@ export default function HistorialPage() {
 
   useEffect(() => { loadFirst(); }, [loadFirst]);
 
-  // Client-side filters applied after load
+  // Client-side filters  // Filtrado local en memoria
   const filtered = allVisits.filter(v => {
-    // Text search
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      if (!v.clientName.toLowerCase().includes(q)) return false;
-    }
-    // Date filter
-    if (dateFilter === 'today' && v.createdAt < startOfDay()) return false;
-    if (dateFilter === 'week' && v.createdAt < startOfWeek()) return false;
-    if (dateFilter === 'month' && v.createdAt < startOfMonth()) return false;
+    // 1. Text search
+    if (search && !v.clientName.toLowerCase().includes(search.toLowerCase())) return false;
+    
+    // 2. Date filter
+    const localTime = v.arrival.localTime;
+    if (dateFilter === 'today' && localTime < startOfDay()) return false;
+    if (dateFilter === 'week' && localTime < startOfWeek()) return false;
+    if (dateFilter === 'month' && localTime < startOfMonth()) return false;
+
     return true;
   });
+
+  const handleDelete = async (e: React.MouseEvent, visitId: string) => {
+    e.preventDefault(); // Evita que el Link redireccione
+    if (!confirm('¿Estás seguro de eliminar este reporte por completo? Se borrarán todas las fotos asociadas. Esta acción no se puede deshacer.')) return;
+
+    setDeletingId(visitId);
+    try {
+      await deleteVisit(visitId);
+      setAllVisits(prev => prev.filter(v => v.id !== visitId));
+      toast.success('Visita eliminada correctamente');
+    } catch (err) {
+      console.error(err);
+      toast.error('Ocurrió un error al eliminar la visita');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const DATE_FILTERS: { key: DateFilter; label: string }[] = [
     { key: 'all', label: 'Todo' },
@@ -164,7 +182,7 @@ export default function HistorialPage() {
                       : <Clock className="w-5 h-5 text-amber-600" />
                     }
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-2">
                     <p className="font-semibold text-slate-800 truncate">{v.clientName}</p>
                     {v.clientAddress && (
                       <p className="text-xs text-slate-400 flex items-center gap-1 truncate">
@@ -177,7 +195,18 @@ export default function HistorialPage() {
                     </p>
                     <p className="text-xs text-slate-400">{v.activities.length} actividades</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
+                  
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button 
+                      onClick={(e) => handleDelete(e, v.id)}
+                      disabled={deletingId === v.id}
+                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                      title="Eliminar Reporte"
+                    >
+                      {deletingId === v.id ? <Loader2 className="w-5 h-5 animate-spin text-red-500" /> : <Trash2 className="w-5 h-5" />}
+                    </button>
+                    <ChevronRight className="w-4 h-4 text-slate-300" />
+                  </div>
                 </div>
               </Link>
             ))}

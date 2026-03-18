@@ -9,6 +9,7 @@ import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { savePendingPhoto } from '@/lib/idb';
 import { toast } from 'sonner';
 
 export default function ActividadPage() {
@@ -42,19 +43,37 @@ export default function ActividadPage() {
     try {
       let photoUrls: string[] = [];
 
-      // Upload photos to Firebase Storage if any
+      // Upload photos to Firebase Storage if any OR save to IDB
       if (photos.length > 0) {
-        setUploadProgress(`Subiendo fotos...`);
-        const uploads = await Promise.all(
-          photos.map(async (dataUrl, i) => {
-            setUploadProgress(`Subiendo foto ${i + 1} de ${photos.length}...`);
-            const file = dataUrlToFile(dataUrl, `actividad_${Date.now()}_${i}.jpg`);
-            const path = `visits/${visitId}/${Date.now()}_${i}.jpg`;
-            return uploadPhotoToStorage(file, path);
-          })
-        );
-        photoUrls = uploads;
-        toast.success(`📸 ${photos.length} foto${photos.length > 1 ? 's' : ''} subida${photos.length > 1 ? 's' : ''}`);
+        if (isOnline) {
+          setUploadProgress(`Subiendo fotos...`);
+          const uploads = await Promise.all(
+            photos.map(async (dataUrl, i) => {
+              setUploadProgress(`Subiendo foto ${i + 1} de ${photos.length}...`);
+              const file = dataUrlToFile(dataUrl, `actividad_${Date.now()}_${i}.jpg`);
+              const path = `visits/${visitId}/${Date.now()}_${i}.jpg`;
+              return uploadPhotoToStorage(file, path);
+            })
+          );
+          photoUrls = uploads;
+          toast.success(`📸 ${photos.length} foto${photos.length > 1 ? 's' : ''} subida${photos.length > 1 ? 's' : ''}`);
+        } else {
+          // Offline mode! Save locally directly as dataUrls
+          toast.info('Modo sin conexión: Guardando fotos localmente para subirlas después...', { duration: 4000 });
+          const pendingIds = await Promise.all(
+            photos.map(async (dataUrl, i) => {
+              const pendingId = `pending_act_${Date.now()}_${i}`;
+              await savePendingPhoto({
+                id: pendingId,
+                dataUrl,
+                type: 'activity',
+                visitId
+              });
+              return pendingId; // Return placeholders to be stored in Firestore
+            })
+          );
+          photoUrls = pendingIds;
+        }
       }
 
       setUploadProgress('Guardando actividad...');

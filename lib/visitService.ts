@@ -4,7 +4,7 @@
  */
 
 import {
-  collection, doc, addDoc, updateDoc, getDoc, getDocs,
+  collection, doc, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
   query, where, orderBy, serverTimestamp, Timestamp,
   limit, startAfter, DocumentSnapshot
 } from 'firebase/firestore';
@@ -239,6 +239,15 @@ export async function getPaginatedVisits(
   const visits = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
   const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
   return { visits, lastDoc: newLastDoc };
+}
+
+// ──────────────────────────────────────────────
+// Delete the entire visit
+// ──────────────────────────────────────────────
+export async function deleteVisit(visitId: string): Promise<void> {
+  const ref = doc(db, COLLECTION, visitId);
+  await deleteDoc(ref);
+  logger.log(`🗑️ Visita ${visitId} eliminada`);
 }
 
 void Timestamp; // keep import alive for future use

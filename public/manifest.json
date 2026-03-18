@@ -1,7 +1,7 @@
 {
-  "name": "Descongelado",
-  "short_name": "Descongelado",
-  "description": "Sistema de control de calidad para análisis de productos en descongelado",
+  "name": "Bitácora Técnica",
+  "short_name": "Bitácora",
+  "description": "Sistema de registro, auditoría y control de visitas de soporte técnico",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -43,14 +43,14 @@
   "categories": [
     "business",
     "productivity",
-    "food"
+    "utilities"
   ],
   "shortcuts": [
     {
-      "name": "Nuevo Análisis",
-      "short_name": "Nuevo",
-      "description": "Crear un nuevo análisis de calidad",
-      "url": "/?action=new",
+      "name": "Nueva Visita",
+      "short_name": "Visita",
+      "description": "Registrar una nueva visita técnica",
+      "url": "/visita/nueva",
       "icons": [
         {
           "src": "/icon-192.png",
@@ -60,10 +60,10 @@
       ]
     },
     {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Ver análisis recientes",
-      "url": "/",
+      "name": "Historial",
+      "short_name": "Historial",
+      "description": "Ver visitas pasadas",
+      "url": "/historial",
       "icons": [
         {
           "src": "/icon-192.png",

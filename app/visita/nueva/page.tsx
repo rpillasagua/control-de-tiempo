@@ -10,6 +10,8 @@ import { getClients } from '@/lib/clientService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
 import { Client, TimeStamp } from '@/lib/types';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { savePendingPhoto } from '@/lib/idb';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -17,6 +19,7 @@ export default function NuevaVisitaPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { loading: geoLoading, capture: captureGeo } = useGeolocation();
+  const isOnline = useNetworkStatus();
   const inputFileRef = useRef<HTMLInputElement>(null);
 
   const [clientName, setClientName] = useState('');
@@ -70,14 +73,31 @@ export default function NuevaVisitaPage() {
       const tempId = Date.now().toString();
 
       if (arrivalPhoto) {
-        toast.info('Subiendo foto de llegada...');
-        try {
-          const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
-          const path = `visits/${tempId}/arrival.jpg`;
-          photoUrl = await uploadPhotoToStorage(file, path);
-        } catch (err) {
-          console.error('Error subiendo foto de llegada', err);
-          toast.error('La visita se creará, pero falló la subida de foto');
+        if (isOnline) {
+          toast.info('Subiendo foto de llegada...');
+          try {
+            const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
+            const path = `visits/${tempId}/arrival.jpg`;
+            photoUrl = await uploadPhotoToStorage(file, path);
+          } catch (err) {
+            console.error('Error subiendo foto de llegada', err);
+            toast.error('La visita se creará, pero falló la subida de foto');
+          }
+        } else {
+          // Offline Flow
+          toast.info('Modo offline: Guardando foto localmente...');
+          const pendingId = `pending_arrival_${tempId}`;
+          await savePendingPhoto({
+            id: pendingId,
+            dataUrl: arrivalPhoto,
+            type: 'arrival',
+            visitId: tempId // We will swap this with the real visit ID later
+            // Wait, visit ID is created via `createVisit`. 
+            // In createVisit, it auto-generates ID inside if undefined... 
+            // BUT wait! `tempId` is NOT the final visitId if we use addDoc!
+            // Let's modify `photoUrl` to use the pendingId. We must patch the pendingPhoto visitId AFTER createVisit!
+          });
+          photoUrl = pendingId;
         }
       }
 
@@ -99,6 +119,16 @@ export default function NuevaVisitaPage() {
         selectedClient?.id, // ID real en vez de undefined
         clientAddress.trim() || undefined
       );
+
+      // 4. (Offline-only) Re-link the saved IDB photo from tempId to the REAL visitId
+      if (arrivalPhoto && !isOnline && photoUrl?.startsWith('pending_')) {
+        await savePendingPhoto({
+          id: photoUrl,
+          dataUrl: arrivalPhoto,
+          type: 'arrival',
+          visitId: visitId // NOW we have the real Firebase ID
+        });
+      }
 
       toast.success('✅ Llegada registrada');
       router.push(`/visita/${visitId}`);
