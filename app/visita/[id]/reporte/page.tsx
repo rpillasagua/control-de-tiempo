@@ -194,16 +194,24 @@ export default function ReportPage() {
                       <p className="text-sm text-slate-500">Llegada</p>
                       <p className="font-semibold text-slate-800">{formatDateTime(visit.arrival.localTime)}</p>
                       {visit.arrival.location && (
-                        <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${visit.arrival.location.lat},${visit.arrival.location.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-500 hover:text-blue-700 hover:underline mt-0.5 flex items-center gap-1 w-fit transition-colors"
-                        >
-                          <MapPin className="w-3 h-3" />
-                          Ver ubicación GPS en mapa
-                          {visit.arrival.location.accuracy && ` (Precisión: ±${visit.arrival.location.accuracy}m)`}
-                        </a>
+                        <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm">
+                          <iframe 
+                            width="100%" 
+                            height="150" 
+                            frameBorder="0" 
+                            scrolling="no" 
+                            src={`https://maps.google.com/maps?q=${visit.arrival.location.lat},${visit.arrival.location.lng}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                          />
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${visit.arrival.location.lat},${visit.arrival.location.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-slate-50 text-xs text-blue-600 hover:text-blue-700 py-2 px-3 flex items-center justify-between w-full transition-colors border-t border-slate-200"
+                          >
+                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Abrir en Google Maps</span>
+                            {visit.arrival.location.accuracy && <span className="text-slate-400">±{visit.arrival.location.accuracy}m</span>}
+                          </a>
+                        </div>
                       )}
                     </div>
                     <p className="font-mono text-slate-700 font-medium">{formatTime(visit.arrival.localTime)}</p>
@@ -218,15 +226,24 @@ export default function ReportPage() {
                         <p className="text-sm text-slate-500">Salida</p>
                         <p className="font-semibold text-slate-800">{formatDateTime(visit.departure.localTime)}</p>
                         {visit.departure.location && (
-                          <a 
-                            href={`https://www.google.com/maps/search/?api=1&query=${visit.departure.location.lat},${visit.departure.location.lng}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-500 hover:text-blue-700 hover:underline mt-0.5 flex items-center gap-1 w-fit transition-colors"
-                          >
-                            <MapPin className="w-3 h-3" />
-                            Ver ubicación GPS en mapa
-                          </a>
+                          <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm">
+                            <iframe 
+                              width="100%" 
+                              height="150" 
+                              frameBorder="0" 
+                              scrolling="no" 
+                              src={`https://maps.google.com/maps?q=${visit.departure.location.lat},${visit.departure.location.lng}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                            />
+                            <a 
+                              href={`https://www.google.com/maps/search/?api=1&query=${visit.departure.location.lat},${visit.departure.location.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-slate-50 text-xs text-blue-600 hover:text-blue-700 py-2 px-3 flex items-center justify-between w-full transition-colors border-t border-slate-200"
+                            >
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Abrir en Google Maps</span>
+                              {visit.departure.location.accuracy && <span className="text-slate-400">±{visit.departure.location.accuracy}m</span>}
+                            </a>
+                          </div>
                         )}
                       </div>
                       <p className="font-mono text-slate-700 font-medium">{formatTime(visit.departure.localTime)}</p>

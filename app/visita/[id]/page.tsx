@@ -386,11 +386,35 @@ export default function VisitaPage() {
             </div>
           </div>
           {visit.arrival.location && (
-            <p className="text-white/60 text-xs mt-3 flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              GPS: {visit.arrival.location.lat.toFixed(5)}, {visit.arrival.location.lng.toFixed(5)}
-              {visit.arrival.location.accuracy && ` (±${visit.arrival.location.accuracy}m)`}
-            </p>
+            <div className="mt-4 bg-slate-800/50 rounded-xl overflow-hidden border border-slate-600">
+              <p className="text-white/80 text-xs p-2.5 flex items-center justify-between border-b border-slate-600/50 bg-slate-800">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-blue-400" />
+                  MAPA DE LLEGADA
+                </span>
+                {visit.arrival.location.accuracy && (
+                  <span className="text-white/50">Precisión GPS: ±{visit.arrival.location.accuracy}m</span>
+                )}
+              </p>
+              <iframe 
+                width="100%" 
+                height="140" 
+                frameBorder="0" 
+                scrolling="no" 
+                src={`https://maps.google.com/maps?q=${visit.arrival.location.lat},${visit.arrival.location.lng}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                className="pointer-events-none"
+              />
+              <div className="bg-slate-800 p-2 text-center">
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${visit.arrival.location.lat},${visit.arrival.location.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors inline-block"
+                >
+                  Abrir aplicación de mapas →
+                </a>
+              </div>
+            </div>
           )}
         </div>
 
