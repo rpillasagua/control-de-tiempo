@@ -8,6 +8,7 @@ import {
   query, where, orderBy, serverTimestamp, Timestamp,
   limit, startAfter, DocumentSnapshot
 } from 'firebase/firestore';
+import { getStorage, ref, listAll, deleteObject } from 'firebase/storage';
 import { db } from './firebase';
 import { Visit, Activity, TimeStamp, VisitStatus } from './types';
 import { logger } from './logger';
@@ -245,8 +246,24 @@ export async function getPaginatedVisits(
 // Delete the entire visit
 // ──────────────────────────────────────────────
 export async function deleteVisit(visitId: string): Promise<void> {
-  const ref = doc(db, COLLECTION, visitId);
-  await deleteDoc(ref);
+  // 1. Limpiar fotos huérfanas de Firebase Storage en cascada
+  try {
+    const storage = getStorage();
+    const folderRef = ref(storage, `visits/${visitId}`);
+    const { items } = await listAll(folderRef);
+    if (items.length > 0) {
+      await Promise.all(items.map(m => deleteObject(m)));
+      logger.log(`🧹 Carpeta de storage (visits/${visitId}) purgada, se borraron ${items.length} fotos`);
+    }
+  } catch (error: any) {
+    if (error.code !== 'storage/object-not-found') {
+      logger.error(`Error barriendo carpeta Storage de la visita ${visitId}`, error);
+    }
+  }
+
+  // 2. Borrar documento maestro en base de datos Firestore
+  const refDoc = doc(db, COLLECTION, visitId);
+  await deleteDoc(refDoc);
   logger.log(`🗑️ Visita ${visitId} eliminada`);
 }
 

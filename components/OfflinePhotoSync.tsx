@@ -28,24 +28,29 @@ export function OfflinePhotoSync() {
 
         for (const photo of pending) {
           try {
-            // 1. Convert Base64 back to a File
-            const file = dataUrlToFile(photo.dataUrl, `${photo.id}.jpg`);
-            const path = `visits/${photo.visitId}/${photo.id}.jpg`;
-            
-            // 2. Upload to Firebase Storage
-            const realUrl = await uploadPhotoToStorage(file, path);
-
-            // 3. Update the matching Firestore document
-            // Firestore handles offline writes too, so the document might currently exist only in local cache
-            // or already be on the server. getDoc gets it from local cache if offline, but we are online here.
+            // 1. Check if the matching Firestore document still exists FIRST
+            // (If the user deleted the visit while offline, we shouldn't upload orphaned photos)
             const visitRef = doc(db, 'visits', photo.visitId);
             const visitSnap = await getDoc(visitRef);
             
-            if (visitSnap.exists()) {
-              const data = visitSnap.data();
-              let updated = false;
+            if (!visitSnap.exists()) {
+              logger.log(`Visita padre ${photo.visitId} ya no existe. Descartando foto en IDB ${photo.id}`);
+              await deletePendingPhoto(photo.id);
+              continue; // Skip uploading to Storage
+            }
 
-              // Check if it's the arrival photo
+            // 2. Convert Base64 back to a File
+            const file = dataUrlToFile(photo.dataUrl, `${photo.id}.jpg`);
+            const path = `visits/${photo.visitId}/${photo.id}.jpg`;
+            
+            // 3. Upload to Firebase Storage
+            const realUrl = await uploadPhotoToStorage(file, path);
+
+            // 4. Update the matching Firestore document
+            const data = visitSnap.data();
+            let updated = false;
+
+            // Check if it's the arrival photo
               if (data.arrival?.photoUrl === photo.id) {
                 data.arrival.photoUrl = realUrl;
                 updated = true;
@@ -65,16 +70,15 @@ export function OfflinePhotoSync() {
                 });
               }
 
-              if (updated) {
-                await updateDoc(visitRef, {
-                  arrival: data.arrival,
-                  activities: data.activities,
-                  updatedAt: new Date().toISOString()
-                });
-              }
+            if (updated) {
+              await updateDoc(visitRef, {
+                arrival: data.arrival,
+                activities: data.activities,
+                updatedAt: new Date().toISOString()
+              });
             }
             
-            // 4. Remove from IndexedDB Queue
+            // 5. Remove from IndexedDB Queue
             await deletePendingPhoto(photo.id);
             successCount++;
           } catch (e) {

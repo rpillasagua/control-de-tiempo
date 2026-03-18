@@ -10,6 +10,7 @@ import { dataUrlToFile } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { savePendingPhoto } from '@/lib/idb';
+import { compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 
 export default function ActividadPage() {
@@ -25,13 +26,24 @@ export default function ActividadPage() {
   const [uploadProgress, setUploadProgress] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (photos.length >= 5) { toast.error('Máximo 5 fotos por actividad'); return; }
-    const reader = new FileReader();
-    reader.onload = () => setPhotos(prev => [...prev, reader.result as string]);
-    reader.readAsDataURL(file);
+    
+    const toastId = toast.loading('Optimizando foto...', { duration: Infinity });
+    try {
+      const compressedFile = await compressImage(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPhotos(prev => [...prev, reader.result as string]);
+        toast.success('Foto adjuntada exitosamente', { id: toastId, duration: 2000 });
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al optimizar imagen', { id: toastId, duration: 3000 });
+    }
     e.target.value = '';
   };
 

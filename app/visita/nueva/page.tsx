@@ -12,6 +12,7 @@ import { dataUrlToFile } from '@/lib/utils';
 import { Client, TimeStamp } from '@/lib/types';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { savePendingPhoto } from '@/lib/idb';
+import { compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -42,12 +43,24 @@ export default function NuevaVisitaPage() {
     if (selected?.address) setClientAddress(selected.address);
   };
 
-  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setArrivalPhoto(reader.result as string);
-    reader.readAsDataURL(file);
+    
+    const toastId = toast.loading('Optimizando foto de llegada...', { duration: Infinity });
+    try {
+      const compressedFile = await compressImage(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setArrivalPhoto(reader.result as string);
+        toast.success('Foto adjuntada', { id: toastId, duration: 2000 });
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al optimizar imagen', { id: toastId, duration: 3000 });
+    }
+    e.target.value = '';
   };
 
   const handleStart = async () => {
