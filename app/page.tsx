@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { getActiveVisit, getTodayVisits } from '@/lib/visitService';
+import { getActiveVisit, getVisitsByTechnician } from '@/lib/visitService';
 import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -167,19 +167,48 @@ export default function DashboardPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
+  const [metrics, setMetrics] = useState({ total: 0, completed: 0, hours: 0 });
   const [dataLoading, setDataLoading] = useState(false);
 
   const loadVisits = useCallback(async () => {
     if (!user) return;
     setDataLoading(true);
     try {
-      const [active, today] = await Promise.all([
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      weekAgo.setHours(0, 0, 0, 0);
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayISO = todayStart.toISOString();
+
+      const [active, recentVisits] = await Promise.all([
         getActiveVisit(user.email),
-        getTodayVisits(user.email)
+        getVisitsByTechnician(user.email, weekAgo.toISOString())
       ]);
+      
       setActiveVisit(active);
-      // Exclude the active one from the list to avoid duplcation
-      setVisits(today.filter(v => v.status !== 'EN_PROGRESO'));
+
+      let completed = 0;
+      let totalTime = 0;
+      const todayList: Visit[] = [];
+
+      for (const v of recentVisits) {
+        if (v.status === 'FINALIZADA') {
+          completed++;
+          if (v.totalDurationMin) totalTime += v.totalDurationMin;
+        }
+        if (v.createdAt >= todayISO && v.status !== 'EN_PROGRESO') {
+          todayList.push(v);
+        }
+      }
+
+      setMetrics({
+        total: recentVisits.length,
+        completed,
+        hours: Math.round(totalTime / 60)
+      });
+      setVisits(todayList);
     } catch (err: any) {
       console.error(err);
       toast.error(`Error cargando visitas: ${err.message || 'Desconocido'}`);
@@ -246,6 +275,27 @@ export default function DashboardPage() {
             Hola, {user.name.split(' ')[0]} 👋
           </h2>
         </div>
+
+        {/* Dashboard Metrics */}
+        {!dataLoading && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+              <Calendar className="w-5 h-5 text-blue-500 mb-1" />
+              <p className="text-2xl font-bold text-blue-700">{metrics.total}</p>
+              <p className="text-[10px] text-blue-600 uppercase font-semibold tracking-wide mt-0.5">Visitas 7D</p>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+              <CheckCircle className="w-5 h-5 text-emerald-500 mb-1" />
+              <p className="text-2xl font-bold text-emerald-700">{metrics.completed}</p>
+              <p className="text-[10px] text-emerald-600 uppercase font-semibold tracking-wide mt-0.5">Culminadas</p>
+            </div>
+            <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+              <Clock className="w-5 h-5 text-purple-500 mb-1" />
+              <p className="text-2xl font-bold text-purple-700">{metrics.hours}h</p>
+              <p className="text-[10px] text-purple-600 uppercase font-semibold tracking-wide mt-0.5">Horas Trab.</p>
+            </div>
+          </div>
+        )}
 
         {/* Active visit banner */}
         {activeVisit && <ActiveVisitBanner visit={activeVisit} />}

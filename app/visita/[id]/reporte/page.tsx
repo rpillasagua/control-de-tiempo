@@ -199,14 +199,32 @@ export default function ReportPage() {
           <div id="report-content" className="bg-white rounded-2xl shadow-sm overflow-hidden print-card">
 
             {/* Report Header */}
-            <div className="bg-slate-800 text-white px-6 py-5">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-xl font-bold">Reporte Técnico de Visita</h2>
-                  <p className="text-slate-400 text-sm mt-0.5">#{visitId.split('-')[0].toUpperCase()}</p>
+            <div className="bg-slate-800 text-white px-6 py-6 border-b border-slate-700">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-5">
+                  {profile?.logoUrl && (
+                    <img 
+                      src={profile.logoUrl} 
+                      alt="Logo Empresa" 
+                      className="w-16 h-16 rounded-xl bg-white object-contain p-1.5 shadow-sm no-print" 
+                      crossOrigin="anonymous" 
+                    />
+                  )}
+                  {profile?.logoUrl && (
+                    <img 
+                      src={profile.logoUrl} 
+                      alt="Logo Empresa Print" 
+                      className="w-16 h-16 rounded-xl bg-white object-contain p-1.5 shadow-sm hidden print:block pt-0" 
+                      crossOrigin="anonymous" 
+                    />
+                  )}
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight">Reporte Técnico</h2>
+                    <p className="text-slate-400 text-sm mt-0.5 font-medium">#{visitId.split('-')[0].toUpperCase()}</p>
+                  </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${isComplete ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-slate-900'}`}>
-                  {isComplete ? '✓ Completada' : '⏳ En curso'}
+                <div className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-wide shadow-sm ${isComplete ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-amber-400 text-amber-950 shadow-amber-400/20'}`}>
+                  {isComplete ? '✓ COMPLETADA' : '⏳ EN CURSO'}
                 </div>
               </div>
             </div>
