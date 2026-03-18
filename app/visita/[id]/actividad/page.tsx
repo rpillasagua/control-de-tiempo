@@ -111,7 +111,7 @@ export default function ActividadPage() {
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2 flex-wrap">
             Fotos de evidencia{' '}
-            <span className="text-slate-400 font-normal">(hasta 5 — se guardan en Google Drive)</span>
+            <span className="text-slate-400 font-normal">(hasta 5 — guardadas en la nube)</span>
             {!isOnline && (
               <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">
                 <WifiOff className="w-3 h-3" /> Sin conexión — se subirán al volver online
