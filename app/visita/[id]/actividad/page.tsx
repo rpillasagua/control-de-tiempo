@@ -15,7 +15,7 @@ export default function ActividadPage() {
   const params = useParams();
   const visitId = params.id as string;
   const router = useRouter();
-  const { getDriveToken } = useAuth();
+  const { user } = useAuth();
   const isOnline = useNetworkStatus();
 
   const [description, setDescription] = useState('');
