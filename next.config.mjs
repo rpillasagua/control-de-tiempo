@@ -59,18 +59,15 @@ const withPWA = withPWAInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Ignorar ESLint durante build (warnings no deben bloquear)
+  // Ignorar ESLint durante build
   eslint: {
     ignoreDuringBuilds: true,
   },
 
-  serverExternalPackages: ['pdf-parse'],
-
-  // Configuración para SPA + PWA
-  output: 'export', // Exportar como SPA estática
+  // NOTE: output: 'export' removed — dynamic routes [id] require server mode.
 
   images: {
-    unoptimized: true, // Requerido para export estático
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'], // Formatos modernos
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -91,9 +88,6 @@ const nextConfig = {
 
   // Configuración de trailing slash para compatibilidad
   trailingSlash: true,
-
-  // NOTA: swcMinify está habilitado por defecto en Next.js 15+
-  // NOTA: compress no funciona con output: 'export' (requiere servidor)
 
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {

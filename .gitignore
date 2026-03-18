@@ -20,9 +20,12 @@
 # production
 /build
 
-# misc
-.DS_Store
-*.pem
+# Firebase
+bitacora-tecnica-5dce1-firebase-adminsdk-fbsvc-3f5ed8b59f.json
+.firebase/
+firestore-debug.log
+firebase-debug.log
+ui-debug.log*
 
 # debug
 npm-debug.log*

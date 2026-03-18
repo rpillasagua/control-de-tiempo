@@ -42,12 +42,12 @@ if (typeof window !== 'undefined') {
 }
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDxOH8U006DP1dSRIo0qaYoTrhoC_4b9bE', // FORZADO: Ignorar env var de Vercel (está restringida)
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'studio-6276322063-5d9d6.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'studio-6276322063-5d9d6',
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'studio-6276322063-5d9d6.firebasestorage.app',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '725463781946',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:725463781946:web:57b8c03f42060ec4eb5b03'
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 // Debug: Log Firebase config en desarrollo

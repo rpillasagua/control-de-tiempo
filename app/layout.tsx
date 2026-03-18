@@ -4,21 +4,19 @@ import { Inter, Outfit } from 'next/font/google';
 import { Toaster } from '@/components/Toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ServiceWorkerManager from '@/components/ServiceWorkerManager';
-import TokenExpiryNotifier from '@/components/TokenExpiryNotifier';
-import AuthInitializer from '@/components/AuthInitializer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 // PWA Ready - Vercel Production Build
 export const metadata: Metadata = {
-  title: 'Descongelado',
-  description: 'Sistema de control de calidad para análisis de productos en descongelado - Aquagold',
+  title: 'Bitácora Técnica',
+  description: 'Registro de visitas técnicas con evidencia GPS y fotos',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Descongelado',
+    title: 'Bitácora Técnica',
   },
   icons: {
     icon: [
@@ -60,8 +58,6 @@ export default function RootLayout({
           {children}
         </ErrorBoundary>
         <Toaster />
-        <TokenExpiryNotifier />
-        <AuthInitializer />
         <ServiceWorkerManager />
       </body>
     </html>

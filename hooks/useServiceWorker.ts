@@ -53,38 +53,7 @@ export function useServiceWorker() {
 
         registerSW();
 
-        // ✅ PERIODIC BACKGROUND CHECK FOR PENDING PHOTOS
-        // This ensures photos get uploaded even if the user misses the 'online' event
-        const checkPendingPhotos = async () => {
-            if (!navigator.onLine) return;
-
-            try {
-                const { photoStorageService } = await import('@/lib/photoStorageService');
-                await photoStorageService.initialize();
-
-                const [pending, failed] = await Promise.all([
-                    photoStorageService.getPendingPhotos(),
-                    photoStorageService.getFailedPhotos()
-                ]);
-
-                const totalPending = pending.length + failed.length;
-
-                if (totalPending > 0) {
-                    logger.log(`📋 Background check: ${totalPending} fotos pendientes detectadas`);
-                    // The PendingUploadsPanel will handle the actual retry
-                    // This is just to ensure visibility in logs
-                }
-            } catch (error) {
-                console.error('Error en background check de fotos:', error);
-            }
-        };
-
-        // Check every 30 seconds
-        const photoCheckInterval = setInterval(checkPendingPhotos, 30000);
-
         // Cleanup
-        return () => {
-            clearInterval(photoCheckInterval);
-        };
+        return () => {};
     }, []);
 }

@@ -1,321 +1,296 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image'; // Optimización de Next.js
-import { User, LogOut, Loader2 } from 'lucide-react';
-import { googleAuthService, UserProfile } from '@/lib/googleAuthService';
-import GoogleLoginButton from '@/components/GoogleLoginButton';
-import AnalysisDashboard from '@/components/AnalysisDashboard';
-import DriveDiagnostic from '@/components/DriveDiagnostic';
-import { QualityAnalysis } from '@/lib/types';
-import { logger } from '@/lib/logger';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User, Users, Settings } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { getActiveVisit, getTodayVisits } from '@/lib/visitService';
+import { Visit } from '@/lib/types';
+import { toast } from 'sonner';
+import Link from 'next/link';
 
-interface AuthState {
-  isAuthenticated: boolean;
-  user: UserProfile | null;
-  loading: boolean;
+// ─────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────
+function formatDuration(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-// --- Custom Hook ---
-const useGoogleAuth = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    loading: true
+function formatTimestamp(iso: string): string {
+  return new Date(iso).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-EC', {
+    weekday: 'long', day: 'numeric', month: 'long'
   });
+}
 
+function elapsed(sinceIso: string): string {
+  const ms = Date.now() - new Date(sinceIso).getTime();
+  const min = Math.floor(ms / 60000);
+  return formatDuration(min);
+}
+
+// ─────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────
+
+function ActiveVisitBanner({ visit }: { visit: Visit }) {
+  const [elapsedDisplay, setElapsedDisplay] = useState(elapsed(visit.arrival.localTime));
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        logger.log('🚀 Iniciando inicialización de Auth en page.tsx');
-        await googleAuthService.initialize();
-        logger.log('✅ Inicialización completada en page.tsx');
+    const t = setInterval(() => setElapsedDisplay(elapsed(visit.arrival.localTime)), 30000);
+    return () => clearInterval(t);
+  }, [visit.arrival.localTime]);
 
-        // La suscripción actualiza el estado automáticamente cuando el servicio cambia
-        const unsubscribe = googleAuthService.subscribe((user) => {
-          logger.log('📥 Recibida actualización de usuario en page.tsx:', user ? user.name : 'null');
-          setAuthState({
-            isAuthenticated: !!user,
-            user: user,
-            loading: false
-          });
-        });
-
-        return unsubscribe;
-      } catch (error) {
-        logger.error('Error inicializando Google Auth:', error);
-        setAuthState(prev => ({ ...prev, loading: false }));
-      }
-    };
-
-    // Ejecutar y limpiar
-    const cleanupPromise = initAuth();
-    return () => {
-      cleanupPromise.then(cleanup => cleanup && cleanup());
-    };
-  }, []);
-
-  const login = async () => {
-    try {
-      await googleAuthService.login();
-    } catch (error) {
-      logger.error('Error en login:', error);
-    }
-  };
-
-  const logout = () => {
-    googleAuthService.logout();
-  };
-  return { ...authState, login, logout };
-};
-
-// --- Components ---
-
-const LoginPage = () => {
   return (
-    <main className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-slate-300">
-      <div className="w-full max-w-[400px] bg-white rounded-[14px] shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-slate-100 p-10 animate-in fade-in zoom-in-95 duration-300">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-            <User className="h-8 w-8 text-white" />
+    <Link href={`/visita/${visit.id}`}>
+      <div className="bg-emerald-500 text-white rounded-2xl p-5 shadow-lg flex items-center justify-between hover:bg-emerald-600 transition-colors active:scale-[0.98] cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+          <div>
+            <p className="font-bold text-lg">{visit.clientName}</p>
+            <p className="text-emerald-100 text-sm">
+              Desde {formatTimestamp(visit.arrival.localTime)} · {elapsedDisplay} en curso
+            </p>
           </div>
         </div>
-        <div className="text-center space-y-2 mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Control de Calidad</h1>
-          <h2 className="text-xl font-semibold text-slate-800">Análisis en Descongelado</h2>
-          <p className="text-sm text-slate-500 mt-2">Accede con tu cuenta corporativa para gestionar los análisis</p>
+        <ChevronRight className="w-6 h-6 text-emerald-200" />
+      </div>
+    </Link>
+  );
+}
+
+function VisitCard({ visit }: { visit: Visit }) {
+  const isClosed = visit.status === 'FINALIZADA';
+  return (
+    <Link href={`/visita/${visit.id}`}>
+      <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow active:scale-[0.98] cursor-pointer">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {isClosed
+                ? <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                : <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              }
+              <p className="font-semibold text-slate-800 truncate">{visit.clientName}</p>
+            </div>
+            {visit.clientAddress && (
+              <div className="flex items-center gap-1 text-slate-500 text-sm mb-2">
+                <MapPin className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{visit.clientAddress}</span>
+              </div>
+            )}
+            <p className="text-xs text-slate-400">
+              {formatTimestamp(visit.arrival.localTime)}
+              {visit.departure && ` → ${formatTimestamp(visit.departure.localTime)}`}
+            </p>
+          </div>
+          <div className="text-right ml-3 flex-shrink-0">
+            {visit.totalDurationMin !== undefined && visit.totalDurationMin !== null ? (
+              <p className="font-bold text-slate-700">{formatDuration(visit.totalDurationMin)}</p>
+            ) : null}
+            <p className="text-xs text-slate-400">{visit.activities.length} actividades</p>
+          </div>
         </div>
-        <div className="mb-8"><GoogleLoginButton /></div>
-        <p className="text-xs text-center text-slate-400">&copy; {new Date().getFullYear()} Todos los derechos reservados.</p>
+      </div>
+    </Link>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Login Page
+// ─────────────────────────────────────────────────────────
+function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+      <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-2xl p-10">
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </div>
+        </div>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Bitácora Técnica</h1>
+          <p className="text-slate-500 text-sm mt-1">Registro de visitas y evidencia de trabajo</p>
+        </div>
+        <button
+          onClick={onLogin}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors font-medium text-slate-700 disabled:opacity-50"
+        >
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continuar con Google
+            </>
+          )}
+        </button>
+        <p className="text-xs text-center text-slate-400 mt-6">Sesión persistente — no expira cada hora</p>
       </div>
     </main>
   );
-};
+}
 
-const LoadingScreen = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white">
-    <div className="relative">
-      <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
-      <Loader2 className="h-16 w-16 text-blue-500 animate-spin relative z-10" />
-    </div>
-    <p className="mt-6 text-lg font-medium text-blue-400 animate-pulse">Iniciando sistema...</p>
-  </div>
-);
+// ─────────────────────────────────────────────────────────
+// Main Dashboard
+// ─────────────────────────────────────────────────────────
+export default function DashboardPage() {
+  const { user, loading: authLoading, login } = useAuth();
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
+  const [dataLoading, setDataLoading] = useState(false);
 
-const AppHeader = ({ user, onLogout }: { user: UserProfile; onLogout: () => void }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const loadVisits = useCallback(async () => {
+    if (!user) return;
+    setDataLoading(true);
+    try {
+      const [active, today] = await Promise.all([
+        getActiveVisit(user.email),
+        getTodayVisits(user.email)
+      ]);
+      setActiveVisit(active);
+      // Exclude the active one from the list to avoid duplcation
+      setVisits(today.filter(v => v.status !== 'EN_PROGRESO'));
+    } catch {
+      toast.error('Error cargando visitas');
+    } finally {
+      setDataLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadVisits();
+  }, [user, loadVisits]);
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LoginPage
+        onLogin={async () => {
+          setLoginLoading(true);
+          try { await login(); } catch { /* handled internally */ }
+          finally { setLoginLoading(false); }
+        }}
+        loading={loginLoading}
+      />
+    );
+  }
+
+  const today = formatDate(new Date().toISOString());
 
   return (
-    <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 transition-all" style={{ borderBottom: 'none' }}>
-      <div className="max-w-5xl mx-auto px-4 py-2">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 leading-tight">
-            Análisis en <span className="text-blue-600">Descongelado</span>
-          </h1>
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="focus:outline-none group transition-transform active:scale-95 flex items-center gap-2"
-            >
-              {user.picture ? (
-                <div
-                  className="relative h-12 w-12 overflow-hidden shadow-md transition-all duration-200 hover:scale-105"
-                  style={{ borderRadius: '14px' }}
-                >
-                  <img
-                    src={user.picture}
-                    alt={user.name}
-                    className="h-full w-full object-cover"
-                    style={{ borderRadius: '14px' }}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const parent = e.currentTarget.parentElement;
-                      if (parent) {
-                        parent.classList.add('fallback-avatar');
-                        const fallback = parent.querySelector('.fallback-text');
-                        if (fallback) fallback.classList.remove('hidden');
-                      }
-                    }}
-                  />
-                  <span
-                    className="absolute inset-0 flex items-center justify-center text-lg font-bold text-blue-600 bg-blue-100 hidden fallback-text"
-                    style={{ borderRadius: '14px' }}
-                  >
-                    {user.name.charAt(0)}
-                  </span>
+    <div className="min-h-screen bg-slate-50 pb-24">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-30">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h1 className="font-bold text-slate-800 text-lg">Bitácora Técnica</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {user.picture
+              ? <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full border border-slate-200" />
+              : <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
                 </div>
-              ) : (
-                <div
-                  className="w-12 h-12 bg-blue-100 flex items-center justify-center text-blue-600 shadow-md hover:scale-105 transition-transform duration-200"
-                  style={{ borderRadius: '14px' }}
-                >
-                  <span className="text-lg font-bold">{user.name.charAt(0)}</span>
-                </div>
-              )}
-            </button>
-
-            {isDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsDropdownOpen(false)}
-                ></div>
-                <div
-                  className="absolute right-0 mt-3 w-[200px] bg-white p-[16px] z-[100] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-[12px]"
-                  style={{
-                    borderRadius: '14px',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                    transform: 'translateX(-125px)'
-                  }}
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <p className="text-[14px] font-[700] text-[#111827] truncate w-full">{user.name}</p>
-                    <p className="text-[12px] text-[#6B7280] truncate w-full mt-[2px]">{user.email}</p>
-                  </div>
-
-                  <hr className="border-t border-[#E5E7EB] w-full m-0" />
-
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      onLogout();
-                    }}
-                    className="w-full text-[13px] font-[600] rounded-[12px] flex items-center justify-center gap-[6px] transition-all"
-                    style={{
-                      padding: '10px 12px',
-                      backgroundColor: '#FEF2F2',
-                      color: '#EF4444',
-                      border: 'none'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE2E2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEF2F2';
-                    }}
-                  >
-                    <LogOut size={14} />
-                    Cerrar Sesión
-                  </button>
-                </div>
-              </>
-            )}
+            }
           </div>
         </div>
-      </div>
-    </header>
-  );
-};
+      </header>
 
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
 
+        {/* Date + greeting */}
+        <div>
+          <p className="text-xs text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> {today}
+          </p>
+          <h2 className="text-2xl font-bold text-slate-800 mt-1">
+            Hola, {user.name.split(' ')[0]} 👋
+          </h2>
+        </div>
 
-// --- Main Page ---
+        {/* Active visit banner */}
+        {activeVisit && <ActiveVisitBanner visit={activeVisit} />}
 
-export default function Home() {
-  const { isAuthenticated, user, loading, login, logout } = useGoogleAuth();
-
-  // Inicializar estado con caché local si existe
-  const [initialAnalyses, setInitialAnalyses] = useState<QualityAnalysis[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('cached_analyses');
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch (e) {
-          console.error('Error parsing cached analyses', e);
-        }
-      }
-    }
-    return [];
-  });
-  const [initialLastDoc, setInitialLastDoc] = useState<any>(null);
-  const [loadingAnalyses, setLoadingAnalyses] = useState(false);
-
-  // Efecto para cargar datos SOLO cuando el usuario se autentica
-  useEffect(() => {
-    let isMounted = true;
-
-    if (isAuthenticated && user) {
-      let unsubscribe: (() => void) | undefined;
-
-      const setupSubscription = async () => {
-        // Solo mostrar loading si no hay datos en caché
-        if (initialAnalyses.length === 0) {
-          setLoadingAnalyses(true);
-        }
-
-        try {
-          const { subscribeToRecentAnalyses } = await import('@/lib/analysisService');
-
-          // Suscribirse a los últimos 30 análisis
-          unsubscribe = subscribeToRecentAnalyses((analyses, lastDoc) => {
-            if (isMounted) {
-              setInitialAnalyses(analyses);
-              setInitialLastDoc(lastDoc);
-              setLoadingAnalyses(false);
-
-              // Guardar en caché local (máximo 100 items para no saturar)
-              try {
-                // Combinar con lo que ya había en caché para tener historial offline
-                // Pero priorizar los datos frescos de Firestore
-                const cached = localStorage.getItem('cached_analyses');
-                let newCache = [...analyses];
-
-                if (cached) {
-                  const prevCache = JSON.parse(cached) as QualityAnalysis[];
-                  // Agregar items antiguos que no estén en la nueva lista
-                  const existingIds = new Set(analyses.map(a => a.id));
-                  const oldItems = prevCache.filter(a => !existingIds.has(a.id));
-                  newCache = [...newCache, ...oldItems];
-                }
-
-                // Limitar a 100 items
-                const limitedCache = newCache.slice(0, 100);
-                localStorage.setItem('cached_analyses', JSON.stringify(limitedCache));
-              } catch (e) {
-                console.error('Error saving to cache', e);
-              }
-            }
-          }, 30); // Límite explícito de 30
-        } catch (error) {
-          logger.error('Error setting up analysis subscription:', error);
-          if (isMounted) setLoadingAnalyses(false);
-        }
-      };
-
-      setupSubscription();
-
-      return () => {
-        isMounted = false;
-        if (unsubscribe) unsubscribe();
-      };
-    }
-
-    return () => { isMounted = false; };
-  }, [isAuthenticated, user]);
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  if (!isAuthenticated || !user) {
-    return <LoginPage />;
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 pb-10">
-      <AppHeader user={user} onLogout={logout} />
-
-      <main className="animate-fade-in mt-6">
-        {loadingAnalyses ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
-            <p className="text-slate-400 text-sm font-medium">Obteniendo registros recientes...</p>
-          </div>
-        ) : (
-          <AnalysisDashboard initialAnalyses={initialAnalyses} initialLastDoc={initialLastDoc} />
+        {/* New visit CTA */}
+        {!activeVisit && (
+          <Link href="/visita/nueva">
+            <div className="bg-blue-600 text-white rounded-2xl p-5 flex items-center justify-between shadow-md hover:bg-blue-700 transition-colors active:scale-[0.98] cursor-pointer">
+              <div>
+                <p className="font-bold text-lg">Nueva Visita Técnica</p>
+                <p className="text-blue-200 text-sm flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> Iniciar registro con GPS</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Plus className="w-7 h-7" />
+              </div>
+            </div>
+          </Link>
         )}
+
+        {/* Quick Actions Menu */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <Link href="/clientes" className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+            <span className="text-sm font-semibold text-slate-700">Mis Clientes</span>
+          </Link>
+          
+          <Link href="/perfil" className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
+              <Settings className="w-5 h-5" />
+            </div>
+            <span className="text-sm font-semibold text-slate-700">Mi Perfil</span>
+          </Link>
+        </div>
+
+        {/* Today's visits */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">Visitas de hoy</h3>
+            <Link href="/historial" className="text-sm text-blue-600 hover:underline">Ver historial</Link>
+          </div>
+
+          {dataLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 text-slate-300 animate-spin" />
+            </div>
+          ) : visits.length === 0 ? (
+            <div className="text-center py-10 text-slate-400">
+              <Clock className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+              <p>Aún no hay visitas registradas hoy</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {visits.map(v => <VisitCard key={v.id} visit={v} />)}
+            </div>
+          )}
+        </div>
+
       </main>
+
     </div>
   );
 }

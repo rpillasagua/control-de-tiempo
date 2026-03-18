@@ -2,10 +2,62 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regla base: Solo usuarios autenticados pueden leer y escribir.
-    // Esto previene el acceso público y soluciona la advertencia de vencimiento.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    
+    // Función: usuario autenticado
+    function isAuthenticated() {
+      return request.auth != null;
     }
+
+    // Función: el documento pertenece al usuario que lo solicita
+    // (Asegura que un técnico solo vea/edite su propia data)
+    function isOwner(emailField) {
+      return isAuthenticated() && request.auth.token.email == emailField;
+    }
+
+    // ──────────────────────────────────────────────
+    // 1. VISITAS (visits)
+    // ──────────────────────────────────────────────
+    match /visits/{visitId} {
+      // Cualquier persona puede AL MENOS LEER un reporte si tiene el ID (link público).
+      // En una app real de alta seguridad podrías requerir un PIN,
+      // pero el requisito es mandar el link por WhatsApp para el cliente.
+      allow read: if true;
+      
+      // Solo el técnico dueño puede crear, modificar o eliminar sus visitas
+      allow create: if isOwner(request.resource.data.technicianId);
+      allow update, delete: if isOwner(resource.data.technicianId);
+      
+      // ──────────────────────────────────────────────
+      // 1.1 ACTIVIDADES DE LA VISITA (subcolección)
+      // ──────────────────────────────────────────────
+      match /activities/{activityId} {
+        // Lectura pública por la misma razón del reporte
+        allow read: if true;
+        
+        // La escritura de actividades requiere que el técnico sea el dueño de la visita padre
+        allow create, update, delete: if 
+          isOwner(get(/databases/$(database)/documents/visits/$(visitId)).data.technicianId);
+      }
+    }
+
+    // ──────────────────────────────────────────────
+    // 2. CLIENTES (clients)
+    // ──────────────────────────────────────────────
+    match /clients/{clientId} {
+      // Los clientes son privados para cada técnico
+      allow read, update, delete: if isOwner(resource.data.createdBy);
+      allow create: if isOwner(request.resource.data.createdBy);
+    }
+
+    // ──────────────────────────────────────────────
+    // 3. PERFIL PROFESIONAL (profiles)
+    // ──────────────────────────────────────────────
+    match /profiles/{emailId} {
+      // El perfil público puede ser leído por cualquiera que vea el reporte
+      allow read: if true;
+      // Pero solo puede ser editado por el dueño (el document ID debe ser el correo)
+      allow write: if isOwner(emailId);
+    }
+    
   }
 }

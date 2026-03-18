@@ -1,14 +1,14 @@
 {
-  "name": "resistencias-app",
-  "version": "2.2.0",
+  "name": "bitacora-tecnica",
+  "version": "1.0.0",
   "private": true,
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "next dev -H 0.0.0.0 -p 8080",
+    "dev": "next dev",
     "vercel-build": "npm install --legacy-peer-deps && npm run build",
-    "dev:https": "local-ssl-proxy --source 8443 --target 8080 --cert certs/localhost.crt --key certs/localhost.key",
+    "dev:https": "local-ssl-proxy --source 8443 --target 3000 --cert certs/localhost.crt --key certs/localhost.key",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:https\"",
     "build": "next build",
     "build:spa": "next build",
@@ -21,8 +21,7 @@
     "generate-cert": "openssl req -x509 -newkey rsa:2048 -keyout certs/localhost.key -out certs/localhost.crt -days 365 -nodes -subj '/CN=localhost'",
     "generate-icons": "node scripts/generate-pwa-icons.js",
     "pwa:check": "node scripts/check-pwa.js",
-    "migrate-photo-urls": "npx tsx scripts/migrate-photo-urls.ts",
-    "update-specs": "python scripts/convert_excel_to_ts.py"
+    "migrate-photo-urls": "npx tsx scripts/migrate-photo-urls.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.11.1",
@@ -36,11 +35,9 @@
     "browser-image-compression": "^2.0.2",
     "date-fns": "^3.0.6",
     "dotenv": "^17.2.3",
-    "exceljs": "^4.4.0",
-    "firebase": "^10.7.1",
+    "firebase": "^10.14.1",
     "lucide-react": "^0.263.1",
     "next": "^15.5.5",
-    "pdf-parse": "^1.1.1",
     "postcss": "^8.5.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -48,14 +45,9 @@
     "tailwindcss": "^4.1.17",
     "typescript": "^5.3.3",
     "use-debounce": "^10.0.0",
-    "xlsx": "^0.18.5",
-    "xlsx-js-style": "^1.2.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@capacitor/android": "^7.4.3",
-    "@capacitor/cli": "^7.4.3",
-    "@capacitor/core": "^7.4.3",
     "concurrently": "^9.2.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.6",
