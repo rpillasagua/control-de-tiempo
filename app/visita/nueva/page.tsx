@@ -116,8 +116,8 @@ export default function NuevaVisitaPage() {
 
       const arrival: TimeStamp = {
         localTime: new Date().toISOString(),
-        location: geoPoint ?? undefined,
-        photoUrl: photoUrl
+        ...(geoPoint ? { location: geoPoint } : {}),
+        ...(photoUrl ? { photoUrl } : {})
       };
 
       // Buscar el ID real del cliente si lo seleccionó de la lista

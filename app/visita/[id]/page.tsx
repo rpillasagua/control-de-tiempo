@@ -266,7 +266,7 @@ export default function VisitaPage() {
 
       await closeVisit(visitId, {
         localTime: new Date().toISOString(),
-        location: geoPoint
+        ...(geoPoint ? { location: geoPoint } : {})
       }, summary || undefined);
 
       toast.success('✅ Visita finalizada correctamente');
