@@ -33,7 +33,7 @@ Al finalizar, se genera un **Reporte Técnico de Visita** que puede imprimirse o
 ### 🛠️ Registro de Actividades
 - Agregar actividades con descripción libre durante la visita
 - Adjuntar fotos a cada actividad (con compresión automática de imágenes)
-- Subida de imágenes a Google Drive de forma organizada
+- Subida de imágenes a **Firebase Storage** de forma organizada y centralizada
 
 ### 📄 Reportes Profesionales
 - Reporte formal con datos del cliente, del técnico y registro de tiempos
@@ -58,7 +58,7 @@ Al finalizar, se genera un **Reporte Técnico de Visita** que puede imprimirse o
 | **Frontend** | Next.js 14, TypeScript, Tailwind CSS |
 | **Base de datos** | Firebase Firestore |
 | **Autenticación** | Google OAuth (sesión persistente) |
-| **Almacenamiento de fotos** | Google Drive API v3 |
+| **Almacenamiento de fotos** | Firebase Storage |
 | **PWA** | Service Workers, Web App Manifest |
 | **Geolocalización** | Browser Geolocation API |
 
