@@ -22,8 +22,6 @@ export interface AuthUser {
   email: string;
   name: string;
   picture: string;
-  // The Google OAuth access token (for Drive API)
-  accessToken?: string;
 }
 
 export function useAuth() {
@@ -33,26 +31,14 @@ export function useAuth() {
   useEffect(() => {
     const auth = getAuth();
 
-    // Firebase persists the session automatically — no hourly token re-auth
+    // Firebase persists the session automatically
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
-        // Get fresh Google OAuth token (for Drive API calls), silently
-        let accessToken: string | undefined;
-        try {
-          const tokenResult = await firebaseUser.getIdTokenResult();
-          // The actual Google access token is obtained via getIdToken or stored after sign-in
-          accessToken = await firebaseUser.getIdToken(false);
-          void tokenResult; // prevent unused var lint
-        } catch {
-          logger.warn('Could not get token for Drive API');
-        }
-
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email ?? '',
           name: firebaseUser.displayName ?? '',
-          picture: firebaseUser.photoURL ?? '',
-          accessToken
+          picture: firebaseUser.photoURL ?? ''
         });
       } else {
         setUser(null);
@@ -66,19 +52,10 @@ export function useAuth() {
   const login = async () => {
     const auth = getAuth();
     const provider = new GoogleAuthProvider();
-    // Request Drive scope so we can upload photos
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
     provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
 
     try {
       const result = await signInWithPopup(auth, provider);
-      // Extract the OAuth access token (needed for Drive uploads)
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const accessToken = credential?.accessToken;
-      if (accessToken) {
-        // Store for Drive API usage (expires in 1h, but auto-refreshed via signIn)
-        sessionStorage.setItem('drive_access_token', accessToken);
-      }
       logger.log('✅ Login Firebase exitoso:', result.user.displayName);
     } catch (error) {
       logger.error('❌ Error en login:', error);
@@ -89,18 +66,8 @@ export function useAuth() {
   const logout = async () => {
     const auth = getAuth();
     await signOut(auth);
-    sessionStorage.removeItem('drive_access_token');
     void db; // keep db import alive
   };
 
-  // Helper to get Drive access token (refreshes automatically on re-login)
-  const getDriveToken = async (): Promise<string | null> => {
-    // First try session storage (freshest token from last signIn)
-    const stored = sessionStorage.getItem('drive_access_token');
-    if (stored) return stored;
-    // Fallback: re-trigger login popup to get a fresh token
-    return null;
-  };
-
-  return { user, loading, login, logout, getDriveToken };
+  return { user, loading, login, logout };
 }
