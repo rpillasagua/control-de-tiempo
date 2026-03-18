@@ -180,8 +180,9 @@ export default function DashboardPage() {
       setActiveVisit(active);
       // Exclude the active one from the list to avoid duplcation
       setVisits(today.filter(v => v.status !== 'EN_PROGRESO'));
-    } catch {
-      toast.error('Error cargando visitas');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Error cargando visitas: ${err.message || 'Desconocido'}`);
     } finally {
       setDataLoading(false);
     }

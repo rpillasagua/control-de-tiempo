@@ -56,8 +56,9 @@ export default function HistorialPage() {
       setAllVisits(result.visits);
       setLastDoc(result.lastDoc);
       setHasMore(result.visits.length === PAGE_SIZE);
-    } catch {
-      toast.error('Error cargando historial');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Error cargando historial: ${err.message || 'Desconocido'}`);
     } finally {
       setLoading(false);
     }
@@ -71,8 +72,9 @@ export default function HistorialPage() {
       setAllVisits(prev => [...prev, ...result.visits]);
       setLastDoc(result.lastDoc);
       setHasMore(result.visits.length === PAGE_SIZE);
-    } catch {
-      toast.error('Error cargando más visitas');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Error cargando más visitas: ${err.message || 'Desconocido'}`);
     } finally {
       setLoadingMore(false);
     }
