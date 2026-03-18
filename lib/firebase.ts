@@ -68,7 +68,7 @@ const isFirebaseConfigured =
 let app: any = null;
 let db: any = null;
 
-if (isFirebaseConfigured) {
+if (typeof window !== 'undefined' && isFirebaseConfigured) {
   try {
     // Check if already initialized
     if (getApps().length === 0) {
@@ -78,15 +78,13 @@ if (isFirebaseConfigured) {
       db = getFirestore(app);
 
       // 🌐 Habilitar persistencia local de Firestore para modo offline
-      // MUST be called immediately after getFirestore and before any other operations
-      if (typeof window !== 'undefined' && db) {
+      if (db) {
         enableIndexedDbPersistence(db).catch((err: any) => {
           if (err.code === 'failed-precondition') {
             logger.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
           } else if (err.code === 'unimplemented') {
             logger.log('⚠️ Persistencia Firestore: No soportada en este navegador');
           } else {
-            // Silently ignore all other persistence errors
             logger.log('ℹ️ Persistencia Firestore: Inicializada previamente');
           }
         });
@@ -94,8 +92,6 @@ if (isFirebaseConfigured) {
 
       logger.log('✅ Firebase Firestore inicializado correctamente');
       logger.log('📊 Proyecto:', firebaseConfig.projectId);
-      logger.log('🌐 Modo offline habilitado (persistencia local)');
-      logger.log('📝 Nota: Las fotos se guardan en Google Drive, no en Firebase Storage');
     } else {
       // Use existing app
       app = getApps()[0];
@@ -106,14 +102,12 @@ if (isFirebaseConfigured) {
     logger.error('❌ Firebase no pudo inicializarse:', error);
     logger.warn('⚠️ La app funcionará sin base de datos.');
   }
-} else {
+} else if (typeof window !== 'undefined' && !isFirebaseConfigured) {
   logger.error('❌ Firebase NO está configurado. Configura las variables de entorno en .env.local');
 }
 
-// Exportamos db, auth y storage
+// Exportamos db y auth
 import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
 
-export const auth = app ? getAuth(app) : null;
-export const storage = app ? getStorage(app) : null;
+export const auth = (typeof window !== 'undefined' && app) ? getAuth(app) : null;
 export { db };

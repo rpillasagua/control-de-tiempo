@@ -2,19 +2,15 @@
  * Firebase Storage Service
  * Handles uploading compressed images directly to the Firebase central storage bucket.
  */
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from './firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { logger } from './logger';
 
 export async function uploadPhotoToStorage(
   file: File,
   path: string
 ): Promise<string> {
-  if (!storage) {
-    throw new Error('Firebase Storage no inicializado');
-  }
-
   try {
+    const storage = getStorage(); // Gets the default initialized app's storage
     const storageRef = ref(storage, path);
     
     // Upload the file
@@ -34,3 +30,4 @@ export async function uploadPhotoToStorage(
     throw error;
   }
 }
+

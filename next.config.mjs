@@ -2,15 +2,14 @@ import withPWAInit from '@ducanh2912/next-pwa';
 
 const withPWA = withPWAInit({
   dest: 'public',
+  // Rehabilitado para compilación en Vercel
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
 
-  // 🚀 OPTIMIZACIÓN: Excluir archivos innecesarios del pre-caché
-  buildExcludes: [/middleware-manifest\.json$/, /_buildManifest\.js$/, /_ssgManifest\.js$/],
-
-  // 📦 PRE-CACHÉ: Assets críticos que se cachean al instalar la PWA
-  publicExcludes: ['!*.map', '!*.svg'], // No pre-cachear mapas ni todos los SVGs
+  // IMPORTANTE: Hemos removido buildExcludes y publicExcludes porque
+  // causaban que el runtime de Webpack de Next.js 15 colapsara (TypeError: reading 'call')
+  // al intentar pre-renderizar las rutas estáticas durante el 'next build'.
 
   // 🔄 FALLBACKS: Páginas offline cuando no hay conexión
   fallbacks: {

@@ -14,7 +14,6 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth';
-import { db } from '@/lib/firebase';
 import { logger } from '@/lib/logger';
 
 export interface AuthUser {
@@ -66,7 +65,6 @@ export function useAuth() {
   const logout = async () => {
     const auth = getAuth();
     await signOut(auth);
-    void db; // keep db import alive
   };
 
   return { user, loading, login, logout };

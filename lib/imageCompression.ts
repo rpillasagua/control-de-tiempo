@@ -1,4 +1,3 @@
-import imageCompression from 'browser-image-compression';
 import { logger } from './logger';
 
 interface CompressionOptions {
@@ -31,6 +30,9 @@ export async function compressImage(
     try {
         logger.log(`📦 Compressing image: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
+        // Dynamically import the browser-only library to prevent SSR crashes in Next.js
+        const imageCompression = (await import('browser-image-compression')).default;
+
         // Create a promise that rejects after a timeout (e.g., 10 seconds)
         const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('Compression timed out')), 10000);
@@ -54,6 +56,7 @@ export async function compressImage(
         if (compressionOptions.useWebWorker) {
             logger.warn('⚠️ Retrying compression without WebWorker...');
             try {
+                const imageCompression = (await import('browser-image-compression')).default;
                 const fallbackOptions = { ...compressionOptions, useWebWorker: false };
                 const compressedFile = await imageCompression(file, fallbackOptions);
                 return compressedFile;
