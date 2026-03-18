@@ -1,113 +1,52 @@
-import { initializeApp, getApps } from 'firebase/app';
+/**
+ * firebase.ts — Inicialización segura de Firebase para Next.js (SSR + Cliente)
+ *
+ * REGLA DE ORO: Firebase SDK está diseñado para correr en el navegador.
+ * NO lo envolcemos en `typeof window !== 'undefined'` porque eso deja
+ * `db` como `null` durante la hidratación de React en Vercel/producción,
+ * y todos los servicios de escritura fallan silenciosamente.
+ *
+ * En cambio, usamos `getApps().length === 0` para detectar si ya existe
+ * una instancia (protección de re-inicialización tipo singleton) y
+ * manejamos el error gracefully en el servidor.
+ */
+
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
-import { setLogLevel } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { logger } from './logger';
 
-// 🔇 Configurar nivel de log de Firebase para suprimir warnings offline
-if (typeof window !== 'undefined') {
-  // Reducir verbosidad de Firebase (solo errores críticos)
-  setLogLevel('error');
-
-  // Suprimir warnings adicionales de Firestore offline
-  const originalConsoleWarn = console.warn;
-  const originalConsoleError = console.error;
-
-  console.warn = function (...args) {
-    const message = args.join(' ');
-    if (
-      message.includes('Could not reach Cloud Firestore backend') ||
-      message.includes('The operation could not be completed') ||
-      message.includes('Connection failed') ||
-      message.includes('device does not have a healthy Internet connection') ||
-      message.includes('Firestore') && message.includes('offline')
-    ) {
-      return; // No mostrar warnings offline
-    }
-    originalConsoleWarn.apply(console, args);
-  };
-
-  console.error = function (...args) {
-    const message = args.join(' ');
-    if (
-      message.includes('@firebase/firestore') && (
-        message.includes('Could not reach') ||
-        message.includes('Connection failed') ||
-        message.includes('Most recent error')
-      )
-    ) {
-      return; // No mostrar errores de conexión offline
-    }
-    originalConsoleError.apply(console, args);
-  };
-}
-
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
-// Debug: Log Firebase config en desarrollo
-if (typeof window !== 'undefined' && window.location.hostname.includes('localhost')) {
-  logger.log('Firebase Config:', {
-    apiKey: firebaseConfig.apiKey.substring(0, 10) + '...',
-    authDomain: firebaseConfig.authDomain,
-    projectId: firebaseConfig.projectId
-  });
-}
+// ── Singleton: inicializar solo una vez ────────────────────────────────────
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Verificar si Firebase está configurado correctamente
-const isFirebaseConfigured =
-  firebaseConfig.apiKey !== 'demo-api-key' &&
-  firebaseConfig.projectId !== 'demo-project';
+// ── Exportaciones core ────────────────────────────────────────────────────
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 
-// Inicializar Firebase solo si no existe una instancia y está configurado
-let app: any = null;
-let db: any = null;
-
-if (typeof window !== 'undefined' && isFirebaseConfigured) {
-  try {
-    // Check if already initialized
-    if (getApps().length === 0) {
-      app = initializeApp(firebaseConfig);
-
-      // Initialize Firestore
-      db = getFirestore(app);
-
-      // 🌐 Habilitar persistencia local de Firestore para modo offline
-      if (db) {
-        enableIndexedDbPersistence(db).catch((err: any) => {
-          if (err.code === 'failed-precondition') {
-            logger.log('⚠️ Persistencia Firestore: Ya está habilitada en otra pestaña');
-          } else if (err.code === 'unimplemented') {
-            logger.log('⚠️ Persistencia Firestore: No soportada en este navegador');
-          } else {
-            logger.log('ℹ️ Persistencia Firestore: Inicializada previamente');
-          }
-        });
-      }
-
-      logger.log('✅ Firebase Firestore inicializado correctamente');
-      logger.log('📊 Proyecto:', firebaseConfig.projectId);
-    } else {
-      // Use existing app
-      app = getApps()[0];
-      db = getFirestore(app);
-      logger.log('ℹ️ Usando instancia de Firebase existente');
+// ── Persistencia offline (solo en el navegador) ───────────────────────────
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db).catch((err: any) => {
+    if (err.code === 'failed-precondition') {
+      logger.log('⚠️ Persistencia Firestore: múltiples pestañas abiertas');
+    } else if (err.code === 'unimplemented') {
+      logger.log('⚠️ Persistencia Firestore: navegador no compatible');
     }
-  } catch (error) {
-    logger.error('❌ Firebase no pudo inicializarse:', error);
-    logger.warn('⚠️ La app funcionará sin base de datos.');
-  }
-} else if (typeof window !== 'undefined' && !isFirebaseConfigured) {
-  logger.error('❌ Firebase NO está configurado. Configura las variables de entorno en .env.local');
+  });
+
+  // Suprimir logs de conexión offline de Firebase
+  const _cw = console.warn.bind(console);
+  console.warn = (...args: any[]) => {
+    const msg = args.join(' ');
+    if (msg.includes('Could not reach Cloud Firestore') || msg.includes('offline')) return;
+    _cw(...args);
+  };
 }
-
-// Exportamos db y auth
-import { getAuth } from 'firebase/auth';
-
-export const auth = (typeof window !== 'undefined' && app) ? getAuth(app) : null;
-export { db };
