@@ -224,8 +224,9 @@ export default function VisitaPage() {
     try {
       const v = await getVisit(visitId);
       setVisit(v);
-    } catch {
-      toast.error('Error cargando visita');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Error cargando visita: ${err.message || 'Desconocido'}`);
     } finally {
       setLoading(false);
     }

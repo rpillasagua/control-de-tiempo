@@ -2,18 +2,23 @@
 /**
  * useAuth — Firebase Auth hook (persistent session)
  * Uses Firebase signInWithPopup + onAuthStateChanged.
- * Sessions persist for MONTHS without re-login (no more hourly expiry).
+ * Sessions persist for MONTHS without re-login.
+ *
+ * IMPORTANTE: Importamos `auth` desde firebase.ts para garantizar que 
+ * usamos SIEMPRE la misma instancia de Firebase App. Si llamamos a
+ * `getAuth()` sin la app, Next.js puede crear una segunda instancia vacía,
+ * y las reglas de Firestore rechazarán todas las escrituras.
  */
 
 import { useState, useEffect } from 'react';
 import {
-  getAuth,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
   User
 } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { logger } from '@/lib/logger';
 
 export interface AuthUser {
@@ -28,9 +33,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuth();
-
-    // Firebase persists the session automatically
+    // Usar la instancia centralizada de auth desde firebase.ts
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
         setUser({
@@ -49,7 +52,6 @@ export function useAuth() {
   }, []);
 
   const login = async () => {
-    const auth = getAuth();
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
 
@@ -63,7 +65,6 @@ export function useAuth() {
   };
 
   const logout = async () => {
-    const auth = getAuth();
     await signOut(auth);
   };
 
