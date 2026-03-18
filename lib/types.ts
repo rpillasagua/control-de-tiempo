@@ -2,11 +2,8 @@
 // TIPOS DEL SISTEMA — BITÁCORA TÉCNICA
 // ============================================
 
-export type WorkShift = 'DIA' | 'NOCHE' | 'MIXTO';
 
-// ============================================
-// GEOLOCALIZACIÓN
-// ============================================
+
 export interface GeoPoint {
   lat: number;
   lng: number;
@@ -90,37 +87,4 @@ export interface TechnicianProfile {
   name: string;
   picture?: string;
 }
-
-
-export const SHIFT_LABELS: Record<WorkShift, string> = {
-  DIA: 'Turno Día (0H00 - 12H00)',
-  NOCHE: 'Turno Noche (12H00 - 0H00)',
-  MIXTO: 'Turno Mixto'
-};
-
-/**
- * Registro de Entrada/Salida
- */
-export interface TimeLog {
-  id: string;
-  userId: string;
-  type: 'ENTRADA' | 'SALIDA' | 'INICIO_ALMUERZO' | 'FIN_ALMUERZO';
-  timestamp: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-  photoUrl?: string; // Para validación facial
-}
-
-/**
- * Perfil de usuario en el sistema de tiempo
- */
-export interface WorkerProfile {
-  id: string;
-  email: string;
-  name: string;
-  role: 'ADMIN' | 'WORKER';
-  department: string;
-  defaultShift: WorkShift;
-}
+

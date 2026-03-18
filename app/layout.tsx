@@ -4,6 +4,7 @@ import { Inter, Outfit } from 'next/font/google';
 import { Toaster } from '@/components/Toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ServiceWorkerManager from '@/components/ServiceWorkerManager';
+import { OfflineBanner } from '@/components/OfflineBanner';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
@@ -54,6 +55,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${inter.variable} ${outfit.variable} antialiased`}>
+        <OfflineBanner />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

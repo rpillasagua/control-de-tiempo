@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Clock, MapPin, Plus, CheckCircle2,
-  Loader2, AlertCircle, ChevronRight, Camera
+  Loader2, AlertCircle, ChevronRight, Camera,
+  MoreVertical, Pencil, Trash2, X, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { getVisit, closeVisit } from '@/lib/visitService';
+import { getVisit, closeVisit, updateActivity, deleteActivity } from '@/lib/visitService';
 import { Visit, Activity } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -29,11 +30,73 @@ function formatTime(iso: string): string {
 }
 
 // ─────────────────────────────────────────────────────────
+// Edit Activity Modal
+// ─────────────────────────────────────────────────────────
+function EditActivityModal({
+  activity,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  activity: Activity;
+  onSave: (text: string) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [text, setText] = useState(activity.description);
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg mx-auto p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-slate-800 text-lg">Editar actividad</h3>
+          <button onClick={onCancel} className="p-1 rounded-full hover:bg-slate-100">
+            <X className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          rows={5}
+          className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        />
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button
+            onClick={() => onSave(text)}
+            disabled={saving || !text.trim()}
+            className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
 // Activity Card
 // ─────────────────────────────────────────────────────────
-function ActivityCard({ activity, index }: { activity: Activity; index: number }) {
+function ActivityCard({
+  activity,
+  index,
+  isActive,
+  onEdit,
+  onDelete,
+}: {
+  activity: Activity;
+  index: number;
+  isActive: boolean;
+  onEdit: (a: Activity) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm relative">
       <div className="flex gap-3">
         <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold">
           {index + 1}
@@ -54,6 +117,35 @@ function ActivityCard({ activity, index }: { activity: Activity; index: number }
           )}
           <p className="text-xs text-slate-400 mt-2">{formatTime(activity.timestamp)}</p>
         </div>
+        {isActive && (
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              <MoreVertical className="w-4 h-4 text-slate-400" />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-8 bg-white border border-slate-100 rounded-xl shadow-lg z-20 w-36 overflow-hidden">
+                  <button
+                    onClick={() => { setMenuOpen(false); onEdit(activity); }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <Pencil className="w-4 h-4 text-blue-500" /> Editar
+                  </button>
+                  <button
+                    onClick={() => { setMenuOpen(false); onDelete(activity.id); }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -123,6 +215,10 @@ export default function VisitaPage() {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closing, setClosing] = useState(false);
 
+  // Edit activity state
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
   // Load visit
   const loadVisit = useCallback(async () => {
     try {
@@ -178,6 +274,32 @@ export default function VisitaPage() {
     } catch {
       toast.error('Error al cerrar visita');
       setClosing(false);
+    }
+  };
+
+  const handleEditSave = async (newDescription: string) => {
+    if (!editingActivity) return;
+    setEditSaving(true);
+    try {
+      await updateActivity(visitId, editingActivity.id, newDescription);
+      toast.success('Actividad actualizada');
+      setEditingActivity(null);
+      await loadVisit();
+    } catch {
+      toast.error('Error al editar la actividad');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    if (!confirm('¿Eliminar esta actividad? Esta acción no se puede deshacer.')) return;
+    try {
+      await deleteActivity(visitId, activityId);
+      toast.success('Actividad eliminada');
+      await loadVisit();
+    } catch {
+      toast.error('Error al eliminar la actividad');
     }
   };
 
@@ -301,7 +423,14 @@ export default function VisitaPage() {
           ) : (
             <div className="space-y-3">
               {visit.activities.map((act, i) => (
-                <ActivityCard key={act.id} activity={act} index={i} />
+                <ActivityCard
+                  key={act.id}
+                  activity={act}
+                  index={i}
+                  isActive={isActive}
+                  onEdit={setEditingActivity}
+                  onDelete={handleDeleteActivity}
+                />
               ))}
               {isActive && (
                 <Link href={`/visita/${visitId}/actividad`}>
@@ -322,7 +451,7 @@ export default function VisitaPage() {
           </div>
         )}
 
-        {/* Link to report (both active and closed) */}
+        {/* Link to report */}
         <Link href={`/visita/${visitId}/reporte`}>
           <button className="w-full bg-white border border-slate-200 rounded-xl py-3 text-slate-600 text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2">
             Ver Reporte / Factura <ChevronRight className="w-4 h-4" />
@@ -350,6 +479,15 @@ export default function VisitaPage() {
           onConfirm={handleClose}
           onCancel={() => setShowCloseModal(false)}
           closing={closing}
+        />
+      )}
+
+      {editingActivity && (
+        <EditActivityModal
+          activity={editingActivity}
+          onSave={handleEditSave}
+          onCancel={() => setEditingActivity(null)}
+          saving={editSaving}
         />
       )}
     </div>

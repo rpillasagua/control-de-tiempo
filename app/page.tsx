@@ -37,28 +37,49 @@ function elapsed(sinceIso: string): string {
 // Sub-components
 // ─────────────────────────────────────────────────────────
 
+const OVERDUE_HOURS = 4;
+
 function ActiveVisitBanner({ visit }: { visit: Visit }) {
   const [elapsedDisplay, setElapsedDisplay] = useState(elapsed(visit.arrival.localTime));
+  const [isOverdue, setIsOverdue] = useState(false);
+
   useEffect(() => {
-    const t = setInterval(() => setElapsedDisplay(elapsed(visit.arrival.localTime)), 30000);
+    const check = () => {
+      const ms = Date.now() - new Date(visit.arrival.localTime).getTime();
+      setElapsedDisplay(elapsed(visit.arrival.localTime));
+      setIsOverdue(ms > OVERDUE_HOURS * 60 * 60 * 1000);
+    };
+    check();
+    const t = setInterval(check, 30000);
     return () => clearInterval(t);
   }, [visit.arrival.localTime]);
 
   return (
-    <Link href={`/visita/${visit.id}`}>
-      <div className="bg-emerald-500 text-white rounded-2xl p-5 shadow-lg flex items-center justify-between hover:bg-emerald-600 transition-colors active:scale-[0.98] cursor-pointer">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+    <div className="space-y-2">
+      {isOverdue && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-2">
+          <span className="text-lg leading-none">⚠️</span>
           <div>
-            <p className="font-bold text-lg">{visit.clientName}</p>
-            <p className="text-emerald-100 text-sm">
-              Desde {formatTimestamp(visit.arrival.localTime)} · {elapsedDisplay} en curso
-            </p>
+            <p className="text-amber-800 font-semibold text-sm">Llevas más de {OVERDUE_HOURS}h en esta visita</p>
+            <p className="text-amber-600 text-xs mt-0.5">¿Olvidaste registrar la salida?</p>
           </div>
         </div>
-        <ChevronRight className="w-6 h-6 text-emerald-200" />
-      </div>
-    </Link>
+      )}
+      <Link href={`/visita/${visit.id}`}>
+        <div className="bg-emerald-500 text-white rounded-2xl p-5 shadow-lg flex items-center justify-between hover:bg-emerald-600 transition-colors active:scale-[0.98] cursor-pointer">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+            <div>
+              <p className="font-bold text-lg">{visit.clientName}</p>
+              <p className="text-emerald-100 text-sm">
+                Desde {formatTimestamp(visit.arrival.localTime)} · {elapsedDisplay} en curso
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-6 h-6 text-emerald-200" />
+        </div>
+      </Link>
+    </div>
   );
 }
 

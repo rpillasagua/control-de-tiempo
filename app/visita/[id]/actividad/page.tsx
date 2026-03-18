@@ -2,11 +2,12 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Camera, Loader2, X, Upload } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, X, Upload, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { addActivity } from '@/lib/visitService';
 import { uploadPhotoToDrive, dataUrlToFile } from '@/lib/driveService';
 import { useAuth } from '@/hooks/useAuth';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { toast } from 'sonner';
 
 export default function ActividadPage() {
@@ -14,6 +15,7 @@ export default function ActividadPage() {
   const visitId = params.id as string;
   const router = useRouter();
   const { getDriveToken } = useAuth();
+  const isOnline = useNetworkStatus();
 
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<string[]>([]); // base64 previews
@@ -111,9 +113,14 @@ export default function ActividadPage() {
 
         {/* Photos */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2 flex-wrap">
             Fotos de evidencia{' '}
             <span className="text-slate-400 font-normal">(hasta 5 — se guardan en Google Drive)</span>
+            {!isOnline && (
+              <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                <WifiOff className="w-3 h-3" /> Sin conexión — se subirán al volver online
+              </span>
+            )}
           </label>
           <input
             ref={fileRef}

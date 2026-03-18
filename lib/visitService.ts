@@ -5,7 +5,8 @@
 
 import {
   collection, doc, addDoc, updateDoc, getDoc, getDocs,
-  query, where, orderBy, serverTimestamp, Timestamp
+  query, where, orderBy, serverTimestamp, Timestamp,
+  limit, startAfter, DocumentSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Visit, Activity, TimeStamp, VisitStatus } from './types';
@@ -175,6 +176,69 @@ export async function getActiveVisit(technicianId: string): Promise<Visit | null
 export async function updateVisitSummary(visitId: string, summary: string): Promise<void> {
   const ref = doc(db, COLLECTION, visitId);
   await updateDoc(ref, { summary, updatedAt: new Date().toISOString() });
+}
+
+// ──────────────────────────────────────────────
+// Update an activity description
+// ──────────────────────────────────────────────
+export async function updateActivity(
+  visitId: string,
+  activityId: string,
+  newDescription: string
+): Promise<void> {
+  const ref = doc(db, COLLECTION, visitId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error(`Visita ${visitId} no existe`);
+
+  const activities: Activity[] = snap.data().activities ?? [];
+  const updated = activities.map(a =>
+    a.id === activityId ? { ...a, description: newDescription } : a
+  );
+
+  await updateDoc(ref, { activities: updated, updatedAt: new Date().toISOString() });
+  logger.log(`✅ Actividad ${activityId} actualizada`);
+}
+
+// ──────────────────────────────────────────────
+// Delete an activity from a visit
+// ──────────────────────────────────────────────
+export async function deleteActivity(
+  visitId: string,
+  activityId: string
+): Promise<void> {
+  const ref = doc(db, COLLECTION, visitId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error(`Visita ${visitId} no existe`);
+
+  const activities: Activity[] = snap.data().activities ?? [];
+  const filtered = activities.filter(a => a.id !== activityId);
+
+  await updateDoc(ref, { activities: filtered, updatedAt: new Date().toISOString() });
+  logger.log(`✅ Actividad ${activityId} eliminada de visita ${visitId}`);
+}
+
+// ──────────────────────────────────────────────
+// Paginated visit query (cursor-based)
+// ──────────────────────────────────────────────
+
+export async function getPaginatedVisits(
+  technicianId: string,
+  pageSize: number,
+  lastDoc?: DocumentSnapshot
+): Promise<{ visits: Visit[]; lastDoc: DocumentSnapshot | null }> {
+  const col = collection(db, COLLECTION);
+  const constraints = [
+    where('technicianId', '==', technicianId),
+    orderBy('createdAt', 'desc'),
+    limit(pageSize),
+    ...(lastDoc ? [startAfter(lastDoc)] : [])
+  ];
+
+  const q = query(col, ...constraints);
+  const snap = await getDocs(q);
+  const visits = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
+  const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+  return { visits, lastDoc: newLastDoc };
 }
 
 void Timestamp; // keep import alive for future use

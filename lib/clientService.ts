@@ -42,3 +42,9 @@ export async function updateClient(
 ): Promise<void> {
   await updateDoc(doc(db, COLLECTION, clientId), data);
 }
+
+export async function deleteClient(clientId: string): Promise<void> {
+  const { deleteDoc } = await import('firebase/firestore');
+  await deleteDoc(doc(db, COLLECTION, clientId));
+  logger.log(`✅ Cliente ${clientId} eliminado`);
+}
