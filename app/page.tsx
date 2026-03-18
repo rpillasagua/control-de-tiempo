@@ -128,11 +128,7 @@ function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean
     <main className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900">
       <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-2xl p-10">
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-          </div>
+          <img src="/icon-192.png" alt="Bitácora Técnica Logo" className="w-20 h-20 rounded-2xl shadow-lg border-2 border-slate-100" />
         </div>
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Bitácora Técnica</h1>
@@ -224,9 +220,7 @@ export default function DashboardPage() {
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+            <img src="/icon-192.png" alt="Logo" className="w-7 h-7 rounded-sm shadow-sm" />
             <h1 className="font-bold text-slate-800 text-lg">Bitácora Técnica</h1>
           </div>
           <div className="flex items-center gap-2">
