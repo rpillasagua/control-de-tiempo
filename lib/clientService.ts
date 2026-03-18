@@ -2,7 +2,7 @@
  * Client Service — CRUD for clients in Firestore
  */
 import {
-  collection, doc, addDoc, updateDoc, getDocs,
+  collection, doc, addDoc, updateDoc, getDocs, deleteDoc,
   query, where, orderBy, serverTimestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -44,7 +44,6 @@ export async function updateClient(
 }
 
 export async function deleteClient(clientId: string): Promise<void> {
-  const { deleteDoc } = await import('firebase/firestore');
   await deleteDoc(doc(db, COLLECTION, clientId));
   logger.log(`✅ Cliente ${clientId} eliminado`);
 }

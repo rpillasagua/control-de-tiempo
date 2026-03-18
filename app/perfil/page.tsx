@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2, Save, UserCircle, LogOut, Camera } from 'lucide-rea
 import { compressImage } from '@/lib/imageCompression';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getProfile, saveProfile, Profile } from '@/lib/profileService';
+import { getProfile, saveProfile, uploadLogo, Profile } from '@/lib/profileService';
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
@@ -81,7 +81,6 @@ export default function ProfilePage() {
     try {
       let finalLogoUrl = formData.logoUrl;
       if (logoFile) {
-        const { uploadLogo } = await import('@/lib/profileService');
         finalLogoUrl = await uploadLogo(user.email || 'unknown', logoFile);
       }
       

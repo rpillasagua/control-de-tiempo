@@ -14,7 +14,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
 import { logger } from './logger';
 
 const firebaseConfig = {
@@ -32,7 +31,6 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // ── Exportaciones core ────────────────────────────────────────────────────
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const storage = getStorage(app);
 
 // ── Persistencia offline (solo en el navegador) ───────────────────────────
 if (typeof window !== 'undefined') {

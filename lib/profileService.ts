@@ -2,8 +2,8 @@
  * Profile Service — Technician Profile CRUD
  */
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { ref, uploadString, getDownloadURL, getStorage } from 'firebase/storage';
+import { db } from './firebase';
 import { logger } from './logger';
 
 export interface Profile {
@@ -34,6 +34,7 @@ export async function saveProfile(email: string, data: Partial<Profile>): Promis
 
 export async function uploadLogo(email: string, base64Image: string): Promise<string> {
   const filePath = `profiles/${email.replace(/[^a-zA-Z0-9]/g, '_')}_logo.webp`;
+  const storage = getStorage();
   const storageRef = ref(storage, filePath);
   
   // Sube el string base64 que produce el compresor de imágenes

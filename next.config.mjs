@@ -144,7 +144,6 @@ const nextConfig = {
     config.externals = config.externals || [];
     config.externals.push({
       'undici': 'commonjs undici',
-      '@firebase/storage': 'commonjs @firebase/storage',
     });
 
     // Configurar el cache para que funcione mejor con OneDrive
