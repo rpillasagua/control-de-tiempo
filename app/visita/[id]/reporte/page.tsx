@@ -33,6 +33,7 @@ export default function ReportPage() {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const loadVisit = useCallback(async () => {
     try {
@@ -49,9 +50,60 @@ export default function ReportPage() {
     }
   }, [visitId]);
 
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
   useEffect(() => { loadVisit(); }, [loadVisit]);
 
-  const handlePrint = () => window.print();
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloadingPdf(true);
+      toast.loading('Generando PDF corporativo...', { id: 'pdf-toast' });
+      
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
+      const element = document.getElementById('report-content');
+      if (!element) throw new Error('Contenedor no encontrado');
+
+      // Ocultar elementos no-print temporalmente
+      const noPrintElements = element.querySelectorAll('.no-print');
+      noPrintElements.forEach((el) => {
+        (el as HTMLElement).style.display = 'none';
+      });
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      // Restaurar elementos no-print
+      noPrintElements.forEach((el) => {
+        (el as HTMLElement).style.display = '';
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Reporte_Tecnico_${visit?.clientName?.replace(/\s+/g, '_')}_${visitId.slice(0,6)}.pdf`);
+      
+      toast.success('PDF descargado exitosamente', { id: 'pdf-toast' });
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al generar PDF. Intente de nuevo.', { id: 'pdf-toast' });
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const publicUrl = typeof window !== 'undefined' ? `${window.location.origin}/reporte/${visitId}` : '';
 
@@ -90,6 +142,20 @@ export default function ReportPage() {
         }
       `}</style>
 
+      {/* Lightbox Overlay */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out no-print"
+          onClick={() => setLightboxImage(null)}
+        >
+          <img 
+            src={lightboxImage} 
+            alt="Evidencia" 
+            className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl" 
+          />
+        </div>
+      )}
+
       <div className="min-h-screen bg-slate-100 pb-10 print:bg-white">
 
         {/* Screen-only header */}
@@ -118,17 +184,19 @@ export default function ReportPage() {
                 <Share2 className="w-4 h-4" /> WhatsApp
               </button>
               <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+                onClick={handleDownloadPDF}
+                disabled={downloadingPdf}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                <Printer className="w-4 h-4" /> Imprimir
+                {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                {downloadingPdf ? 'Generando...' : 'Descargar PDF'}
               </button>
             </div>
           </div>
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden print-card">
+          <div id="report-content" className="bg-white rounded-2xl shadow-sm overflow-hidden print-card">
 
             {/* Report Header */}
             <div className="bg-slate-800 text-white px-6 py-5">
@@ -277,7 +345,13 @@ export default function ReportPage() {
                           {act.photoUrls.length > 0 && (
                             <div className="flex gap-2 mt-2 flex-wrap">
                               {act.photoUrls.map((url, pi) => (
-                                <img key={pi} src={url} alt="" className="w-20 h-20 rounded-lg object-cover border border-slate-100" />
+                                <img 
+                                  key={pi} 
+                                  src={url} 
+                                  alt="Evidencia técnica" 
+                                  onClick={() => setLightboxImage(url)}
+                                  className="w-20 h-20 rounded-lg object-cover border border-slate-100 cursor-zoom-in active:scale-95 transition-transform" 
+                                />
                               ))}
                             </div>
                           )}

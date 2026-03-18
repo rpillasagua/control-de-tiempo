@@ -86,12 +86,14 @@ function ActivityCard({
   isActive,
   onEdit,
   onDelete,
+  onImageClick,
 }: {
   activity: Activity;
   index: number;
   isActive: boolean;
   onEdit: (a: Activity) => void;
   onDelete: (id: string) => void;
+  onImageClick?: (url: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -109,8 +111,9 @@ function ActivityCard({
                 <img
                   key={i}
                   src={url}
-                  alt={`Foto ${i + 1}`}
-                  className="w-16 h-16 rounded-lg object-cover border border-slate-100 flex-shrink-0"
+                  alt={`Evidencia ${i + 1}`}
+                  onClick={() => onImageClick?.(url)}
+                  className="w-16 h-16 rounded-lg object-cover border border-slate-100 flex-shrink-0 cursor-zoom-in active:scale-95 transition-transform"
                 />
               ))}
             </div>
@@ -219,6 +222,9 @@ export default function VisitaPage() {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
+  // Lightbox
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
   // Load visit
   const loadVisit = useCallback(async () => {
     try {
@@ -326,6 +332,25 @@ export default function VisitaPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32">
+      {/* Lightbox Overlay */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+            onClick={(e) => { e.stopPropagation(); setLightboxImage(null); }}
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <img 
+            src={lightboxImage} 
+            alt="Evidencia Ampliada" 
+            className="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl" 
+          />
+        </div>
+      )}
 
       {/* Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30">
@@ -455,6 +480,7 @@ export default function VisitaPage() {
                   isActive={isActive}
                   onEdit={setEditingActivity}
                   onDelete={handleDeleteActivity}
+                  onImageClick={setLightboxImage}
                 />
               ))}
               {isActive && (
