@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { createClient } from '@/lib/clientService';
+import { createClient, getClients } from '@/lib/clientService';
 import { toast } from 'sonner';
 
 export default function NewClientPage() {
@@ -36,6 +36,17 @@ export default function NewClientPage() {
 
     setSaving(true);
     try {
+      // Validar si el cliente ya existe
+      const existingClients = await getClients(user.email);
+      const nameToCheck = formData.name.trim().toLowerCase();
+      const alreadyExists = existingClients.some(c => c.name.toLowerCase() === nameToCheck);
+      
+      if (alreadyExists) {
+        toast.warning('Ese cliente ya se encuentra registrado en tu lista.');
+        setSaving(false);
+        return;
+      }
+
       await createClient(
         user.email,
         {
@@ -50,8 +61,9 @@ export default function NewClientPage() {
       
       toast.success('Cliente guardado');
       router.back();
-    } catch {
-      toast.error('Error al guardar el cliente');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Error de base de datos: ${err.message || 'Desconocido'}`);
     } finally {
       setSaving(false);
     }

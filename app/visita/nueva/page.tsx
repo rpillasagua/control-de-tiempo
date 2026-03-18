@@ -145,9 +145,9 @@ export default function NuevaVisitaPage() {
 
       toast.success('✅ Llegada registrada');
       router.push(`/visita/${visitId}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Error al registrar llegada');
+      toast.error(`Fallo Firebase: ${err.message || 'Desconocido'}`);
     } finally {
       setSaving(false);
     }
