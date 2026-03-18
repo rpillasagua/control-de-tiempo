@@ -1,29 +1,3 @@
-import { WorkShift } from './types';
-
-/**
- * Determina el turno basado en la hora
- * Turno Día: 7:10 AM - 7:10 PM
- * Turno Noche: 7:10 PM - 7:10 AM
- */
-export function getWorkShift(date: Date = new Date()): WorkShift {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-
-  // Convertir a minutos desde medianoche
-  const totalMinutes = hours * 60 + minutes;
-
-  // 7:10 AM = 430 minutos
-  // 7:10 PM = 1150 minutos
-  const dayShiftStart = 7 * 60 + 10; // 430
-  const dayShiftEnd = 19 * 60 + 10; // 1150
-
-  if (totalMinutes >= dayShiftStart && totalMinutes < dayShiftEnd) {
-    return 'DIA';
-  } else {
-    return 'NOCHE';
-  }
-}
-
 /**
  * Formatea la fecha en formato YYYY-MM-DD
  */
@@ -205,4 +179,20 @@ export function debounce<T extends (...args: any[]) => any>(
       func.apply(this, args);
     }, wait);
   };
+}
+
+/**
+ * Convierte un Data URL (base64) a un objeto File
+ */
+export function dataUrlToFile(dataUrl: string, filename: string): File {
+  const arr = dataUrl.split(',');
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
 }

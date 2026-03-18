@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { createVisit } from '@/lib/visitService';
 import { getClients } from '@/lib/clientService';
+import { uploadPhotoToStorage } from '@/lib/storageService';
+import { dataUrlToFile } from '@/lib/utils';
 import { Client, TimeStamp } from '@/lib/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -63,12 +65,30 @@ export default function NuevaVisitaPage() {
         toast.info('Sin GPS — se registrará sin coordenadas');
       }
 
-      // 2. Build arrival timestamp
+      // 2. Build arrival timestamp y subir foto si hay
+      let photoUrl = undefined;
+      const tempId = Date.now().toString();
+
+      if (arrivalPhoto) {
+        toast.info('Subiendo foto de llegada...');
+        try {
+          const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
+          const path = `visits/${tempId}/arrival.jpg`;
+          photoUrl = await uploadPhotoToStorage(file, path);
+        } catch (err) {
+          console.error('Error subiendo foto de llegada', err);
+          toast.error('La visita se creará, pero falló la subida de foto');
+        }
+      }
+
       const arrival: TimeStamp = {
         localTime: new Date().toISOString(),
         location: geoPoint ?? undefined,
-        // photoUrl: arrivalPhoto (in Phase B we upload to Drive)
+        photoUrl: photoUrl
       };
+
+      // Buscar el ID real del cliente si lo seleccionó de la lista
+      const selectedClient = clients.find(c => c.name === clientName);
 
       // 3. Create visit in Firestore
       const visitId = await createVisit(
@@ -76,7 +96,7 @@ export default function NuevaVisitaPage() {
         user.name,
         clientName.trim(),
         arrival,
-        undefined,
+        selectedClient?.id, // ID real en vez de undefined
         clientAddress.trim() || undefined
       );
 

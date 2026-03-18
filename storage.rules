@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Firebase Storage Rules para Bitácora Técnica
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Función: usuario autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    match /visits/{visitId}/{allPaths=**} {
+      // PERMISOS DE LECTURA (READ)
+      // Todo el mundo puede ver las fotos (necesario para el reporte público)
+      allow read: if true;
+
+      // PERMISOS DE ESCRITURA (WRITE)
+      // Solo el técnico autenticado puede subir fotos nuevas
+      allow write: if isAuthenticated() 
+                   && request.resource.size < 5 * 1024 * 1024 // max 5MB por foto (ya llegan comprimidas a <1MB)
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

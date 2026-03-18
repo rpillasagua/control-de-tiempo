@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Camera, Loader2, X, Upload, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { addActivity } from '@/lib/visitService';
-import { uploadPhotoToDrive, dataUrlToFile } from '@/lib/driveService';
+import { uploadPhotoToStorage } from '@/lib/storageService';
+import { dataUrlToFile } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { toast } from 'sonner';
@@ -41,24 +42,19 @@ export default function ActividadPage() {
     try {
       let photoUrls: string[] = [];
 
-      // Upload photos to Google Drive if any
+      // Upload photos to Firebase Storage if any
       if (photos.length > 0) {
-        const token = await getDriveToken();
-        if (token) {
-          setUploadProgress(`Subiendo fotos...`);
-          const uploads = await Promise.all(
-            photos.map(async (dataUrl, i) => {
-              setUploadProgress(`Subiendo foto ${i + 1} de ${photos.length}...`);
-              const file = dataUrlToFile(dataUrl, `actividad_${Date.now()}_${i}.jpg`);
-              // Get client name from visitId context — we'll use a placeholder label
-              return uploadPhotoToDrive(token, file, visitId, 'visita', `foto_${i + 1}_${Date.now()}.jpg`);
-            })
-          );
-          photoUrls = uploads;
-          toast.success(`📸 ${photos.length} foto${photos.length > 1 ? 's' : ''} guardada${photos.length > 1 ? 's' : ''} en Drive`);
-        } else {
-          toast.info('⚠️ Sin token de Drive — las fotos no se guardaron. Cierra sesión y vuelve a entrar.');
-        }
+        setUploadProgress(`Subiendo fotos...`);
+        const uploads = await Promise.all(
+          photos.map(async (dataUrl, i) => {
+            setUploadProgress(`Subiendo foto ${i + 1} de ${photos.length}...`);
+            const file = dataUrlToFile(dataUrl, `actividad_${Date.now()}_${i}.jpg`);
+            const path = `visits/${visitId}/${Date.now()}_${i}.jpg`;
+            return uploadPhotoToStorage(file, path);
+          })
+        );
+        photoUrls = uploads;
+        toast.success(`📸 ${photos.length} foto${photos.length > 1 ? 's' : ''} subida${photos.length > 1 ? 's' : ''}`);
       }
 
       setUploadProgress('Guardando actividad...');
