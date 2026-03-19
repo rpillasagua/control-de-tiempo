@@ -72,10 +72,26 @@ export default function ReportPage() {
       await Promise.all(
         Array.from(images).map(async (img) => {
           const src = img.src;
-          if (!src || src.startsWith('data:')) return; // already base64
+          if (!src || src.startsWith('data:') || src.startsWith('blob:')) return; 
+
           try {
             origSrcs.push({ img, src });
-            const resp = await fetch(src, { mode: 'cors' });
+            
+            // Check if it's the same origin
+            const isSameOrigin = src.startsWith(window.location.origin) || src.startsWith('/');
+            
+            // Fetch directly if same origin, otherwise go through our proxy
+            const fetchUrl = isSameOrigin 
+              ? src 
+              : `/api/proxy-image?url=${encodeURIComponent(src)}`;
+              
+            const resp = await fetch(fetchUrl);
+            
+            if (!resp.ok) {
+              console.warn(`PDF Proxy error for ${src}: ${resp.status}`);
+              return; 
+            }
+
             const blob = await resp.blob();
             const dataUrl: string = await new Promise((res, rej) => {
               const reader = new FileReader();
@@ -84,9 +100,9 @@ export default function ReportPage() {
               reader.readAsDataURL(blob);
             });
             img.src = dataUrl;
-          } catch {
+          } catch (err) {
             // If fetch fails, leave original src — html2canvas will skip it
-            console.warn('PDF: no se pudo convertir imagen:', src);
+            console.warn('PDF: no se pudo convertir imagen (proxy falló):', err);
           }
         })
       );
