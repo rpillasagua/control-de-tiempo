@@ -301,7 +301,7 @@ export default function DashboardPage() {
         {activeVisit && <ActiveVisitBanner visit={activeVisit} />}
 
         {/* New visit CTA */}
-        {!activeVisit && (
+        {!dataLoading && !activeVisit && (
           <Link href="/visita/nueva">
             <div className="bg-blue-600 text-white rounded-2xl p-5 flex items-center justify-between shadow-md hover:bg-blue-700 transition-colors active:scale-[0.98] cursor-pointer">
               <div>

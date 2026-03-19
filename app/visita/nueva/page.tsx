@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Loader2, Camera, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { createVisit } from '@/lib/visitService';
+import { createVisit, getActiveVisit } from '@/lib/visitService';
 import { getClients } from '@/lib/clientService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
@@ -28,13 +28,24 @@ export default function NuevaVisitaPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [saving, setSaving] = useState(false);
   const [arrivalPhoto, setArrivalPhoto] = useState<string | null>(null); // base64 preview
+  const [checkingActive, setCheckingActive] = useState(true);
 
-  // Load clients
+  // Load clients and check active visit
   React.useEffect(() => {
     if (user?.email) {
-      getClients(user.email).then(setClients).catch(console.error);
+      getActiveVisit(user.email).then(active => {
+        if (active) {
+          toast.error('Tienes una visita en proceso, finalízala primero');
+          router.replace(`/visita/${active.id}`);
+        } else {
+          setCheckingActive(false);
+          getClients(user.email).then(setClients).catch(console.error);
+        }
+      }).catch(() => {
+        setCheckingActive(false);
+      });
     }
-  }, [user]);
+  }, [user, router]);
 
   const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
@@ -163,6 +174,11 @@ export default function NuevaVisitaPage() {
         </div>
       </header>
 
+      {checkingActive ? (
+        <div className="flex h-[60vh] items-center justify-center">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        </div>
+      ) : (
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
 
         {/* Info card */}
@@ -269,6 +285,7 @@ export default function NuevaVisitaPage() {
         </p>
 
       </main>
+      )}
     </div>
   );
 }
