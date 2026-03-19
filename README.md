@@ -1,7 +1,7 @@
 # Bitácora Técnica
 
 **Registro de visitas y evidencia de trabajo para técnicos**  
-Una PWA (Progressive Web App) diseñada para que técnicos de campo registren sus visitas a clientes de forma ordenada, con control de tiempos, captura GPS, actividades con fotos y generación automática de reportes profesionales.
+Una PWA (Progressive Web App) Offline-First diseñada para que técnicos de campo registren sus visitas a clientes, con control de tiempos, captura GPS, actividades con fotos y generación automática de reportes profesionales en PDF, **incluso sin conexión a internet**.
 
 ---
 
@@ -13,41 +13,35 @@ El técnico abre la app, selecciona o crea un cliente, inicia la visita y el sis
 - **Hora y coordenadas GPS de salida**
 - **Tiempo total de atención**
 
-Al finalizar, se genera un **Reporte Técnico de Visita** que puede imprimirse o compartirse directamente por WhatsApp.
+Al finalizar, se genera un **Reporte Técnico de Visita en PDF** que puede compartirse directamente por WhatsApp.
 
 ---
 
 ## 🚀 Funcionalidades Principales
 
+### 📶 Modo Offline (Sin Internet)
+- Crear visitas, registrar clientes y capturar fotos en zonas sin cobertura celular.
+- Los datos y fotos se guardan en la memoria interna del celular (IndexedDB / LocalStorage).
+- Sincronización automática de fotos a Firebase y actualización de bases de datos cuando el dispositivo recupera la conexión.
+
 ### 📋 Gestión de Visitas
-- Crear una nueva visita seleccionando un cliente
-- Banner de visita activa con cronómetro en tiempo real
-- Listado de visitas del día con estado (En Progreso / Finalizada)
-- Historial completo de visitas anteriores
+- Listado de visitas del día con estado (En Progreso / Finalizada).
+- Prevención estricta de visitas duplicadas concurrentes.
+- Buscador y filtros instantáneos soportados por una caché masiva local.
 
 ### 📍 Control GPS Automático
-- Captura de coordenadas al llegar y al salir
-- Enlace directo a Google Maps desde el reporte para verificar la ubicación
-- Muestra precisión de la señal GPS (`±Xm`)
+- Captura de coordenadas al llegar y al salir con indicador de precisión (`±Xm`).
+- Enlace directo a Google Maps desde el reporte para verificar la ubicación.
 
 ### 🛠️ Registro de Actividades
-- Agregar actividades con descripción libre durante la visita
-- Adjuntar fotos a cada actividad (con compresión automática de imágenes)
-- Subida de imágenes a **Firebase Storage** de forma organizada y centralizada
+- Agregar actividades con descripción durante la visita.
+- Módulo de compresión inteligente de imágenes integrado (ahorro masivo de datos 4G).
+- Subida de imágenes a **Firebase Storage** de forma centralizada.
 
 ### 📄 Reportes Profesionales
-- Reporte formal con datos del cliente, del técnico y registro de tiempos
-- Perfil empresarial (nombre de empresa, RUC, teléfono) en el encabezado
-- Compartir por **WhatsApp** con enlace o **imprimir** directamente
-- URL pública por visita (accesible sin login)
-
-### 👤 Perfil del Técnico
-- Configurar nombre, empresa, RUC y teléfono
-- Datos visibles automáticamente en todos los reportes generados
-
-### 🏢 Gestión de Clientes
-- Registrar clientes con nombre y dirección
-- Acceso rápido desde el dashboard principal
+- Generación nativa de PDFs perfectos a todo color (incluso en iOS y Safari).
+- El perfil empresarial del técnico (logo, RUC, teléfono) figura en el encabezado.
+- Botones de acción rápida: WhatsApp e Imprimir.
 
 ---
 
@@ -55,84 +49,61 @@ Al finalizar, se genera un **Reporte Técnico de Visita** que puede imprimirse o
 
 | Capa | Tecnología |
 |------|-----------|
-| **Frontend** | Next.js 14, TypeScript, Tailwind CSS |
-| **Base de datos** | Firebase Firestore |
-| **Autenticación** | Google OAuth (sesión persistente) |
+| **Frontend** | Next.js 15, TypeScript, Tailwind CSS v4 |
+| **Generación PDF** | html2canvas-pro + jsPDF |
+| **Base de datos** | Firebase Firestore (con persistencia IndexedDB) |
 | **Almacenamiento de fotos** | Firebase Storage |
-| **PWA** | Service Workers, Web App Manifest |
-| **Geolocalización** | Browser Geolocation API |
+| **PWA** | @ducanh2912/next-pwa (Service Workers, app manifest) |
 
 ---
 
-## 📂 Estructura del Proyecto
+## 📂 Estructura del Proyecto Crítica
 
 ```
 bitacora-tecnica/
 ├── app/
-│   ├── page.tsx              # Dashboard principal (visitas del día)
-│   ├── visita/
-│   │   ├── nueva/            # Crear nueva visita
-│   │   └── [id]/
-│   │       ├── page.tsx      # Detalle de visita + registro de actividades
-│   │       └── reporte/      # Reporte imprimible / compartible
-│   ├── clientes/             # Listado y creación de clientes
-│   ├── historial/            # Historial de visitas anteriores
-│   ├── perfil/               # Configuración del perfil del técnico
-│   └── reporte/[id]/         # Reporte público (acceso sin login)
-├── components/               # Componentes reutilizables (auth, toasts, etc.)
-├── hooks/
-│   ├── useAuth.ts            # Autenticación con Google
-│   ├── useGeolocation.ts     # Captura de coordenadas GPS
-│   └── useNetworkStatus.ts   # Detección de conectividad
+│   ├── page.tsx              # Dashboard principal
+│   ├── visita/               # Lógica de inicio de visita y reportes
+│   ├── historial/            # Buscador en memoria RAM de miles de visitas
+│   └── api/                  # (No usado en Static Export)
+├── components/               # OfflineBanner, OfflinePhotoSync, ServiceWorkerManager
 └── lib/
-    ├── visitService.ts       # CRUD de visitas en Firestore
-    ├── clientService.ts      # CRUD de clientes
-    ├── profileService.ts     # Perfil del técnico
-    ├── driveService.ts       # Subida de fotos a Google Drive
-    ├── types.ts              # Tipos TypeScript compartidos
-    └── firebase.ts           # Configuración Firebase
+    ├── visitService.ts       # CRUD de visitas en Firestore (+ LocalStorage guards)
+    ├── clientService.ts      # CRUD de clientes con Caché Local
+    ├── storageService.ts     # Módulo de Firebase Storage
+    ├── idb.ts                # Gestión manual de fotos offline (IndexedDB)
+    └── imageCompression.ts   # Optimizador de peso de imágenes
 ```
 
 ---
 
 ## 🔒 Seguridad
 
-- **Autenticación:** Login exclusivo mediante cuenta Google (OAuth)
-- **Aislamiento de datos:** Cada técnico solo ve sus propias visitas y clientes (reglas Firestore)
-- **Credenciales privadas:** Las claves de Firebase Admin y archivos `.env` están excluidos del repositorio
+- **Autenticación:** Login exclusivo mediante cuenta Google (OAuth).
+- **Aislamiento de datos:** Reglas de Firestore estrictas: los técnicos no pueden robar la titularidad de reportes de otros técnicos ni acceder a clientes ajenos.
 
 ---
 
-## 🚀 Instalación y Desarrollo
+## 🚀 Instalación y Despliegue
+
+El proyecto está configurado para exportarse como un **Static HTML Export (SPA)** para máxima compatibilidad con PWA y Firebase Hosting.
 
 ```bash
-# 1. Clonar el repo
-git clone https://github.com/rpillasagua/control-de-tiempo.git
-cd control-de-tiempo
+# 1. Instalar dependencias
+npm install
 
-# 2. Instalar dependencias
-npm install --legacy-peer-deps
-
-# 3. Configurar variables de entorno
+# 2. Configurar variables de entorno
 cp .env.local.example .env.local
-# Editar .env.local con tus credenciales de Firebase y Google
+# Llenar .env.local con las llaves de Firebase
 
-# 4. Servidor de desarrollo
+# 3. Servidor de desarrollo
 npm run dev
-```
 
-La app estará disponible en `http://localhost:3000`.
-
----
-
-## ☁️ Despliegue
-
-La aplicación está optimizada para despliegue en **Vercel** con soporte para Edge Functions.
-
-```bash
+# 4. Construcción para Producción (Static Export)
 npm run build
 ```
 
----
+Una vez ejecutado el build, la carpeta `out/` contiene toda la app lista para ser servida por Apache, Nginx o Firebase Hosting. Usa `npm run start` para probarla localmente.
 
+---
 *Última actualización: Marzo 2026*
