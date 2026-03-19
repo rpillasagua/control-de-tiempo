@@ -17,10 +17,7 @@ import {
 } from '@/lib/visitService';
 import { Visit, Activity } from '@/lib/types';
 import { toast } from 'sonner';
-import dynamic from 'next/dynamic';
-
-// Dynamic import to avoid SSR issues with canvas
-const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false });
+import { SignaturePad } from '@/components/SignaturePad';
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -131,14 +128,10 @@ function CloseVisitModal({
 }: { onConfirm: (summary: string, sig: string | null) => void; onCancel: () => void; closing: boolean }) {
   const [summary, setSummary] = useState('');
   const [showSig, setShowSig] = useState(false);
-  const sigRef = useRef<any>(null);
+  const [capturedSig, setCapturedSig] = useState<string | null>(null);
 
   const handleConfirm = () => {
-    let sig: string | null = null;
-    if (showSig && sigRef.current && !sigRef.current.isEmpty()) {
-      sig = sigRef.current.getTrimmedCanvas().toDataURL('image/png');
-    }
-    onConfirm(summary, sig);
+    onConfirm(summary, capturedSig);
   };
 
   return (
@@ -167,17 +160,16 @@ function CloseVisitModal({
         </button>
 
         {showSig && (
-          <div className="space-y-2">
-            <p className="text-xs text-slate-400">El cliente firma con el dedo en el cuadro de abajo:</p>
-            <div className="border-2 border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SignatureCanvas
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                {...({ ref: sigRef, penColor: '#1e293b', canvasProps: { className: 'w-full', style: { height: 160, width: '100%' } } } as any)}
-              />
-            </div>
-            <button onClick={() => sigRef.current?.clear()} className="text-xs text-red-500 hover:underline">
-              Limpiar firma
-            </button>
+          <SignaturePad
+            onSave={setCapturedSig}
+            onClear={() => setCapturedSig(null)}
+          />
+        )}
+
+        {showSig && capturedSig && (
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+            <span className="text-xs text-emerald-700 font-medium">✓ Firma capturada</span>
+            <button onClick={() => setCapturedSig(null)} className="text-xs text-red-500 ml-auto">Borrar</button>
           </div>
         )}
 
