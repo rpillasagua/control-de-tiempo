@@ -7,6 +7,7 @@ import { getActiveVisit, getVisitsByTechnician } from '@/lib/visitService';
 import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { SyncHubIndicator } from '@/components/SyncHubIndicator';
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -254,6 +255,7 @@ export default function DashboardPage() {
             <h1 className="font-bold text-slate-800 text-lg">Bitácora Técnica</h1>
           </div>
           <div className="flex items-center gap-2">
+            <SyncHubIndicator />
             {user.picture
               ? <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full border border-slate-200" />
               : <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">

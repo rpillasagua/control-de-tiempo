@@ -35,7 +35,16 @@ export interface Activity {
 // ============================================
 // VISITA TÉCNICA (documento principal)
 // ============================================
-export type VisitStatus = 'EN_PROGRESO' | 'FINALIZADA' | 'BORRADOR';
+export type VisitStatus = 'EN_PROGRESO' | 'FINALIZADA' | 'PAUSADA' | 'BORRADOR';
+
+// ============================================
+// PAUSA DE VISITA
+// ============================================
+export interface VisitPause {
+  startTime: string;   // ISO — cuando el técnico pausó
+  endTime?: string;    // ISO — cuando reanudó (undefined si sigue pausada)
+  reason: string;      // motivo de la pausa
+}
 
 export interface Visit {
   id: string;
@@ -56,8 +65,14 @@ export interface Visit {
   summary?: string;       // resumen general
 
   // Calculados
-  totalDurationMin?: number;  // departure - arrival en minutos
+  totalDurationMin?: number;  // neto: departure - arrival - pauses en minutos
   status: VisitStatus;
+
+  // Pausa de visita
+  pauses?: VisitPause[];
+
+  // Firma digital del cliente
+  clientSignature?: string;   // Base64 PNG
 
   // Metadata
   createdAt: string;

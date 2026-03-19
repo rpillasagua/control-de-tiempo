@@ -10,8 +10,9 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, listAll, deleteObject } from 'firebase/storage';
 import { db } from './firebase';
-import { Visit, Activity, TimeStamp, VisitStatus } from './types';
+import { Visit, Activity, TimeStamp, VisitStatus, VisitPause } from './types';
 import { logger } from './logger';
+import { deletePendingPhoto } from './idb';
 
 const COLLECTION = 'visits';
 
@@ -100,7 +101,15 @@ export async function closeVisit(
   const visit = snap.data();
   const arrivalTime = new Date(visit.arrival.localTime).getTime();
   const departureTime = new Date(departure.localTime).getTime();
-  const totalDurationMin = Math.round((departureTime - arrivalTime) / 60000);
+
+  // Calculate total PAUSED time (sum of completed pauses) in ms
+  const pauses: VisitPause[] = visit.pauses ?? [];
+  const pausedMs = pauses.reduce((acc, p) => {
+    if (!p.endTime) return acc;
+    return acc + (new Date(p.endTime).getTime() - new Date(p.startTime).getTime());
+  }, 0);
+
+  const totalDurationMin = Math.max(0, Math.round((departureTime - arrivalTime - pausedMs) / 60000));
 
   await updateDoc(ref, {
     departure,
@@ -115,7 +124,56 @@ export async function closeVisit(
     localStorage.removeItem(`active_visit_${visit.technicianId}`);
   }
 
-  logger.log(`✅ Visita ${visitId} cerrada. Duración: ${totalDurationMin} min`);
+  logger.log(`✅ Visita ${visitId} cerrada. Duración neta: ${totalDurationMin} min`);
+}
+
+// ──────────────────────────────────────────────
+// Pause a visit
+// ──────────────────────────────────────────────
+export async function pauseVisit(visitId: string, reason: string): Promise<void> {
+  const ref = doc(db, COLLECTION, visitId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error(`Visita ${visitId} no existe`);
+
+  const pauses: VisitPause[] = snap.data().pauses ?? [];
+  const newPause: VisitPause = { startTime: new Date().toISOString(), reason };
+
+  await updateDoc(ref, {
+    pauses: [...pauses, newPause],
+    status: 'PAUSADA' as VisitStatus,
+    updatedAt: new Date().toISOString(),
+  });
+  logger.log(`⏸ Visita ${visitId} pausada. Motivo: ${reason}`);
+}
+
+// ──────────────────────────────────────────────
+// Resume a paused visit
+// ──────────────────────────────────────────────
+export async function resumeVisit(visitId: string): Promise<void> {
+  const ref = doc(db, COLLECTION, visitId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error(`Visita ${visitId} no existe`);
+
+  const pauses: VisitPause[] = snap.data().pauses ?? [];
+  const updated = pauses.map((p, i) =>
+    i === pauses.length - 1 && !p.endTime ? { ...p, endTime: new Date().toISOString() } : p
+  );
+
+  await updateDoc(ref, {
+    pauses: updated,
+    status: 'EN_PROGRESO' as VisitStatus,
+    updatedAt: new Date().toISOString(),
+  });
+  logger.log(`▶️ Visita ${visitId} reanudada`);
+}
+
+// ──────────────────────────────────────────────
+// Save client digital signature
+// ──────────────────────────────────────────────
+export async function saveClientSignature(visitId: string, signatureBase64: string): Promise<void> {
+  const ref = doc(db, COLLECTION, visitId);
+  await updateDoc(ref, { clientSignature: signatureBase64, updatedAt: new Date().toISOString() });
+  logger.log(`✒️ Firma del cliente guardada en visita ${visitId}`);
 }
 
 // ──────────────────────────────────────────────
@@ -220,9 +278,17 @@ export async function deleteActivity(
   if (!snap.exists()) throw new Error(`Visita ${visitId} no existe`);
 
   const activities: Activity[] = snap.data().activities ?? [];
+  const target = activities.find(a => a.id === activityId);
   const filtered = activities.filter(a => a.id !== activityId);
 
   await updateDoc(ref, { activities: filtered, updatedAt: new Date().toISOString() });
+
+  // 🧹 Fix Storage Leak: clean up any pending offline photos from IndexedDB
+  if (target?.photoUrls) {
+    const pendingIds = target.photoUrls.filter(u => u.startsWith('pending_'));
+    await Promise.all(pendingIds.map(id => deletePendingPhoto(id).catch(() => {})));
+  }
+
   logger.log(`✅ Actividad ${activityId} eliminada de visita ${visitId}`);
 }
 

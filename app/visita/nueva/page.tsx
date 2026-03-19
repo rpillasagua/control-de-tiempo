@@ -29,6 +29,10 @@ export default function NuevaVisitaPage() {
   const [saving, setSaving] = useState(false);
   const [arrivalPhoto, setArrivalPhoto] = useState<string | null>(null); // base64 preview
   const [checkingActive, setCheckingActive] = useState(true);
+  
+  // GPS Strict Guard
+  const [gpsErrorMsg, setGpsErrorMsg] = useState('');
+  const [gpsOverride, setGpsOverride] = useState(false);
 
   // Load clients and check active visit
   React.useEffect(() => {
@@ -95,29 +99,36 @@ export default function NuevaVisitaPage() {
     setSaving(true);
     const tempId = Date.now().toString();
 
+    let geoPoint = null;
     try {
-      // 1. Capturar GPS y subir foto EN PARALELO para reducir el tiempo de espera
-      const [geoPoint, photoUrl] = await Promise.all([
-        // GPS (opcional)
-        captureGeo().catch(() => {
-          toast.info('Sin GPS — se registrará sin coordenadas');
-          return null;
-        }),
-        // Foto de llegada (opcional)
-        arrivalPhoto && isOnline
-          ? (async () => {
-              try {
-                const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
-                const path = `visits/${tempId}/arrival.jpg`;
-                return await uploadPhotoToStorage(file, path);
-              } catch (err) {
-                console.error('Error subiendo foto de llegada', err);
-                toast.error('La visita se creará, pero falló la subida de foto');
-                return undefined;
-              }
-            })()
-          : Promise.resolve(undefined),
-      ]);
+      geoPoint = await captureGeo();
+      setGpsErrorMsg('');
+    } catch (err: any) {
+      if (!gpsOverride) {
+        toast.error('GPS Requerido. Revisa tu señal o confirma la excepción manual.');
+        setGpsErrorMsg(err.message || 'Error obteniendo ubicación');
+        setSaving(false);
+        return; // BLOCK!
+      } else {
+        toast.info('Visitando sin GPS (Excepción confirmada)');
+      }
+    }
+
+    try {
+      // Foto de llegada (opcional)
+      const photoUrl = arrivalPhoto && isOnline
+        ? await (async () => {
+            try {
+              const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
+              const path = `visits/${tempId}/arrival.jpg`;
+              return await uploadPhotoToStorage(file, path);
+            } catch (err) {
+              console.error('Error subiendo foto de llegada', err);
+              toast.error('La visita se creará, pero falló la subida de foto');
+              return undefined;
+            }
+          })()
+        : undefined;
 
       // Guardar foto offline si corresponde
       let finalPhotoUrl: string | undefined = photoUrl ?? undefined;
@@ -277,6 +288,21 @@ export default function NuevaVisitaPage() {
             </button>
           )}
         </div>
+
+        {gpsErrorMsg && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 animate-fade-in">
+            <p className="font-semibold mb-2">⚠️ Error GPS: {gpsErrorMsg}</p>
+            <label className="flex items-start gap-2 cursor-pointer mt-1">
+              <input 
+                type="checkbox" 
+                checked={gpsOverride} 
+                onChange={e => setGpsOverride(e.target.checked)} 
+                className="mt-0.5 w-5 h-5 rounded border-red-300 text-red-600 focus:ring-red-500 flex-shrink-0" 
+              />
+              <span className="leading-snug">Declaro que me es imposible obtener señal GPS en este momento y asumo la responsabilidad de registrar la visita sin coordenadas.</span>
+            </label>
+          </div>
+        )}
 
         {/* Submit */}
         <button

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, Clock, MapPin, CheckCircle, Loader2, ChevronRight, Search, Calendar, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, CheckCircle, Loader2, ChevronRight, Search, Calendar, Trash2, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getVisitsByTechnician, deleteVisit } from '@/lib/visitService';
@@ -47,6 +47,26 @@ export default function HistorialPage() {
   
   // Client-side pagination state
   const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
+
+  const handleExportCSV = (visits: Visit[]) => {
+    const header = ['Fecha', 'Cliente', 'Dirección', 'Estado', 'Llegada', 'Salida', 'Duración (min)', 'Actividades'];
+    const rows = visits.map(v => [
+      new Date(v.arrival.localTime).toLocaleDateString('es-EC'),
+      v.clientName,
+      v.clientAddress ?? '',
+      v.status,
+      formatTime(v.arrival.localTime),
+      v.departure ? formatTime(v.departure.localTime) : '',
+      v.totalDurationMin ?? '',
+      v.activities.length,
+    ]);
+    const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `visitas_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -125,7 +145,14 @@ export default function HistorialPage() {
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <Link href="/"><button className="p-2 rounded-full hover:bg-slate-100"><ArrowLeft className="w-5 h-5 text-slate-600" /></button></Link>
-          <h1 className="font-bold text-slate-800 text-lg">Historial de Visitas</h1>
+          <h1 className="font-bold text-slate-800 text-lg flex-1">Historial de Visitas</h1>
+          <button
+            onClick={() => handleExportCSV(filtered)}
+            className="flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-3 py-1.5 hover:bg-emerald-100 transition-colors font-medium"
+            title="Descargar CSV para Excel"
+          >
+            <Download className="w-3.5 h-3.5" /> Excel
+          </button>
         </div>
 
         {/* Search bar */}
