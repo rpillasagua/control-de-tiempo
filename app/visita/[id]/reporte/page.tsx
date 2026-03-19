@@ -68,6 +68,7 @@ export default function ReportPage() {
       // ── 1. Pre-convert cross-origin images to inline base64 ──
       const images = element.querySelectorAll('img');
       const origSrcs: { img: HTMLImageElement; src: string }[] = [];
+      const transparentGif = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
       await Promise.all(
         Array.from(images).map(async (img) => {
@@ -77,19 +78,18 @@ export default function ReportPage() {
           try {
             origSrcs.push({ img, src });
             
-            // Check if it's the same origin
             const isSameOrigin = src.startsWith(window.location.origin) || src.startsWith('/');
             
-            // Because the app is a Static Export, we cannot use Next API routes.
-            // Using a public CORS proxy as a fallback to download the Firebase image.
+            // Usamos un proxy más permisivo
             const fetchUrl = isSameOrigin 
               ? src 
-              : `https://corsproxy.io/?${encodeURIComponent(src)}`;
+              : `https://api.allorigins.win/raw?url=${encodeURIComponent(src)}`;
               
             const resp = await fetch(fetchUrl);
             
             if (!resp.ok) {
               console.warn(`PDF Proxy error for ${src}: ${resp.status}`);
+              img.src = transparentGif; // Evita que html2canvas intente cargarla y contamine el canvas
               return; 
             }
 
@@ -103,6 +103,7 @@ export default function ReportPage() {
             img.src = dataUrl;
           } catch (err) {
             console.warn('PDF: no se pudo convertir imagen (proxy falló):', err);
+            img.src = transparentGif; // Failsafe contra canvas tainted
           }
         })
       );
@@ -172,7 +173,8 @@ export default function ReportPage() {
       toast.success('PDF descargado exitosamente', { id: 'pdf-toast' });
     } catch (err) {
       console.error('Error generando PDF:', err);
-      toast.error('Error al generar PDF. Intente de nuevo.', { id: 'pdf-toast' });
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Error: ${errorMessage}`, { id: 'pdf-toast' });
     } finally {
       setDownloadingPdf(false);
     }
