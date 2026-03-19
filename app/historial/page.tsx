@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { ArrowLeft, Clock, MapPin, CheckCircle, Loader2, ChevronRight, Search, Calendar, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getPaginatedVisits, deleteVisit } from '@/lib/visitService';
+import { getVisitsByTechnician, deleteVisit } from '@/lib/visitService';
 import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
-import { DocumentSnapshot } from 'firebase/firestore';
 
 const PAGE_SIZE = 15;
 
@@ -41,21 +40,21 @@ export default function HistorialPage() {
   const { user } = useAuth();
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Client-side pagination state
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
 
-  const loadFirst = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const result = await getPaginatedVisits(user.email, PAGE_SIZE);
-      setAllVisits(result.visits);
-      setLastDoc(result.lastDoc);
-      setHasMore(result.visits.length === PAGE_SIZE);
+      // Pull latest 300 visits to memory for instant filtering
+      const result = await getVisitsByTechnician(user.email);
+      setAllVisits(result);
     } catch (err: any) {
       console.error(err);
       toast.error(`Error cargando historial: ${err.message || 'Desconocido'}`);
@@ -64,37 +63,38 @@ export default function HistorialPage() {
     }
   }, [user]);
 
-  const loadMore = async () => {
-    if (!user || !lastDoc || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const result = await getPaginatedVisits(user.email, PAGE_SIZE, lastDoc);
-      setAllVisits(prev => [...prev, ...result.visits]);
-      setLastDoc(result.lastDoc);
-      setHasMore(result.visits.length === PAGE_SIZE);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(`Error cargando más visitas: ${err.message || 'Desconocido'}`);
-    } finally {
-      setLoadingMore(false);
-    }
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // Reset pagination limit when filters change
+  useEffect(() => {
+    setDisplayLimit(PAGE_SIZE);
+  }, [search, dateFilter]);
+
+  // Purely client-side, hyper-fast filtering
+  const filtered = useMemo(() => {
+    return allVisits.filter(v => {
+      // 1. Text search
+      if (search && !v.clientName.toLowerCase().includes(search.toLowerCase())) return false;
+      
+      // 2. Date filter
+      const localTime = v.arrival.localTime;
+      if (dateFilter === 'today' && localTime < startOfDay()) return false;
+      if (dateFilter === 'week' && localTime < startOfWeek()) return false;
+      if (dateFilter === 'month' && localTime < startOfMonth()) return false;
+
+      return true;
+    });
+  }, [allVisits, search, dateFilter]);
+
+  const displayedVisits = useMemo(() => {
+    return filtered.slice(0, displayLimit);
+  }, [filtered, displayLimit]);
+
+  const hasMore = displayLimit < filtered.length;
+
+  const loadMore = () => {
+    setDisplayLimit(prev => prev + PAGE_SIZE);
   };
-
-  useEffect(() => { loadFirst(); }, [loadFirst]);
-
-  // Client-side filters  // Filtrado local en memoria
-  const filtered = allVisits.filter(v => {
-    // 1. Text search
-    if (search && !v.clientName.toLowerCase().includes(search.toLowerCase())) return false;
-    
-    // 2. Date filter
-    const localTime = v.arrival.localTime;
-    if (dateFilter === 'today' && localTime < startOfDay()) return false;
-    if (dateFilter === 'week' && localTime < startOfWeek()) return false;
-    if (dateFilter === 'month' && localTime < startOfMonth()) return false;
-
-    return true;
-  });
 
   const handleDelete = async (e: React.MouseEvent, visitId: string) => {
     e.preventDefault(); // Evita que el Link redireccione
@@ -175,7 +175,7 @@ export default function HistorialPage() {
         ) : (
           <>
             <p className="text-xs text-slate-400 px-1">{filtered.length} visita{filtered.length !== 1 ? 's' : ''} {search || dateFilter !== 'all' ? 'con este filtro' : 'en total'}</p>
-            {filtered.map(v => (
+            {displayedVisits.map(v => (
               <Link key={v.id} href={`/visita/${v.id}`}>
                 <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${v.status === 'FINALIZADA' ? 'bg-emerald-100' : 'bg-amber-100'}`}>
@@ -214,13 +214,12 @@ export default function HistorialPage() {
             ))}
 
             {/* Load more */}
-            {hasMore && !search && dateFilter === 'all' && (
+            {hasMore && (
               <button
                 onClick={loadMore}
-                disabled={loadingMore}
-                className="w-full py-3 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors mt-4"
               >
-                {loadingMore ? <><Loader2 className="w-4 h-4 animate-spin" /> Cargando...</> : 'Cargar más visitas'}
+                Cargar más
               </button>
             )}
           </>

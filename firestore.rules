@@ -25,7 +25,8 @@ service cloud.firestore {
       
       // Solo el técnico dueño puede crear, modificar o eliminar sus visitas
       allow create: if isOwner(request.resource.data.technicianId);
-      allow update, delete: if isOwner(resource.data.technicianId);
+      allow update: if isOwner(resource.data.technicianId) && request.resource.data.technicianId == resource.data.technicianId;
+      allow delete: if isOwner(resource.data.technicianId);
       
       // ──────────────────────────────────────────────
       // 1.1 ACTIVIDADES DE LA VISITA (subcolección)

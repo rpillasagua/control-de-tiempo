@@ -52,6 +52,9 @@ export async function createVisit(
   };
 
   const docRef = await addDoc(collection(db, COLLECTION), visitData);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`active_visit_${technicianId}`, docRef.id);
+  }
   logger.log(`✅ Visita creada: ${docRef.id}`);
   return docRef.id;
 }
@@ -107,6 +110,10 @@ export async function closeVisit(
     updatedAt: new Date().toISOString(),
     _serverUpdatedAt: serverTimestamp()
   });
+
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(`active_visit_${visit.technicianId}`);
+  }
 
   logger.log(`✅ Visita ${visitId} cerrada. Duración: ${totalDurationMin} min`);
 }

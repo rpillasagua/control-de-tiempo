@@ -33,8 +33,18 @@ export default function NuevaVisitaPage() {
   // Load clients and check active visit
   React.useEffect(() => {
     if (user?.email) {
+      // 1. Sync check (bulletproof offline protection)
+      const localActiveId = localStorage.getItem(`active_visit_${user.email}`);
+      if (localActiveId) {
+        toast.error('Tienes una visita en proceso, finalízala primero');
+        router.replace(`/visita/${localActiveId}`);
+        return;
+      }
+
+      // 2. Network check (in case they started it on another device or cleared cache)
       getActiveVisit(user.email).then(active => {
         if (active) {
+          localStorage.setItem(`active_visit_${user.email}`, active.id);
           toast.error('Tienes una visita en proceso, finalízala primero');
           router.replace(`/visita/${active.id}`);
         } else {
@@ -42,6 +52,7 @@ export default function NuevaVisitaPage() {
           getClients(user.email).then(setClients).catch(console.error);
         }
       }).catch(() => {
+        // If offline and no local active, it's safe to create
         setCheckingActive(false);
       });
     }
