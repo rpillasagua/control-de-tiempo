@@ -108,7 +108,9 @@ export default function ReportPage() {
   const publicUrl = typeof window !== 'undefined' ? `${window.location.origin}/reporte/${visitId}` : '';
 
   const handleWhatsApp = () => {
-    const text = `Hola, adjunto el *Reporte Técnico* de la visita realizada.\n\n📍 Cliente: ${visit.clientName}\n🔗 Ver reporte aquí: ${publicUrl}`;
+    const isCompleteLocal = visit.status === 'FINALIZADA';
+    const estadoTexto = isCompleteLocal ? 'realizada' : 'en proceso';
+    const text = `Hola, adjunto el *Reporte Técnico* de la visita ${estadoTexto}.\n\n📍 Cliente: ${visit.clientName}\n🔗 Ver reporte aquí: ${publicUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -280,7 +282,7 @@ export default function ReportPage() {
                       <p className="text-sm text-slate-500">Llegada</p>
                       <p className="font-semibold text-slate-800">{formatDateTime(visit.arrival.localTime)}</p>
                       {visit.arrival.location && (
-                        <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm">
+                        <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm" data-html2canvas-ignore="true">
                           <iframe 
                             width="100%" 
                             height="150" 
@@ -312,7 +314,7 @@ export default function ReportPage() {
                         <p className="text-sm text-slate-500">Salida</p>
                         <p className="font-semibold text-slate-800">{formatDateTime(visit.departure.localTime)}</p>
                         {visit.departure.location && (
-                          <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm">
+                          <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm" data-html2canvas-ignore="true">
                             <iframe 
                               width="100%" 
                               height="150" 
@@ -367,6 +369,7 @@ export default function ReportPage() {
                                   key={pi} 
                                   src={url} 
                                   alt="Evidencia técnica" 
+                                  crossOrigin="anonymous"
                                   onClick={() => setLightboxImage(url)}
                                   className="w-20 h-20 rounded-lg object-cover border border-slate-100 cursor-zoom-in active:scale-95 transition-transform" 
                                 />
