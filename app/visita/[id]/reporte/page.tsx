@@ -80,10 +80,11 @@ export default function ReportPage() {
             // Check if it's the same origin
             const isSameOrigin = src.startsWith(window.location.origin) || src.startsWith('/');
             
-            // Fetch directly if same origin, otherwise go through our proxy
+            // Because the app is a Static Export, we cannot use Next API routes.
+            // Using a public CORS proxy as a fallback to download the Firebase image.
             const fetchUrl = isSameOrigin 
               ? src 
-              : `/api/proxy-image?url=${encodeURIComponent(src)}`;
+              : `https://corsproxy.io/?${encodeURIComponent(src)}`;
               
             const resp = await fetch(fetchUrl);
             
@@ -101,7 +102,6 @@ export default function ReportPage() {
             });
             img.src = dataUrl;
           } catch (err) {
-            // If fetch fails, leave original src — html2canvas will skip it
             console.warn('PDF: no se pudo convertir imagen (proxy falló):', err);
           }
         })
