@@ -58,47 +58,104 @@ export default function ReportPage() {
     try {
       setDownloadingPdf(true);
       toast.loading('Generando PDF corporativo...', { id: 'pdf-toast' });
-      
+
       const { default: html2canvas } = await import('html2canvas');
       const { jsPDF } = await import('jspdf');
 
       const element = document.getElementById('report-content');
       if (!element) throw new Error('Contenedor no encontrado');
 
-      // Ocultar elementos no-print temporalmente
+      // ── 1. Pre-convert cross-origin images to inline base64 ──
+      const images = element.querySelectorAll('img');
+      const origSrcs: { img: HTMLImageElement; src: string }[] = [];
+
+      await Promise.all(
+        Array.from(images).map(async (img) => {
+          const src = img.src;
+          if (!src || src.startsWith('data:')) return; // already base64
+          try {
+            origSrcs.push({ img, src });
+            const resp = await fetch(src, { mode: 'cors' });
+            const blob = await resp.blob();
+            const dataUrl: string = await new Promise((res, rej) => {
+              const reader = new FileReader();
+              reader.onloadend = () => res(reader.result as string);
+              reader.onerror = rej;
+              reader.readAsDataURL(blob);
+            });
+            img.src = dataUrl;
+          } catch {
+            // If fetch fails, leave original src — html2canvas will skip it
+            console.warn('PDF: no se pudo convertir imagen:', src);
+          }
+        })
+      );
+
+      // ── 2. Ocultar elementos no-print ──
       const noPrintElements = element.querySelectorAll('.no-print');
       noPrintElements.forEach((el) => {
         (el as HTMLElement).style.display = 'none';
       });
 
+      // ── 3. Capturar con html2canvas ──
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
       });
 
-      // Restaurar elementos no-print
+      // ── 4. Restaurar elementos ──
       noPrintElements.forEach((el) => {
         (el as HTMLElement).style.display = '';
       });
-
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
+      // Restore original image srcs
+      origSrcs.forEach(({ img, src }) => {
+        img.src = src;
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Reporte_Tecnico_${visit?.clientName?.replace(/\s+/g, '_')}_${visitId.slice(0,6)}.pdf`);
-      
+      // ── 5. Generar PDF multi-página ──
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight <= pageHeight) {
+        // Single page — fits on one A4
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      } else {
+        // Multi-page: slice canvas into A4-height chunks
+        const sliceHeightPx = (pageHeight / imgWidth) * canvas.width;
+        let yOffset = 0;
+        let pageIndex = 0;
+
+        while (yOffset < canvas.height) {
+          const h = Math.min(sliceHeightPx, canvas.height - yOffset);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = h;
+          const ctx = sliceCanvas.getContext('2d')!;
+          ctx.drawImage(canvas, 0, yOffset, canvas.width, h, 0, 0, canvas.width, h);
+
+          const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+          const sliceImgHeight = (h * imgWidth) / canvas.width;
+
+          if (pageIndex > 0) pdf.addPage();
+          pdf.addImage(sliceData, 'JPEG', 0, 0, imgWidth, sliceImgHeight);
+
+          yOffset += h;
+          pageIndex++;
+        }
+      }
+
+      pdf.save(`Reporte_Tecnico_${visit?.clientName?.replace(/\s+/g, '_')}_${visitId.slice(0, 6)}.pdf`);
       toast.success('PDF descargado exitosamente', { id: 'pdf-toast' });
     } catch (err) {
-      console.error(err);
+      console.error('Error generando PDF:', err);
       toast.error('Error al generar PDF. Intente de nuevo.', { id: 'pdf-toast' });
     } finally {
       setDownloadingPdf(false);

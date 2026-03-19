@@ -45,7 +45,7 @@ export default function ClientListPage() {
   const handleDelete = async (client: Client) => {
     if (!confirm(`¿Eliminar el cliente "${client.name}"? Esta acción no se puede deshacer.`)) return;
     try {
-      await deleteClient(client.id);
+      await deleteClient(client.id, user?.email);
       toast.success('Cliente eliminado');
       await load();
     } catch {

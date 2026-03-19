@@ -61,7 +61,7 @@ export default function EditClientPage() {
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
         notes: formData.notes.trim() || undefined
-      });
+      }, user?.email);
       toast.success('Cliente actualizado correctamente');
       router.push('/clientes');
     } catch {
