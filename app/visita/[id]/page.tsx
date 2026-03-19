@@ -441,6 +441,20 @@ export default function VisitaPage() {
               </div>
             </div>
           )}
+          {visit.arrival.photoUrl && !visit.arrival.photoUrl.startsWith('pending_') && (
+            <div className="mt-4">
+              <p className="text-white/70 text-xs mb-2 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5" />
+                FOTO DE LLEGADA
+              </p>
+              <img
+                src={visit.arrival.photoUrl}
+                alt="Foto de llegada"
+                onClick={() => setLightboxImage(visit.arrival.photoUrl!)}
+                className="w-full h-40 object-cover rounded-xl cursor-zoom-in border border-white/10 active:scale-95 transition-transform"
+              />
+            </div>
+          )}
         </div>
 
         {/* Activities */}
