@@ -71,53 +71,49 @@ export default function NuevaVisitaPage() {
     }
 
     setSaving(true);
+    const tempId = Date.now().toString();
+
     try {
-      // 1. Capture GPS (optional but attempted)
-      let geoPoint = null;
-      try {
-        geoPoint = await captureGeo();
-        toast.success('📍 Ubicación capturada');
-      } catch {
-        toast.info('Sin GPS — se registrará sin coordenadas');
-      }
+      // 1. Capturar GPS y subir foto EN PARALELO para reducir el tiempo de espera
+      const [geoPoint, photoUrl] = await Promise.all([
+        // GPS (opcional)
+        captureGeo().catch(() => {
+          toast.info('Sin GPS — se registrará sin coordenadas');
+          return null;
+        }),
+        // Foto de llegada (opcional)
+        arrivalPhoto && isOnline
+          ? (async () => {
+              try {
+                const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
+                const path = `visits/${tempId}/arrival.jpg`;
+                return await uploadPhotoToStorage(file, path);
+              } catch (err) {
+                console.error('Error subiendo foto de llegada', err);
+                toast.error('La visita se creará, pero falló la subida de foto');
+                return undefined;
+              }
+            })()
+          : Promise.resolve(undefined),
+      ]);
 
-      // 2. Build arrival timestamp y subir foto si hay
-      let photoUrl = undefined;
-      const tempId = Date.now().toString();
-
-      if (arrivalPhoto) {
-        if (isOnline) {
-          toast.info('Subiendo foto de llegada...');
-          try {
-            const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
-            const path = `visits/${tempId}/arrival.jpg`;
-            photoUrl = await uploadPhotoToStorage(file, path);
-          } catch (err) {
-            console.error('Error subiendo foto de llegada', err);
-            toast.error('La visita se creará, pero falló la subida de foto');
-          }
-        } else {
-          // Offline Flow
-          toast.info('Modo offline: Guardando foto localmente...');
-          const pendingId = `pending_arrival_${tempId}`;
-          await savePendingPhoto({
-            id: pendingId,
-            dataUrl: arrivalPhoto,
-            type: 'arrival',
-            visitId: tempId // We will swap this with the real visit ID later
-            // Wait, visit ID is created via `createVisit`. 
-            // In createVisit, it auto-generates ID inside if undefined... 
-            // BUT wait! `tempId` is NOT the final visitId if we use addDoc!
-            // Let's modify `photoUrl` to use the pendingId. We must patch the pendingPhoto visitId AFTER createVisit!
-          });
-          photoUrl = pendingId;
-        }
+      // Guardar foto offline si corresponde
+      let finalPhotoUrl: string | undefined = photoUrl ?? undefined;
+      if (arrivalPhoto && !isOnline) {
+        const pendingId = `pending_arrival_${tempId}`;
+        await savePendingPhoto({
+          id: pendingId,
+          dataUrl: arrivalPhoto,
+          type: 'arrival',
+          visitId: tempId,
+        });
+        finalPhotoUrl = pendingId;
       }
 
       const arrival: TimeStamp = {
         localTime: new Date().toISOString(),
         ...(geoPoint ? { location: geoPoint } : {}),
-        ...(photoUrl ? { photoUrl } : {})
+        ...(finalPhotoUrl ? { photoUrl: finalPhotoUrl } : {})
       };
 
       // Buscar el ID real del cliente si lo seleccionó de la lista
@@ -134,12 +130,12 @@ export default function NuevaVisitaPage() {
       );
 
       // 4. (Offline-only) Re-link the saved IDB photo from tempId to the REAL visitId
-      if (arrivalPhoto && !isOnline && photoUrl?.startsWith('pending_')) {
+      if (arrivalPhoto && !isOnline && finalPhotoUrl?.startsWith('pending_')) {
         await savePendingPhoto({
-          id: photoUrl,
+          id: finalPhotoUrl,
           dataUrl: arrivalPhoto,
           type: 'arrival',
-          visitId: visitId // NOW we have the real Firebase ID
+          visitId: visitId
         });
       }
 
