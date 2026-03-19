@@ -1,0 +1,13 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm.
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Could not find files for /_error in .next/build-manifest.json
+Could not find files for /_error in .next/build-manifest.json
+Could not find files for /_error in .next/build-manifest.json
+Could not find files for /_error in .next/build-manifest.json
+TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.c [as require] (C:\Users\ROGER\Documents\bitacora-tecnica\.next\server\webpack-runtime.js:1:128)
+Error occurred prerendering page "/visita/nueva". Read more: https://nextjs.org/docs/messages/prerender-error
+TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.c [as require] (C:\Users\ROGER\Documents\bitacora-tecnica\.next\server\webpack-runtime.js:1:128)
+Export encountered an error on /visita/nueva/page: /visita/nueva, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null
