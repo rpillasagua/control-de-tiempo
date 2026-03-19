@@ -129,19 +129,20 @@ export async function getVisitsByTechnician(
   dateFrom?: string
 ): Promise<Visit[]> {
   const col = collection(db, COLLECTION);
-  const constraints = [
+  const constraints: any[] = [
     where('technicianId', '==', technicianId),
-    orderBy('createdAt', 'desc')
+    orderBy('createdAt', 'desc'),
+    limit(300) // Protege de lecturas masivas (+300 docs en el dashboard)
   ];
 
   const q = query(col, ...constraints);
   const snap = await getDocs(q);
 
-  const visits: Visit[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
+  let visits: Visit[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
 
   // Optional date filter (client-side after query)
   if (dateFrom) {
-    return visits.filter(v => v.createdAt >= dateFrom);
+    visits = visits.filter(v => v.createdAt >= dateFrom);
   }
 
   return visits;
