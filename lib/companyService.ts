@@ -2,12 +2,11 @@ import { collection, doc, getDoc, getDocs, setDoc, query, where, updateDoc } fro
 import { db } from './firebase';
 import { Company } from './types';
 
-// Obtiene la compañía administrada por un usuario
-export async function getCompanyByAdmin(adminEmail: string): Promise<Company | null> {
+// Obtiene las compañías administradas por un usuario
+export async function getCompaniesByAdmin(adminEmail: string): Promise<Company[]> {
   const q = query(collection(db, 'companies'), where('adminEmail', '==', adminEmail));
   const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return snap.docs[0].data() as Company;
+  return snap.docs.map(doc => doc.data() as Company);
 }
 
 // Obtiene la compañía a la que pertenece un técnico
@@ -36,4 +35,10 @@ export async function createCompany(company: Company): Promise<void> {
 export async function updateTechnicians(companyId: string, technicianEmails: string[]): Promise<void> {
   const ref = doc(db, 'companies', companyId);
   await updateDoc(ref, { technicianEmails, updatedAt: new Date().toISOString() });
+}
+
+// Transfiere la propiedad de la empresa a otro admin
+export async function transferCompanyOwnership(companyId: string, newAdminEmail: string): Promise<void> {
+  const ref = doc(db, 'companies', companyId);
+  await updateDoc(ref, { adminEmail: newAdminEmail, updatedAt: new Date().toISOString() });
 }
