@@ -8,6 +8,7 @@ import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { SyncHubIndicator } from '@/components/SyncHubIndicator';
+import { useTranslation } from '@/lib/i18n';
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -41,6 +42,7 @@ function elapsed(sinceIso: string): string {
 const OVERDUE_HOURS = 4;
 
 function ActiveVisitBanner({ visit }: { visit: Visit }) {
+  const { t } = useTranslation();
   const [elapsedDisplay, setElapsedDisplay] = useState(elapsed(visit.arrival.localTime));
   const [isOverdue, setIsOverdue] = useState(false);
 
@@ -61,8 +63,8 @@ function ActiveVisitBanner({ visit }: { visit: Visit }) {
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-2">
           <span className="text-lg leading-none">⚠️</span>
           <div>
-            <p className="text-amber-800 font-semibold text-sm">Llevas más de {OVERDUE_HOURS}h en esta visita</p>
-            <p className="text-amber-600 text-xs mt-0.5">¿Olvidaste registrar la salida?</p>
+            <p className="text-amber-800 font-semibold text-sm">{t.overdueMsg(OVERDUE_HOURS)}</p>
+            <p className="text-amber-600 text-xs mt-0.5">{t.forgotExit}</p>
           </div>
         </div>
       )}
@@ -85,6 +87,7 @@ function ActiveVisitBanner({ visit }: { visit: Visit }) {
 }
 
 function VisitCard({ visit }: { visit: Visit }) {
+  const { t } = useTranslation();
   const isClosed = visit.status === 'FINALIZADA';
   return (
     <Link href={`/visita/${visit.id}`}>
@@ -113,7 +116,7 @@ function VisitCard({ visit }: { visit: Visit }) {
             {visit.totalDurationMin !== undefined && visit.totalDurationMin !== null ? (
               <p className="font-bold text-slate-700">{formatDuration(visit.totalDurationMin)}</p>
             ) : null}
-            <p className="text-xs text-slate-400">{visit.activities.length} actividades</p>
+            <p className="text-xs text-slate-400">{visit.activities.length} {t.activitiesLabel ? t.activitiesLabel(0).split(' ')[0].toLowerCase() : 'actividades'}</p>
           </div>
         </div>
       </div>
@@ -125,6 +128,7 @@ function VisitCard({ visit }: { visit: Visit }) {
 // Login Page
 // ─────────────────────────────────────────────────────────
 function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean }) {
+  const { t } = useTranslation();
   return (
     <main className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900">
       <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-2xl p-10">
@@ -132,8 +136,8 @@ function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean
           <img src="/icon-192.png" alt="Bitácora Técnica Logo" className="w-20 h-20 rounded-2xl shadow-lg border-2 border-slate-100" />
         </div>
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Bitácora Técnica</h1>
-          <p className="text-slate-500 text-sm mt-1">Registro de visitas y evidencia de trabajo</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t.appName}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t.appTagline}</p>
         </div>
         <button
           onClick={onLogin}
@@ -150,11 +154,11 @@ function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              Continuar con Google
+              {t.continueWithGoogle}
             </>
           )}
         </button>
-        <p className="text-xs text-center text-slate-400 mt-6">Sesión persistente — no expira cada hora</p>
+        <p className="text-xs text-center text-slate-400 mt-6">{t.sessionPersistent}</p>
       </div>
     </main>
   );
@@ -165,6 +169,7 @@ function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean
 // ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user, loading: authLoading, login } = useAuth();
+  const { t } = useTranslation();
   const [loginLoading, setLoginLoading] = useState(false);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
@@ -252,7 +257,7 @@ export default function DashboardPage() {
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/icon-192.png" alt="Logo" className="w-7 h-7 rounded-sm shadow-sm" />
-            <h1 className="font-bold text-slate-800 text-lg">Bitácora Técnica</h1>
+            <h1 className="font-bold text-slate-800 text-lg">{t.appName}</h1>
           </div>
           <div className="flex items-center gap-2">
             <SyncHubIndicator />
@@ -274,7 +279,7 @@ export default function DashboardPage() {
             <Calendar className="w-3 h-3" /> {today}
           </p>
           <h2 className="text-2xl font-bold text-slate-800 mt-1">
-            Hola, {user.name.split(' ')[0]} 👋
+            {t.greeting(user.name.split(' ')[0])}
           </h2>
         </div>
 
@@ -284,17 +289,17 @@ export default function DashboardPage() {
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
               <Calendar className="w-5 h-5 text-blue-500 mb-1" />
               <p className="text-2xl font-bold text-blue-700">{metrics.total}</p>
-              <p className="text-[10px] text-blue-600 uppercase font-semibold tracking-wide mt-0.5">Visitas 7D</p>
+              <p className="text-[10px] text-blue-600 uppercase font-semibold tracking-wide mt-0.5">{t.visits7d}</p>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
               <CheckCircle className="w-5 h-5 text-emerald-500 mb-1" />
               <p className="text-2xl font-bold text-emerald-700">{metrics.completed}</p>
-              <p className="text-[10px] text-emerald-600 uppercase font-semibold tracking-wide mt-0.5">Culminadas</p>
+              <p className="text-[10px] text-emerald-600 uppercase font-semibold tracking-wide mt-0.5">{t.completed}</p>
             </div>
             <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
               <Clock className="w-5 h-5 text-purple-500 mb-1" />
               <p className="text-2xl font-bold text-purple-700">{metrics.hours}h</p>
-              <p className="text-[10px] text-purple-600 uppercase font-semibold tracking-wide mt-0.5">Horas Trab.</p>
+              <p className="text-[10px] text-purple-600 uppercase font-semibold tracking-wide mt-0.5">{t.workedHours}</p>
             </div>
           </div>
         )}
@@ -307,8 +312,8 @@ export default function DashboardPage() {
           <Link href="/visita/nueva">
             <div className="bg-blue-600 text-white rounded-2xl p-5 flex items-center justify-between shadow-md hover:bg-blue-700 transition-colors active:scale-[0.98] cursor-pointer">
               <div>
-                <p className="font-bold text-lg">Nueva Visita Técnica</p>
-                <p className="text-blue-200 text-sm flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> Iniciar registro con GPS</p>
+                <p className="font-bold text-lg">{t.newVisit}</p>
+                <p className="text-blue-200 text-sm flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {t.startWithGPS}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
                 <Plus className="w-7 h-7" />
@@ -323,22 +328,22 @@ export default function DashboardPage() {
             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
-            <span className="text-sm font-semibold text-slate-700">Mis Clientes</span>
+            <span className="text-sm font-semibold text-slate-700">{t.myClients}</span>
           </Link>
           
           <Link href="/perfil" className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
             <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
               <Settings className="w-5 h-5" />
             </div>
-            <span className="text-sm font-semibold text-slate-700">Mi Perfil</span>
+            <span className="text-sm font-semibold text-slate-700">{t.myProfile}</span>
           </Link>
         </div>
 
         {/* Today's visits */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-700">Visitas de hoy</h3>
-            <Link href="/historial" className="text-sm text-blue-600 hover:underline">Ver historial</Link>
+            <h3 className="font-semibold text-slate-700">{t.todayVisits}</h3>
+            <Link href="/historial" className="text-sm text-blue-600 hover:underline">{t.viewHistory}</Link>
           </div>
 
           {dataLoading ? (
@@ -348,7 +353,7 @@ export default function DashboardPage() {
           ) : visits.length === 0 ? (
             <div className="text-center py-10 text-slate-400">
               <Clock className="w-10 h-10 mx-auto mb-2 text-slate-200" />
-              <p>Aún no hay visitas registradas hoy</p>
+              <p>{t.noVisitsToday}</p>
             </div>
           ) : (
             <div className="space-y-2">

@@ -44,6 +44,7 @@ export const viewport: Viewport = {
 };
 
 import { I18nProvider } from '@/lib/i18n';
+import { InstallBanner } from '@/components/InstallBanner';
 
 export default function RootLayout({
   children,
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${outfit.variable} antialiased`}>
         <I18nProvider>
           <OfflineBanner />
+          <InstallBanner />
           <ErrorBoundary>
             {children}
           </ErrorBoundary>

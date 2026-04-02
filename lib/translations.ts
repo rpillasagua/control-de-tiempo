@@ -127,8 +127,17 @@ const es = {
   // New/Edit Client
   newClientTitle: 'Nuevo Cliente',
   editClientTitle: 'Editar Cliente',
-  namePlaceholder: 'Nombre completo o empresa',
-  addressPlaceholder: 'Dirección o referencia',
+  nameLabel: 'Nombre o Razón Social',
+  namePlaceholder: 'Ej: Ferretería EPA',
+  addressLabel: 'Dirección',
+  addressPlaceholder: 'Ej: Av. Principal 123',
+  phoneLabel: 'Teléfono',
+  phonePlaceholder: '099...',
+  emailLabel: 'Email',
+  emailPlaceholder: '@...',
+  notesLabel: 'Notas adicionales',
+  notesPlaceholder: 'Horarios de atención, persona de contacto...',
+  saveClientBtn: 'Guardar Cliente',
   creating: 'Guardando...',
 
   // Profile
@@ -168,6 +177,9 @@ const es = {
   notFound: 'No encontrado',
   backHome: 'Volver al inicio',
   logout: 'Cerrar sesión',
+  installApp: 'Instalar App',
+  installPrompt: 'Agrega esta aplicación a tu pantalla de inicio para acceso rápido y sin conexión.',
+  notNow: 'Ahora no',
 };
 
 const en: typeof es = {
@@ -282,8 +294,17 @@ const en: typeof es = {
 
   newClientTitle: 'New Client',
   editClientTitle: 'Edit Client',
-  namePlaceholder: 'Full name or company',
-  addressPlaceholder: 'Address or reference',
+  nameLabel: 'Name or Company',
+  namePlaceholder: 'E.g.: Hardware Store LLC',
+  addressLabel: 'Address',
+  addressPlaceholder: 'E.g.: Main St 123',
+  phoneLabel: 'Phone',
+  phonePlaceholder: '555...',
+  emailLabel: 'Email',
+  emailPlaceholder: '@...',
+  notesLabel: 'Additional notes',
+  notesPlaceholder: 'Business hours, contact person...',
+  saveClientBtn: 'Save Client',
   creating: 'Saving...',
 
   profileTitle: 'My Profile',
@@ -319,6 +340,9 @@ const en: typeof es = {
   notFound: 'Not found',
   backHome: 'Back to home',
   logout: 'Sign out',
+  installApp: 'Install App',
+  installPrompt: 'Add this app to your home screen for fast, offline access.',
+  notNow: 'Not now',
 };
 
 const pap: typeof es = {
@@ -433,8 +457,17 @@ const pap: typeof es = {
 
   newClientTitle: 'Kliente Nobo',
   editClientTitle: 'Edita Kliente',
-  namePlaceholder: 'Nòmber kompleto of empresa',
-  addressPlaceholder: 'Adres of referensha',
+  nameLabel: 'Nòmber of Empresa',
+  namePlaceholder: 'Èhèmpel: Hardware Store',
+  addressLabel: 'Adres',
+  addressPlaceholder: 'Èhèmpel: Main St 123',
+  phoneLabel: 'Telifòn',
+  phonePlaceholder: '099...',
+  emailLabel: 'Email',
+  emailPlaceholder: '@...',
+  notesLabel: 'Notanan adishontal',
+  notesPlaceholder: 'Orakion di stoma, persona di kontakto...',
+  saveClientBtn: 'Guarda Kliente',
   creating: 'Guardando...',
 
   profileTitle: 'Mi Perfil',
@@ -470,6 +503,9 @@ const pap: typeof es = {
   notFound: 'No haña',
   backHome: 'Bai kas',
   logout: 'Sali',
+  installApp: 'Instalá App',
+  installPrompt: 'Agrega e aplikashon aki na bo pantaya di inisio pa akseso rapido i offline.',
+  notNow: 'Awor no',
 };
 
 export const translations = { es, en, pap };

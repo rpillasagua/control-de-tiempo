@@ -18,6 +18,7 @@ import {
 import { Visit, Activity } from '@/lib/types';
 import { toast } from 'sonner';
 import { SignaturePad } from '@/components/SignaturePad';
+import { useTranslation } from '@/lib/i18n';
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -42,12 +43,13 @@ function EditActivityModal({
 }: {
   activity: Activity; onSave: (text: string) => void; onCancel: () => void; saving: boolean;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(activity.description);
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg mx-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-slate-800 text-lg">Editar actividad</h3>
+          <h3 className="font-bold text-slate-800 text-lg">{t.editActivity}</h3>
           <button onClick={onCancel} className="p-1 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-500" /></button>
         </div>
         <textarea
@@ -55,12 +57,12 @@ function EditActivityModal({
           className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">Cancelar</button>
+          <button onClick={onCancel} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">{t.cancel}</button>
           <button
             onClick={() => onSave(text)} disabled={saving || !text.trim()}
             className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {t.save}
           </button>
         </div>
       </div>
@@ -76,6 +78,7 @@ const PAUSE_REASONS = ['Almuerzo / merienda', 'Esperando materiales', 'Traslado 
 function PauseModal({ onConfirm, onCancel, pausing }: {
   onConfirm: (reason: string) => void; onCancel: () => void; pausing: boolean;
 }) {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [custom, setCustom] = useState('');
 
@@ -85,10 +88,10 @@ function PauseModal({ onConfirm, onCancel, pausing }: {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg mx-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-slate-800 text-lg">⏸ Pausar Visita</h3>
+          <h3 className="font-bold text-slate-800 text-lg">⏸ {t.pauseVisit}</h3>
           <button onClick={onCancel} className="p-1 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-500" /></button>
         </div>
-        <p className="text-slate-500 text-sm">El tiempo en pausa no contará en la duración total.</p>
+        <p className="text-slate-500 text-sm">{t.pauseExplanation}</p>
         <div className="space-y-2">
           {PAUSE_REASONS.map(r => (
             <label key={r} className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
@@ -106,13 +109,13 @@ function PauseModal({ onConfirm, onCancel, pausing }: {
           />
         )}
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">Cancelar</button>
+          <button onClick={onCancel} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">{t.cancel}</button>
           <button
             onClick={() => onConfirm(finalReason)}
             disabled={pausing || !finalReason}
             className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {pausing ? <Loader2 className="w-4 h-4 animate-spin" /> : <PauseCircle className="w-4 h-4" />} Pausar
+            {pausing ? <Loader2 className="w-4 h-4 animate-spin" /> : <PauseCircle className="w-4 h-4" />} {t.pauseBtn ? t.pauseBtn.split(' ')[1] : 'Pausar'}
           </button>
         </div>
       </div>
@@ -126,6 +129,7 @@ function PauseModal({ onConfirm, onCancel, pausing }: {
 function CloseVisitModal({
   onConfirm, onCancel, closing
 }: { onConfirm: (summary: string, sig: string | null) => void; onCancel: () => void; closing: boolean }) {
+  const { t } = useTranslation();
   const [summary, setSummary] = useState('');
   const [showSig, setShowSig] = useState(false);
   const [capturedSig, setCapturedSig] = useState<string | null>(null);
@@ -137,17 +141,17 @@ function CloseVisitModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-lg mx-auto p-6 space-y-4 my-4">
-        <h3 className="font-bold text-slate-800 text-lg">🏁 Finalizar visita</h3>
-        <p className="text-slate-500 text-sm">Se registrará la hora de salida y tu ubicación GPS actual.</p>
+        <h3 className="font-bold text-slate-800 text-lg">🏁 {t.finalizeVisit}</h3>
+        <p className="text-slate-500 text-sm">{t.finalizeExplanation}</p>
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">
-            Resumen del trabajo <span className="text-slate-400 font-normal">(opcional)</span>
+            {t.workSummary} <span className="text-slate-400 font-normal">({t.optional})</span>
           </label>
           <textarea
             value={summary} onChange={e => setSummary(e.target.value)} rows={3}
             className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            placeholder="Ej: Se configuraron 8 cámaras IP, se verificó conectividad en NVR..."
+            placeholder={t.workSummaryPlaceholder}
           />
         </div>
 
@@ -156,7 +160,7 @@ function CloseVisitModal({
           onClick={() => setShowSig(v => !v)}
           className="w-full flex items-center gap-2 py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors text-sm font-medium"
         >
-          ✒️ {showSig ? 'Ocultar firma del cliente' : 'Solicitar firma del cliente (opcional)'}
+          ✒️ {showSig ? t.hideSignature : t.requestSignature}
         </button>
 
         {showSig && (
@@ -168,20 +172,20 @@ function CloseVisitModal({
 
         {showSig && capturedSig && (
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            <span className="text-xs text-emerald-700 font-medium">✓ Firma capturada</span>
-            <button onClick={() => setCapturedSig(null)} className="text-xs text-red-500 ml-auto">Borrar</button>
+            <span className="text-xs text-emerald-700 font-medium">{t.signatureCaptured}</span>
+            <button onClick={() => setCapturedSig(null)} className="text-xs text-red-500 ml-auto">{t.deleteSignature || 'Borrar'}</button>
           </div>
         )}
 
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">
-            Cancelar
+            {t.cancel}
           </button>
           <button
             onClick={handleConfirm} disabled={closing}
             className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {closing ? <><Loader2 className="w-4 h-4 animate-spin" /> Cerrando...</> : '🏁 Registrar Salida'}
+            {closing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.closing}</> : t.registerExit}
           </button>
         </div>
       </div>

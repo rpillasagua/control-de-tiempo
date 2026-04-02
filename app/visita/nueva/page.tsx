@@ -15,10 +15,12 @@ import { savePendingPhoto } from '@/lib/idb';
 import { compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n';
 
 export default function NuevaVisitaPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { loading: geoLoading, capture: captureGeo } = useGeolocation();
   const isOnline = useNetworkStatus();
   const inputFileRef = useRef<HTMLInputElement>(null);
@@ -105,8 +107,8 @@ export default function NuevaVisitaPage() {
       setGpsErrorMsg('');
     } catch (err: any) {
       if (!gpsOverride) {
-        toast.error('GPS Requerido. Revisa tu señal o confirma la excepción manual.');
-        setGpsErrorMsg(err.message || 'Error obteniendo ubicación');
+        toast.error(t.gpsRequired);
+        setGpsErrorMsg(err.message || t.gpsError);
         setSaving(false);
         return; // BLOCK!
       } else {
@@ -192,7 +194,7 @@ export default function NuevaVisitaPage() {
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
           </Link>
-          <h1 className="font-bold text-slate-800 text-lg">Nueva Visita Técnica</h1>
+          <h1 className="font-bold text-slate-800 text-lg">{t.newVisit}</h1>
         </div>
       </header>
 
@@ -216,10 +218,10 @@ export default function NuevaVisitaPage() {
         <div>
           <div className="flex justify-between items-end mb-1">
             <label className="block text-sm font-semibold text-slate-700">
-              Cliente <span className="text-red-500">*</span>
+              {t.clientName} <span className="text-red-500">*</span>
             </label>
             <Link href="/clientes/nuevo" className="text-xs text-blue-600 font-medium hover:underline">
-              + Nuevo Cliente
+              + {t.newClientTitle || 'Nuevo Cliente'}
             </Link>
           </div>
           <div className="relative">
@@ -241,7 +243,7 @@ export default function NuevaVisitaPage() {
         {/* Address */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">
-            Dirección del trabajo <span className="text-slate-400 font-normal">(opcional)</span>
+            {t.clientAddress}
           </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -258,7 +260,7 @@ export default function NuevaVisitaPage() {
         {/* Photo of arrival (optional) */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">
-            Foto de llegada <span className="text-slate-400 font-normal">(opcional)</span>
+            {t.arrivalPhoto}
           </label>
           <input
             ref={inputFileRef}
@@ -291,7 +293,7 @@ export default function NuevaVisitaPage() {
 
         {gpsErrorMsg && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 animate-fade-in">
-            <p className="font-semibold mb-2">⚠️ Error GPS: {gpsErrorMsg}</p>
+            <p className="font-semibold mb-2">⚠️ {t.gpsError}: {gpsErrorMsg}</p>
             <label className="flex items-start gap-2 cursor-pointer mt-1">
               <input 
                 type="checkbox" 
@@ -299,7 +301,7 @@ export default function NuevaVisitaPage() {
                 onChange={e => setGpsOverride(e.target.checked)} 
                 className="mt-0.5 w-5 h-5 rounded border-red-300 text-red-600 focus:ring-red-500 flex-shrink-0" 
               />
-              <span className="leading-snug">Declaro que me es imposible obtener señal GPS en este momento y asumo la responsabilidad de registrar la visita sin coordenadas.</span>
+              <span className="leading-snug">{t.gpsOverrideText}</span>
             </label>
           </div>
         )}

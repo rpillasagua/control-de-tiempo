@@ -7,9 +7,12 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getProfile, saveProfile, uploadLogo, Profile } from '@/lib/profileService';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function ProfilePage() {
   const { user, loading: authLoading, logout } = useAuth();
+  const { t } = useTranslation();
   const [profileLoading, setProfileLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export default function ProfilePage() {
         setFormData(prev => ({ ...prev, name: user.name || '' }));
       }
     } catch {
-      toast.error('Error cargando perfil');
+      toast.error(t.error);
     } finally {
       setProfileLoading(false);
     }
@@ -85,10 +88,10 @@ export default function ProfilePage() {
       }
       
       await saveProfile(user.email || 'unknown', { ...formData, logoUrl: finalLogoUrl });
-      toast.success('Perfil actualizado correctamente');
+      toast.success(t.profileSaved);
       setLogoFile(null);
     } catch {
-      toast.error('Error al guardar el perfil');
+      toast.error(t.error);
     } finally {
       setSaving(false);
     }
@@ -112,8 +115,9 @@ export default function ProfilePage() {
                 <ArrowLeft className="w-5 h-5 text-slate-600" />
               </button>
             </Link>
-            <h1 className="font-bold text-slate-800 text-lg">Mi Perfil Profesional</h1>
+            <h1 className="font-bold text-slate-800 text-lg">{t.profileTitle}</h1>
           </div>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -155,7 +159,7 @@ export default function ProfilePage() {
           </h3>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre a mostrar</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.technicianName}</label>
             <input 
               name="name"
               value={formData.name || ''}
@@ -165,7 +169,7 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre de la Empresa o Negocio</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.company}</label>
             <input 
               name="companyName"
               value={formData.companyName || ''}
@@ -177,7 +181,7 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">RUC / Cédula</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.ruc}</label>
               <input 
                 name="ruc"
                 value={formData.ruc || ''}
@@ -187,7 +191,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Teléfono</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.phone}</label>
               <input 
                 name="phone"
                 value={formData.phone || ''}
@@ -205,7 +209,7 @@ export default function ProfilePage() {
           className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50"
         >
           {saving || profileLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          {profileLoading ? 'Cargando datos...' : 'Guardar Cambios'}
+          {profileLoading ? t.loading : t.save}
         </button>
 
         <button 
@@ -216,7 +220,7 @@ export default function ProfilePage() {
           className="w-full bg-red-50 text-red-600 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors mt-8"
         >
           <LogOut className="w-5 h-5" />
-          Cerrar Sesión
+          {t.logout}
         </button>
       </main>
     </div>

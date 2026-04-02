@@ -6,10 +6,12 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient, getClients } from '@/lib/clientService';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 
 export default function NewClientPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -76,7 +78,7 @@ export default function NewClientPage() {
             <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-slate-100">
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
-            <h1 className="font-bold text-slate-800 text-lg">Nuevo Cliente</h1>
+            <h1 className="font-bold text-slate-800 text-lg">{t.newClientTitle}</h1>
           </div>
         </div>
       </header>
@@ -84,61 +86,61 @@ export default function NewClientPage() {
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Nombre o Razón Social <span className="text-red-500">*</span>
+            {t.nameLabel} <span className="text-red-500">*</span>
           </label>
           <input 
             name="name"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Ej: Ferretería EPA"
+            placeholder={t.namePlaceholder}
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Dirección</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.addressLabel}</label>
           <input 
             name="address"
             value={formData.address}
             onChange={handleChange}
-            placeholder="Ej: Av. Principal 123"
+            placeholder={t.addressPlaceholder}
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Teléfono</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.phoneLabel}</label>
             <input 
               name="phone"
               type="tel"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="099..."
+              placeholder={t.phonePlaceholder}
               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.emailLabel}</label>
             <input 
               name="email"
               type="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="@..."
+              placeholder={t.emailPlaceholder}
               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Notas adicionales</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.notesLabel}</label>
           <textarea 
             name="notes"
             value={formData.notes}
             onChange={handleChange}
             rows={3}
-            placeholder="Horarios de atención, persona de contacto..."
+            placeholder={t.notesPlaceholder}
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
         </div>
@@ -149,7 +151,7 @@ export default function NewClientPage() {
           className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 mt-8"
         >
           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          Guardar Cliente
+          {saving ? t.creating : t.saveClientBtn}
         </button>
       </main>
     </div>

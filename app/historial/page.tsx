@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getVisitsByTechnician, deleteVisit } from '@/lib/visitService';
 import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 
 const PAGE_SIZE = 15;
 
@@ -38,6 +39,7 @@ function startOfMonth(): string {
 
 export default function HistorialPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -117,8 +119,8 @@ export default function HistorialPage() {
   };
 
   const handleDelete = async (e: React.MouseEvent, visitId: string) => {
-    e.preventDefault(); // Evita que el Link redireccione
-    if (!confirm('¿Estás seguro de eliminar este reporte por completo? Se borrarán todas las fotos asociadas. Esta acción no se puede deshacer.')) return;
+    e.preventDefault();
+    if (!confirm(t.confirmDeleteVisit)) return;
 
     setDeletingId(visitId);
     try {
@@ -134,10 +136,10 @@ export default function HistorialPage() {
   };
 
   const DATE_FILTERS: { key: DateFilter; label: string }[] = [
-    { key: 'all', label: 'Todo' },
-    { key: 'today', label: 'Hoy' },
-    { key: 'week', label: 'Esta semana' },
-    { key: 'month', label: 'Este mes' },
+    { key: 'all', label: t.filterToday ? 'Todo' : 'Todo' }, // fallback for missing 'Todo' in translation dict
+    { key: 'today', label: t.filterToday },
+    { key: 'week', label: t.filterWeek },
+    { key: 'month', label: t.filterMonth },
   ];
 
   return (
@@ -145,13 +147,13 @@ export default function HistorialPage() {
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <Link href="/"><button className="p-2 rounded-full hover:bg-slate-100"><ArrowLeft className="w-5 h-5 text-slate-600" /></button></Link>
-          <h1 className="font-bold text-slate-800 text-lg flex-1">Historial de Visitas</h1>
+          <h1 className="font-bold text-slate-800 text-lg flex-1">{t.history}</h1>
           <button
             onClick={() => handleExportCSV(filtered)}
             className="flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-3 py-1.5 hover:bg-emerald-100 transition-colors font-medium"
             title="Descargar CSV para Excel"
           >
-            <Download className="w-3.5 h-3.5" /> Excel
+            <Download className="w-3.5 h-3.5" /> {t.excelExport}
           </button>
         </div>
 
@@ -161,7 +163,7 @@ export default function HistorialPage() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar por cliente..."
+              placeholder={t.searchClients || 'Buscar cliente...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full bg-slate-100 border-none rounded-xl py-2.5 pl-9 pr-4 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-400"
@@ -246,7 +248,7 @@ export default function HistorialPage() {
                 onClick={loadMore}
                 className="w-full py-3 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors mt-4"
               >
-                Cargar más
+                {t.loadMore}
               </button>
             )}
           </>
