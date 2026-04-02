@@ -8,6 +8,7 @@ import { getVisit } from '@/lib/visitService';
 import { getProfile, Profile } from '@/lib/profileService';
 import { Visit } from '@/lib/types';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('es-EC', {
@@ -34,6 +35,7 @@ export default function ReportPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const loadVisit = useCallback(async () => {
     try {
@@ -244,13 +246,13 @@ export default function ReportPage() {
                   <ArrowLeft className="w-5 h-5 text-slate-600" />
                 </button>
               </Link>
-              <h1 className="font-bold text-slate-800">Reporte de Visita</h1>
+              <h1 className="font-bold text-slate-800">{t.technicalReport}</h1>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCopy}
                 className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
-                title="Copiar Link"
+                title="Link"
               >
                 <Copy className="w-5 h-5" />
               </button>
@@ -258,7 +260,7 @@ export default function ReportPage() {
                 onClick={handleWhatsApp}
                 className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#20bd5a] transition-colors"
               >
-                <Share2 className="w-4 h-4" /> WhatsApp
+                <Share2 className="w-4 h-4" /> {t.shareWhatsapp}
               </button>
               <button
                 onClick={handleDownloadPDF}
@@ -266,7 +268,7 @@ export default function ReportPage() {
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-                {downloadingPdf ? 'Generando...' : 'Descargar PDF'}
+                {downloadingPdf ? t.loading : t.downloadPDF}
               </button>
             </div>
           </div>
@@ -296,12 +298,12 @@ export default function ReportPage() {
                     />
                   )}
                   <div>
-                    <h2 className="text-xl font-bold tracking-tight">Reporte Técnico</h2>
+                    <h2 className="text-xl font-bold tracking-tight">{t.technicalReport}</h2>
                     <p className="text-slate-400 text-sm mt-0.5 font-medium">#{visitId.split('-')[0].toUpperCase()}</p>
                   </div>
                 </div>
                 <div className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-wide shadow-sm ${isComplete ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-amber-400 text-amber-950 shadow-amber-400/20'}`}>
-                  {isComplete ? '✓ COMPLETADA' : '⏳ EN CURSO'}
+                  {isComplete ? `✓ ${t.finished}` : `⏳ ${t.inProgress}`}
                 </div>
               </div>
             </div>
@@ -320,7 +322,7 @@ export default function ReportPage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Técnico Asignado</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t.technicianName}</p>
                   <p className="font-bold text-slate-800 text-lg">{profile?.companyName || profile?.name || visit.technicianName}</p>
                   
                   {profile && (
@@ -347,14 +349,14 @@ export default function ReportPage() {
 
               {/* Time Summary */}
               <div className="px-6 py-5">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Registro de Tiempos</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Registro de Datos</p>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
                       <Clock className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-slate-500">Llegada</p>
+                      <p className="text-sm text-slate-500">{t.arrival}</p>
                       <p className="font-semibold text-slate-800">{formatDateTime(visit.arrival.localTime)}</p>
                       {visit.arrival.location && (
                         <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm" data-html2canvas-ignore="true">
@@ -386,7 +388,7 @@ export default function ReportPage() {
                         <CheckCircle className="w-4 h-4 text-red-500" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-slate-500">Salida</p>
+                        <p className="text-sm text-slate-500">{t.departure}</p>
                         <p className="font-semibold text-slate-800">{formatDateTime(visit.departure.localTime)}</p>
                         {visit.departure.location && (
                           <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 shadow-sm w-full max-w-sm" data-html2canvas-ignore="true">
@@ -416,7 +418,7 @@ export default function ReportPage() {
 
                 {visit.totalDurationMin !== null && visit.totalDurationMin !== undefined && (
                   <div className="mt-4 bg-slate-50 rounded-xl p-4 flex justify-between items-center">
-                    <span className="text-slate-600 font-medium">Tiempo total trabajado</span>
+                    <span className="text-slate-600 font-medium">{t.totalTime}</span>
                     <span className="text-2xl font-bold text-slate-800">{formatDuration(visit.totalDurationMin)}</span>
                   </div>
                 )}
@@ -426,7 +428,7 @@ export default function ReportPage() {
               {visit.activities.length > 0 && (
                 <div className="px-6 py-5">
                   <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">
-                    Actividades Realizadas ({visit.activities.length})
+                    {t.reportActivities} ({visit.activities.length})
                   </p>
                   <div className="space-y-4">
                     {visit.activities.map((act, i) => (
@@ -461,7 +463,7 @@ export default function ReportPage() {
               {/* Summary */}
               {visit.summary && (
                 <div className="px-6 py-5">
-                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Resumen General</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">{t.summaryLabel}</p>
                   <p className="text-slate-700 text-sm leading-relaxed">{visit.summary}</p>
                 </div>
               )}

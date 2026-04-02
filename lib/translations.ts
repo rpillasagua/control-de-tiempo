@@ -173,6 +173,11 @@ const es = {
   syncPending: (n: number) => `${n} pendiente${n > 1 ? 's' : ''}`,
   syncOffline: 'Sin red',
 
+  // PWA Install
+  installApp: 'Instalar Aplicación',
+  installPrompt: 'Instala esta app en tu pantalla de inicio para acceso rápido y sin internet.',
+  notNow: 'Ahora no',
+
   // Generic
   loading: 'Cargando...',
   error: 'Error',
@@ -180,9 +185,6 @@ const es = {
   notFound: 'No encontrado',
   backHome: 'Volver al inicio',
   logout: 'Cerrar sesión',
-  installApp: 'Instalar App',
-  installPrompt: 'Agrega esta aplicación a tu pantalla de inicio para acceso rápido y sin conexión.',
-  notNow: 'Ahora no',
 };
 
 const en: typeof es = {
@@ -340,15 +342,17 @@ const en: typeof es = {
   syncPending: (n: number) => `${n} pending`,
   syncOffline: 'Offline',
 
+  installApp: 'Install App',
+  installPrompt: 'Add this app to your home screen for fast, offline access.',
+  notNow: 'Not now',
+
+
   loading: 'Loading...',
   error: 'Error',
   back: 'Back',
   notFound: 'Not found',
   backHome: 'Back to home',
   logout: 'Sign out',
-  installApp: 'Install App',
-  installPrompt: 'Add this app to your home screen for fast, offline access.',
-  notNow: 'Not now',
 };
 
 const pap: typeof es = {
@@ -506,15 +510,17 @@ const pap: typeof es = {
   syncPending: (n: number) => `${n} pendiente${n > 1 ? 's' : ''}`,
   syncOffline: 'Sin red',
 
+  installApp: 'Instalá Aplikashon',
+  installPrompt: 'Agrega e aplikashon aki na bo pantaya di inisio pa akseso rapido i offline.',
+  notNow: 'Awor no',
+
+
   loading: 'Kargando...',
   error: 'Error',
   back: 'Bèk',
   notFound: 'No haña',
   backHome: 'Bai kas',
   logout: 'Sali',
-  installApp: 'Instalá App',
-  installPrompt: 'Agrega e aplikashon aki na bo pantaya di inisio pa akseso rapido i offline.',
-  notNow: 'Awor no',
 };
 
 export const translations = { es, en, pap };
