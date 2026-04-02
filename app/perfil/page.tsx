@@ -33,7 +33,15 @@ export default function ProfilePage() {
       const cInfo = await getUserCompany(email);
       setHasCompany(cInfo.company !== null);
 
-      if (p) {
+      if (cInfo.company) {
+        setFormData({
+          name: p?.name || user.name || '',
+          companyName: cInfo.company.name || '',
+          ruc: cInfo.company.ruc || '',
+          phone: cInfo.company.phone || '',
+          logoUrl: cInfo.company.logoUrl || p?.logoUrl || '',
+        });
+      } else if (p) {
         setFormData({
           name: p.name || user.name || '',
           companyName: p.companyName || '',
@@ -187,8 +195,9 @@ export default function ProfilePage() {
               name="companyName"
               value={formData.companyName || ''}
               onChange={handleChange}
+              disabled={hasCompany}
               placeholder="Ej: Soluciones Tecnológicas S.A."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+              className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none ${hasCompany ? 'opacity-60 cursor-not-allowed' : ''}`}
             />
           </div>
 
@@ -199,8 +208,9 @@ export default function ProfilePage() {
                 name="ruc"
                 value={formData.ruc || ''}
                 onChange={handleChange}
+                disabled={hasCompany}
                 placeholder="17xxxxxxxx001"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none ${hasCompany ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
             </div>
             <div>
@@ -209,8 +219,9 @@ export default function ProfilePage() {
                 name="phone"
                 value={formData.phone || ''}
                 onChange={handleChange}
+                disabled={hasCompany}
                 placeholder="099..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none ${hasCompany ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
             </div>
           </div>
