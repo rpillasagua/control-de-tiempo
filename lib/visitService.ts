@@ -6,7 +6,8 @@
 import {
   collection, doc, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
   query, where, orderBy, serverTimestamp, Timestamp,
-  limit, startAfter, DocumentSnapshot
+  limit, startAfter, DocumentSnapshot,
+  getDocsFromCache, getDocFromCache
 } from 'firebase/firestore';
 import { getStorage, ref, listAll, deleteObject } from 'firebase/storage';
 import { db } from './firebase';
@@ -193,17 +194,26 @@ export async function saveClientSignature(visitId: string, signatureBase64: stri
 }
 
 // ──────────────────────────────────────────────
-// Get a single visit
+// Get a single visit (cache-first)
 // ──────────────────────────────────────────────
 export async function getVisit(visitId: string): Promise<Visit | null> {
-  const ref = doc(db, COLLECTION, visitId);
-  const snap = await getDoc(ref);
+  const docRef = doc(db, COLLECTION, visitId);
+  // Try cache first for instant offline
+  try {
+    const cacheSnap = await getDocFromCache(docRef);
+    if (cacheSnap.exists()) {
+      // Background refresh
+      getDoc(docRef).catch(() => {});
+      return { id: cacheSnap.id, ...cacheSnap.data() } as Visit;
+    }
+  } catch { /* cache miss */ }
+  const snap = await getDoc(docRef);
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as Visit;
 }
 
 // ──────────────────────────────────────────────
-// Get all visits for a technician (with optional date filter)
+// Get all visits for a technician (cache-first)
 // ──────────────────────────────────────────────
 export async function getVisitsByTechnician(
   technicianId: string,
@@ -213,19 +223,28 @@ export async function getVisitsByTechnician(
   const constraints: any[] = [
     where('technicianId', '==', technicianId),
     orderBy('createdAt', 'desc'),
-    limit(300) // Protege de lecturas masivas (+300 docs en el dashboard)
+    limit(300)
   ];
-
   const q = query(col, ...constraints);
+
+  // 1. Try Firestore IndexedDB cache — instant offline
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      let visits = cacheSnap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
+      if (dateFrom) visits = visits.filter(v => v.createdAt >= dateFrom);
+      // Background network refresh
+      getDocs(q).catch(() => {});
+      return visits;
+    }
+  } catch { /* cache miss */ }
+
+  // 2. Network fetch
   const snap = await getDocs(q);
-
   let visits: Visit[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
-
-  // Optional date filter (client-side after query)
   if (dateFrom) {
     visits = visits.filter(v => v.createdAt >= dateFrom);
   }
-
   return visits;
 }
 
@@ -248,6 +267,15 @@ export async function getActiveVisit(technicianId: string): Promise<Visit | null
     where('technicianId', '==', technicianId),
     where('status', '==', 'EN_PROGRESO')
   );
+  // 1. Cache first
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {}); // background refresh
+      return { id: cacheSnap.docs[0].id, ...cacheSnap.docs[0].data() } as Visit;
+    }
+  } catch { /* cache miss */ }
+  // 2. Network
   const snap = await getDocs(q);
   if (snap.empty) return null;
   return { id: snap.docs[0].id, ...snap.docs[0].data() } as Visit;

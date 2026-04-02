@@ -1,10 +1,13 @@
 /**
  * Client Service — CRUD for clients in Firestore
- * Includes localStorage cache for offline support
+ * Cache-first offline strategy:
+ *  1. Firestore IndexedDB cache (instantaneous)
+ *  2. Network fetch
+ *  3. localStorage fallback
  */
 import {
   collection, doc, addDoc, updateDoc, getDocs, deleteDoc,
-  query, where, orderBy, serverTimestamp
+  query, where, orderBy, serverTimestamp, getDocsFromCache
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Client } from './types';
@@ -62,23 +65,42 @@ export async function createClient(
 }
 
 export async function getClients(technicianId: string): Promise<Client[]> {
+  const q = query(
+    collection(db, COLLECTION),
+    where('createdBy', '==', technicianId),
+    orderBy('name', 'asc')
+  );
+
+  // 1. Try Firestore IndexedDB cache FIRST — instantaneous offline response
   try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('createdBy', '==', technicianId),
-      orderBy('name', 'asc')
-    );
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      const clients = cacheSnap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
+      logger.log(`⚡ Clientes desde caché Firestore (${clients.length})`);
+      setCachedClients(technicianId, clients);
+      // Refresh in background without blocking UI
+      getDocs(q).then(snap => {
+        const fresh = snap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
+        setCachedClients(technicianId, fresh);
+      }).catch(() => {});
+      return clients;
+    }
+  } catch {
+    // Cache miss or not yet initialized — fall through to network
+  }
+
+  // 2. Try network fetch
+  try {
     const snap = await getDocs(q);
     const clients = snap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
-    // Update cache on successful fetch
     setCachedClients(technicianId, clients);
     return clients;
   } catch (err) {
-    // Offline or network error — try cache
-    logger.log('⚠️ Firestore offline, usando caché local de clientes');
+    // 3. Offline + Firestore cache empty — use localStorage as last resort
+    logger.log('⚠️ Firestore offline, usando caché localStorage de clientes');
     const cached = getCachedClients(technicianId);
     if (cached) return cached;
-    throw err; // No cache available either
+    throw err;
   }
 }
 
@@ -96,4 +118,3 @@ export async function deleteClient(clientId: string, technicianId?: string): Pro
   if (technicianId) invalidateClientCache(technicianId);
   logger.log(`✅ Cliente ${clientId} eliminado`);
 }
-

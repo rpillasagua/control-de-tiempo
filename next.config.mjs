@@ -27,7 +27,7 @@ const withPWA = withPWAInit({
           maxEntries: 100, // Más análisis cacheados
           maxAgeSeconds: 7 * 24 * 60 * 60 // 7 días para análisis históricos
         },
-        networkTimeoutSeconds: 3 // Respuesta más rápida offline
+        networkTimeoutSeconds: 10 // Increased from 3s to be more patient on spotty connections
       }
     },
     {
@@ -48,6 +48,47 @@ const withPWA = withPWAInit({
         cacheName: 'static-images',
         expiration: {
           maxEntries: 64,
+          maxAgeSeconds: 30 * 24 * 60 * 60
+        }
+      }
+    },
+    // 📁 FIREBASE STORAGE (company logos, user uploaded evidence)
+    {
+      urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'firebase-storage',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60
+        }
+      }
+    },
+    // 📄 NEXT.JS APP PAGES (Offline caching for HTML pages)
+    {
+      urlPattern: ({ request, url }) => {
+        const isHTML = request.headers.get('accept')?.includes('text/html');
+        const isAppPage = url.pathname.startsWith('/') && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/_next/');
+        return isHTML && isAppPage;
+      },
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'html-pages',
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 7 * 24 * 60 * 60 // 1 week
+        },
+        networkTimeoutSeconds: 5
+      }
+    },
+    // 📦 NEXT.JS STATIC ASSETS (JS/CSS/Chunks)
+    {
+      urlPattern: /\/_next\/static\/.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'next-static-assets',
+        expiration: {
+          maxEntries: 200,
           maxAgeSeconds: 30 * 24 * 60 * 60
         }
       }
