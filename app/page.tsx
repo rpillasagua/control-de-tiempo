@@ -286,12 +286,14 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <SyncHubIndicator />
-            {user.picture
-              ? <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full border border-slate-200" />
-              : <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
-                </div>
-            }
+            <Link href="/perfil" className="block">
+              {user.picture
+                ? <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full border border-slate-200 hover:ring-2 hover:ring-blue-400 transition-shadow" />
+                : <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center hover:ring-2 hover:ring-blue-400 transition-shadow">
+                    <User className="w-5 h-5 text-blue-600" />
+                  </div>
+              }
+            </Link>
           </div>
         </div>
       </header>

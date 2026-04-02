@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { createCompany } from '@/lib/companyService';
 import { acceptInvite } from '@/lib/inviteService';
 import { Company } from '@/lib/types';
+import { useTranslation } from '@/lib/i18n';
 import {
   Building2, Key, Loader2, ArrowRight, CheckCircle2, LogIn
 } from 'lucide-react';
@@ -20,6 +21,7 @@ function BienvenidaForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, login } = useAuth();
+  const { t } = useTranslation();
 
   const [tab, setTab] = useState<Tab>(
     searchParams.get('action') === 'join' ? 'join' : 'create'
@@ -60,7 +62,7 @@ function BienvenidaForm() {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          Continuar con Google
+          {t.continueWithGoogle}
         </button>
       </div>
     );
@@ -78,7 +80,7 @@ function BienvenidaForm() {
           onClick={() => router.push(done.route)}
           className="mt-8 bg-white text-blue-700 font-bold px-8 py-3 rounded-xl hover:bg-blue-50 transition flex items-center gap-2"
         >
-          Continuar <ArrowRight className="w-5 h-5" />
+          {t.welcomeContinue} <ArrowRight className="w-5 h-5" />
         </button>
       </div>
     );
@@ -101,7 +103,7 @@ function BienvenidaForm() {
         updatedAt: now,
       };
       await createCompany(newCo);
-      setDone({ message: `¡Empresa "${newCo.name}" creada!`, route: '/admin' });
+      setDone({ message: t.welcomeCreated(newCo.name), route: '/admin' });
     } catch {
       toast.error('Error creando empresa');
     } finally {
@@ -136,8 +138,8 @@ function BienvenidaForm() {
         <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
           <Building2 className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-800">¡Bienvenido, {user.name.split(' ')[0]}!</h1>
-        <p className="text-slate-500 mt-1">¿Cómo deseas continuar?</p>
+        <h1 className="text-2xl font-bold text-slate-800">{t.welcomeTitle}, {user.name.split(' ')[0]}!</h1>
+        <p className="text-slate-500 mt-1">{t.welcomeSubtitle}</p>
       </div>
 
       {/* Tab selector */}
@@ -152,7 +154,7 @@ function BienvenidaForm() {
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            🏢 Crear Empresa
+            {t.welcomeCreateTab}
           </button>
           <button
             type="button"
@@ -163,7 +165,7 @@ function BienvenidaForm() {
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            🔑 Unirse con Código
+            {t.welcomeJoinTab}
           </button>
         </div>
 
@@ -171,11 +173,9 @@ function BienvenidaForm() {
         {tab === 'create' && (
           <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
             <div>
-              <p className="text-sm text-slate-500 mb-4">
-                Registra tu empresa. Podrás invitar técnicos y recibir reportes de clientes.
-              </p>
+              <p className="text-sm text-slate-500 mb-4">{t.welcomeCreateDesc}</p>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
-                Nombre de tu empresa <span className="text-red-500">*</span>
+                {t.welcomeCompanyLabel} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -185,7 +185,7 @@ function BienvenidaForm() {
                   autoFocus
                   value={companyName}
                   onChange={e => setCompanyName(e.target.value)}
-                  placeholder="Ej. Servi-Tech Aruba"
+                  placeholder={t.welcomeCompanyPlaceholder}
                   className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
                 />
               </div>
@@ -196,7 +196,7 @@ function BienvenidaForm() {
               className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition disabled:opacity-60"
             >
               {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-              {busy ? 'Creando...' : 'Crear Empresa'}
+              {busy ? t.welcomeCreating : t.welcomeCreateBtn}
             </button>
           </form>
         )}
@@ -205,11 +205,9 @@ function BienvenidaForm() {
         {tab === 'join' && (
           <form onSubmit={handleJoin} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
             <div>
-              <p className="text-sm text-slate-500 mb-4">
-                Tu jefe debe enviarte un código de invitación de 6 dígitos o un enlace directo.
-              </p>
+              <p className="text-sm text-slate-500 mb-4">{t.welcomeJoinDesc}</p>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
-                Código de Invitación <span className="text-red-500">*</span>
+                {t.welcomeInviteLabel} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -231,13 +229,13 @@ function BienvenidaForm() {
               className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 transition disabled:opacity-60"
             >
               {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
-              {busy ? 'Verificando...' : 'Unirme al Equipo'}
+              {busy ? t.welcomeVerifying : t.welcomeJoinBtn}
             </button>
           </form>
         )}
 
         <p className="text-center text-xs text-slate-400 mt-4">
-          Sesión activa como <strong>{user.email}</strong>
+          {t.welcomeSessionAs} <strong>{user.email}</strong>
         </p>
       </div>
     </div>

@@ -8,11 +8,13 @@ import { createTicket } from '@/lib/ticketService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { compressImage } from '@/lib/imageCompression';
 import { Company } from '@/lib/types';
+import { useTranslation } from '@/lib/i18n';
 import { toast } from 'sonner';
 
 export default function PublicSupportPage() {
   const params = useParams();
   const companyId = params.companyId as string;
+  const { t } = useTranslation();
 
   const [company, setCompany] = useState<Company | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -62,7 +64,7 @@ export default function PublicSupportPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !issueDescription.trim()) {
-      toast.error('Nombre y problema son requeridos');
+      toast.error(t.supportRequired);
       return;
     }
     
@@ -88,7 +90,7 @@ export default function PublicSupportPage() {
       setSuccess(true);
     } catch (error) {
       console.error(error);
-      toast.error('Ocurrió un error al enviar tu reporte. Intenta de nuevo.');
+      toast.error(t.supportErrorUpload);
     } finally {
       setIsSubmitting(false);
     }
@@ -107,8 +109,8 @@ export default function PublicSupportPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <Building2 className="w-16 h-16 text-slate-300 mb-4" />
-        <h1 className="text-xl font-bold text-slate-800">Empresa no encontrada</h1>
-        <p className="text-slate-500 mt-2">El enlace que ingresaste no es válido o la empresa fue dada de baja.</p>
+        <h1 className="text-xl font-bold text-slate-800">{t.supportNotFound}</h1>
+        <p className="text-slate-500 mt-2">{t.supportNotFoundDesc}</p>
       </div>
     );
   }
@@ -119,15 +121,15 @@ export default function PublicSupportPage() {
         <div className="bg-white/20 p-6 rounded-full mb-6 backdrop-blur-md">
           <CheckCircle2 className="w-20 h-20" />
         </div>
-        <h1 className="text-2xl font-bold mb-3">¡Reporte Enviado!</h1>
+        <h1 className="text-2xl font-bold mb-3">{t.supportSuccessTitle}</h1>
         <p className="text-blue-100 max-w-sm text-lg">
-          Nuestro equipo en <strong>{company.name}</strong> ha recibido tu solicitud y se pondrá en contacto pronto.
+          {t.supportSuccessMsg(company.name)}
         </p>
         <button 
           onClick={() => { setSuccess(false); setIssueDescription(''); setPhotoPreview(null); setRawFile(null); }}
           className="mt-10 bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-50"
         >
-          Enviar otro reporte
+          {t.supportSendAnother}
         </button>
       </div>
     );
@@ -137,9 +139,13 @@ export default function PublicSupportPage() {
     <div className="min-h-screen bg-slate-50 pb-16">
       <div className="bg-blue-600 text-white pt-10 pb-20 px-4 rounded-b-[2.5rem] shadow-sm">
         <div className="max-w-xl mx-auto text-center">
-          <Building2 className="w-10 h-10 mx-auto opacity-80 mb-3" />
+          {company.logoUrl ? (
+            <img src={company.logoUrl} alt={company.name} className="w-16 h-16 mx-auto rounded-xl bg-white object-contain p-1.5 shadow-sm mb-3" crossOrigin="anonymous" />
+          ) : (
+            <Building2 className="w-10 h-10 mx-auto opacity-80 mb-3" />
+          )}
           <h1 className="text-2xl font-bold">{company.name}</h1>
-          <p className="opacity-90 mt-1">Portal Rápido de Soporte Técnico</p>
+          <p className="opacity-90 mt-1">{t.supportPortalTitle}</p>
         </div>
       </div>
 
@@ -147,13 +153,13 @@ export default function PublicSupportPage() {
         <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-lg p-6 space-y-5">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">
-              Tu Nombre Completo <span className="text-red-500">*</span>
+              {t.supportFullName} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <UserIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="text" required value={clientName} onChange={e => setClientName(e.target.value)}
-                placeholder="Ej. Juan Pérez"
+                placeholder={t.supportFullNamePlaceholder}
                 className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
@@ -161,7 +167,7 @@ export default function PublicSupportPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Teléfono</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.supportPhone}</label>
               <div className="relative">
                 <Phone className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
@@ -172,12 +178,12 @@ export default function PublicSupportPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Dirección / Sede</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.supportAddress}</label>
               <div className="relative">
                 <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
                   type="text" value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-                  placeholder="Calle principal..."
+                  placeholder={t.supportAddressPlaceholder}
                   className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
@@ -186,18 +192,18 @@ export default function PublicSupportPage() {
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">
-              Descripción del Problema <span className="text-red-500">*</span>
+              {t.supportProblem} <span className="text-red-500">*</span>
             </label>
             <textarea 
               required rows={4} value={issueDescription} onChange={e => setIssueDescription(e.target.value)}
-              placeholder="¿Qué pasa con el equipo? Sé lo más detallado posible..."
+              placeholder={t.supportProblemPlaceholder}
               className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
             />
           </div>
 
           {/* Photo upload */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Evidencia Fotográfica (Opcional)</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">{t.supportPhoto}</label>
             <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handlePhotoCapture} />
             
             {photoPreview ? (
@@ -207,7 +213,7 @@ export default function PublicSupportPage() {
                   type="button" onClick={() => { setPhotoPreview(null); setRawFile(null); }}
                   className="absolute top-2 right-2 bg-white/90 text-red-500 text-xs px-3 py-1 rounded-full font-bold shadow-sm"
                 >
-                  Eliminar
+                  {t.supportRemovePhoto}
                 </button>
               </div>
             ) : (
@@ -216,7 +222,7 @@ export default function PublicSupportPage() {
                 className="border-2 border-dashed border-slate-200 rounded-xl py-8 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors text-slate-400"
               >
                 <div className="bg-slate-100 p-3 rounded-full"><ImageIcon className="w-6 h-6" /></div>
-                <span className="text-sm">Toca para agregar una foto</span>
+                <span className="text-sm">{t.supportAddPhoto}</span>
               </div>
             )}
           </div>
@@ -226,9 +232,9 @@ export default function PublicSupportPage() {
             className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-wait mt-4"
           >
             {isSubmitting ? (
-              <><Loader2 className="w-5 h-5 animate-spin"/> Enviando tu reporte...</>
+              <><Loader2 className="w-5 h-5 animate-spin"/> {t.supportSending}</>
             ) : (
-              <><Send className="w-5 h-5"/> Enviar Reporte</>
+              <><Send className="w-5 h-5"/> {t.supportSubmit}</>
             )}
           </button>
         </form>

@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { createVisit, getActiveVisit } from '@/lib/visitService';
 import { getClients } from '@/lib/clientService';
+import { getUserCompany } from '@/lib/companyService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
 import { Client, TimeStamp } from '@/lib/types';
@@ -28,7 +29,7 @@ function NuevaVisitaForm() {
 
   // Read assigned ticket query params
   const ticketId = searchParams.get('ticketId') || undefined;
-  const companyId = searchParams.get('companyId') || undefined;
+  const preCompanyId = searchParams.get('companyId') || undefined;
   const preClientName = searchParams.get('clientName') || '';
   const preClientAddress = searchParams.get('clientAddress') || '';
 
@@ -38,6 +39,7 @@ function NuevaVisitaForm() {
   const [saving, setSaving] = useState(false);
   const [arrivalPhoto, setArrivalPhoto] = useState<string | null>(null); // base64 preview
   const [checkingActive, setCheckingActive] = useState(true);
+  const [autoCompanyId, setAutoCompanyId] = useState<string | undefined>(preCompanyId);
   
   // GPS Strict Guard
   const [gpsErrorMsg, setGpsErrorMsg] = useState('');
@@ -63,6 +65,12 @@ function NuevaVisitaForm() {
         } else {
           setCheckingActive(false);
           getClients(user.email).then(setClients).catch(console.error);
+          // Auto-detect company if not coming from a ticket
+          if (!preCompanyId) {
+            getUserCompany(user.email).then(({ company }) => {
+              if (company) setAutoCompanyId(company.id);
+            }).catch(() => {});
+          }
         }
       }).catch(() => {
         // If offline and no local active, it's safe to create
@@ -169,7 +177,7 @@ function NuevaVisitaForm() {
         arrival,
         selectedClient?.id, // ID real en vez de undefined
         clientAddress.trim() || undefined,
-        companyId,
+        autoCompanyId,
         ticketId
       );
 
