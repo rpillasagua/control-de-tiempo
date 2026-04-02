@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
-import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient, getClients } from '@/lib/clientService';
 import { toast } from 'sonner';

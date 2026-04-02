@@ -7,14 +7,8 @@ interface SwipeInput {
     onSwipedDown?: () => void;
 }
 
-interface SwipeState {
-    touchStart: number | null;
-    touchEnd: number | null;
-    verticalStart: number | null;
-    verticalEnd: number | null;
-}
 
-export const useSwipe = ({ onSwipedLeft, onSwipedRight, onSwipedUp, onSwipedDown }: SwipeInput) => {
+export const useSwipe = ({ onSwipedLeft, onSwipedRight }: SwipeInput) => {
     const touchStart = useRef<number | null>(null);
     const touchEnd = useRef<number | null>(null);
     const verticalStart = useRef<number | null>(null);

@@ -43,6 +43,8 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+import { I18nProvider } from '@/lib/i18n';
+
 export default function RootLayout({
   children,
 }: {
@@ -56,24 +58,26 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${inter.variable} ${outfit.variable} antialiased`}>
-        <OfflineBanner />
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
-        <Toaster />
-        <OfflinePhotoSync />
-        {/* Force kill any stuck generic Service Workers to bypass aggressive caching during this debug phase */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-              for(let registration of registrations) {
-                registration.unregister();
-                console.log('SW desinstalado para forzar actualización de caché.');
-              }
-            });
-          }
-        ` }} />
-        <ServiceWorkerManager />
+        <I18nProvider>
+          <OfflineBanner />
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+          <Toaster />
+          <OfflinePhotoSync />
+          {/* Force kill any stuck generic Service Workers to bypass aggressive caching during this debug phase */}
+          <script dangerouslySetInnerHTML={{ __html: `
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister();
+                  console.log('SW desinstalado para forzar actualización de caché.');
+                }
+              });
+            }
+          ` }} />
+          <ServiceWorkerManager />
+        </I18nProvider>
       </body>
     </html>
   )

@@ -17,7 +17,7 @@ export default function ActividadPage() {
   const params = useParams();
   const visitId = params.id as string;
   const router = useRouter();
-  const { user } = useAuth();
+  useAuth();
   const isOnline = useNetworkStatus();
 
   const [description, setDescription] = useState('');

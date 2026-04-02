@@ -8,32 +8,32 @@ const isDev = process.env.NODE_ENV === 'development';
 type LogLevel = 'log' | 'warn' | 'error' | 'info';
 
 class Logger {
-    private formatMessage(level: LogLevel, ...args: unknown[]): string {
+    private formatMessage(level: LogLevel): string {
         const timestamp = new Date().toISOString();
         return `[${timestamp}] [${level.toUpperCase()}]`;
     }
 
     log(...args: unknown[]): void {
         if (isDev) {
-            console.log(this.formatMessage('log', ...args), ...args);
+            console.log(this.formatMessage('log'), ...args);
         }
     }
 
     info(...args: unknown[]): void {
         if (isDev) {
-            console.info(this.formatMessage('info', ...args), ...args);
+            console.info(this.formatMessage('info'), ...args);
         }
     }
 
     warn(...args: unknown[]): void {
         if (isDev) {
-            console.warn(this.formatMessage('warn', ...args), ...args);
+            console.warn(this.formatMessage('warn'), ...args);
         }
     }
 
     error(...args: unknown[]): void {
         // Errores siempre se muestran (incluso en producción)
-        console.error(this.formatMessage('error', ...args), ...args);
+        console.error(this.formatMessage('error'), ...args);
 
         // 📊 ERROR TRACKING: Uncomment to send errors to Sentry/LogRocket
         // To enable: 1) npm install @sentry/nextjs, 2) configure sentry.client.config.ts, 3) uncomment below

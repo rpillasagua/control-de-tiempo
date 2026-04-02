@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Loader2, Save, UserCircle, LogOut, Camera } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, LogOut, Camera } from 'lucide-react';
 import { compressImage } from '@/lib/imageCompression';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
