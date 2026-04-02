@@ -6,6 +6,7 @@ import { compressImage } from '@/lib/imageCompression';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getProfile, saveProfile, uploadLogo, Profile } from '@/lib/profileService';
+import { getUserCompany } from '@/lib/companyService';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -22,12 +23,16 @@ export default function ProfilePage() {
     ruc: '',
     phone: '',
   });
+  const [hasCompany, setHasCompany] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return; // Wait for useAuth to provide the user
     try {
       const email = user.email || 'unknown';
       const p = await getProfile(email);
+      const cInfo = await getUserCompany(email);
+      setHasCompany(cInfo.company !== null);
+
       if (p) {
         setFormData({
           name: p.name || user.name || '',
@@ -127,6 +132,8 @@ export default function ProfilePage() {
           <div className="relative w-24 h-24 mx-auto mb-4 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50 overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors group">
             {(logoFile || formData.logoUrl) ? (
               <img src={logoFile || formData.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+            ) : user?.picture ? (
+              <img src={user.picture} alt="Avatar" className="w-full h-full object-cover rounded-xl" crossOrigin="anonymous" />
             ) : (
               <div className="text-slate-400 flex flex-col items-center">
                 <Camera className="w-6 h-6 mb-1" />
@@ -154,9 +161,15 @@ export default function ProfilePage() {
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-5">
-          <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-3">
+          <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-3 flex justify-between items-center">
             Datos para el Reporte / Factura
           </h3>
+
+          {hasCompany && (
+            <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl mb-4 text-xs text-blue-800 font-medium">
+              ℹ️ Ya perteneces a una Organización. Tu RUC, Logo y Empresa mostrados en los PDF serán dictados por el Panel Administrador, sin importar lo que escribas aquí.
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.technicianName}</label>

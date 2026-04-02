@@ -7,6 +7,9 @@ export interface Company {
   name: string;
   adminEmail: string; // Dueño / Administrador principal
   technicianEmails: string[]; // Lista de correos autorizados como técnicos
+  ruc?: string;
+  phone?: string;
+  logoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

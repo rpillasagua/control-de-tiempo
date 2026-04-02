@@ -6,7 +6,8 @@ import { ArrowLeft, Loader2, Printer, MapPin, Clock, CheckCircle, Share2, Copy, 
 import Link from 'next/link';
 import { getVisit } from '@/lib/visitService';
 import { getProfile, Profile } from '@/lib/profileService';
-import { Visit } from '@/lib/types';
+import { getCompanyById } from '@/lib/companyService';
+import { Visit, Company } from '@/lib/types';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n';
 
@@ -33,6 +34,7 @@ export default function ReportPage() {
   const visitId = params.id as string;
   const [visit, setVisit] = useState<Visit | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const { t } = useTranslation();
@@ -42,6 +44,10 @@ export default function ReportPage() {
       const v = await getVisit(visitId);
       setVisit(v);
       if (v) {
+        if (v.companyId) {
+          const c = await getCompanyById(v.companyId);
+          if (c) setCompany(c);
+        }
         const p = await getProfile(v.technicianId);
         setProfile(p);
       }
@@ -209,6 +215,12 @@ export default function ReportPage() {
   );
 
   const isComplete = visit.status === 'FINALIZADA';
+  
+  const presentationLogo = company?.logoUrl || profile?.logoUrl;
+  const presentationCompany = company?.name || profile?.companyName;
+  const presentationRuc = company?.ruc || profile?.ruc;
+  const presentationPhone = company?.phone || profile?.phone;
+  const presentationTechName = profile?.name || visit.technicianName;
 
   return (
     <>
@@ -281,17 +293,17 @@ export default function ReportPage() {
             <div className="bg-slate-800 text-white px-6 py-6 border-b border-slate-700">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-5">
-                  {profile?.logoUrl && (
+                  {presentationLogo && (
                     <img 
-                      src={profile.logoUrl} 
+                      src={presentationLogo} 
                       alt="Logo Empresa" 
                       className="w-16 h-16 rounded-xl bg-white object-contain p-1.5 shadow-sm no-print" 
                       crossOrigin="anonymous" 
                     />
                   )}
-                  {profile?.logoUrl && (
+                  {presentationLogo && (
                     <img 
-                      src={profile.logoUrl} 
+                      src={presentationLogo} 
                       alt="Logo Empresa Print" 
                       className="w-16 h-16 rounded-xl bg-white object-contain p-1.5 shadow-sm hidden print:block pt-0" 
                       crossOrigin="anonymous" 
@@ -323,27 +335,25 @@ export default function ReportPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t.technicianName}</p>
-                  <p className="font-bold text-slate-800 text-lg">{profile?.companyName || profile?.name || visit.technicianName}</p>
+                  <p className="font-bold text-slate-800 text-lg">{presentationCompany || presentationTechName}</p>
                   
-                  {profile && (
-                    <div className="mt-1 space-y-0.5">
-                      {profile.companyName && profile.name && (
-                        <p className="text-slate-500 text-sm flex items-center gap-1">
-                          <Building2 className="w-3 h-3" /> Rep: {profile.name}
-                        </p>
-                      )}
-                      {profile.ruc && (
-                        <p className="text-slate-500 text-sm font-mono">RUC: {profile.ruc}</p>
-                      )}
-                      {profile.phone && (
-                        <p className="text-slate-500 text-sm flex items-center gap-1">
-                          <Phone className="w-3 h-3" /> {profile.phone}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {/* Fallback si no hay perfil configurado */}
-                  {!profile && <p className="text-slate-500 text-sm">{visit.technicianId}</p>}
+                  <div className="mt-1 space-y-0.5">
+                    {presentationCompany && presentationTechName && (
+                      <p className="text-slate-500 text-sm flex items-center gap-1">
+                        <Building2 className="w-3 h-3" /> Rep: {presentationTechName}
+                      </p>
+                    )}
+                    {presentationRuc && (
+                      <p className="text-slate-500 text-sm font-mono">{t.ruc}: {presentationRuc}</p>
+                    )}
+                    {presentationPhone && (
+                      <p className="text-slate-500 text-sm flex items-center gap-1">
+                        <Phone className="w-3 h-3" /> {presentationPhone}
+                      </p>
+                    )}
+                    {/* Fallback si no hay perfil configurado */}
+                    {!presentationCompany && !presentationTechName && <p className="text-slate-500 text-sm">{visit.technicianId}</p>}
+                  </div>
                 </div>
               </div>
 

@@ -5,15 +5,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTicketMonitor } from '@/hooks/useTicketMonitor';
 import {
   getCompaniesByAdmin, createCompany, updateTechnicians,
-  transferCompanyOwnership
+  transferCompanyOwnership, updateCompanyProfile, uploadCompanyLogo
 } from '@/lib/companyService';
+import { useTranslation } from '@/lib/i18n';
+import { compressImage } from '@/lib/imageCompression';
 import { getTicketsByCompany, updateTicketStatus } from '@/lib/ticketService';
 import { createInvite, getCompanyInvites } from '@/lib/inviteService';
 import { Company, Ticket, Invite } from '@/lib/types';
 import {
   Loader2, Plus, Users, Building2, MapPin, Phone,
   Trash2, Link as LinkIcon, Bell, ChevronDown,
-  ArrowRightLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock
+  ArrowRightLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock, Camera, Save, Volume2, VolumeX
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +45,7 @@ function playPing() {
 // ─────────────────────────────────────────
 export default function AdminDashboardPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Company list + selected
   const [loading, setLoading] = useState(true);
@@ -72,6 +75,26 @@ export default function AdminDashboardPage() {
   const [newTechEmail, setNewTechEmail] = useState('');
   const [selectedTech, setSelectedTech] = useState('');
   const [transferEmail, setTransferEmail] = useState('');
+
+  // Audio Permissions
+  const [audioEnabled, setAudioEnabled] = useState(false);
+
+  // Corporate Data Form
+  const [corpRuc, setCorpRuc] = useState('');
+  const [corpPhone, setCorpPhone] = useState('');
+  const [corpLogoUrl, setCorpLogoUrl] = useState('');
+  const [corpLogoFile, setCorpLogoFile] = useState<string | null>(null);
+  const [savingCorp, setSavingCorp] = useState(false);
+
+  // Sync Corp Form with Active Company
+  useEffect(() => {
+    if (activeCompany) {
+      setCorpRuc(activeCompany.ruc || '');
+      setCorpPhone(activeCompany.phone || '');
+      setCorpLogoUrl(activeCompany.logoUrl || '');
+      setCorpLogoFile(null);
+    }
+  }, [activeCompany]);
 
   // ── Load companies ──────────────────────
   const loadCompanies = useCallback(async () => {
@@ -114,10 +137,10 @@ export default function AdminDashboardPage() {
 
   // ── Real-time alert monitor ─────────────
   const handleNewTicket = useCallback((ticket: Ticket) => {
-    playPing();
+    if (audioEnabled) playPing();
     setNewCount(prev => prev + 1);
     toast.success(`🔔 Nuevo ticket de ${ticket.clientName}`, { duration: 6000 });
-  }, []);
+  }, [audioEnabled]);
 
   useTicketMonitor(selectedCompanyId, handleNewTicket);
 
@@ -259,12 +282,12 @@ export default function AdminDashboardPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <Building2 className="w-16 h-16 text-blue-500 mb-4" />
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Activa tu Empresa</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">{t.adminActivateCompany}</h1>
         <p className="text-slate-500 mb-8 max-w-sm">
-          Crea tu primera organización para invitar técnicos y recibir tickets de tus clientes.
+          {t.adminActivateDesc}
         </p>
         <button onClick={() => setShowCompanyModal(true)} className="bg-blue-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:bg-blue-700 transition">
-          Crear Organización
+          {t.adminCreateCompany}
         </button>
         {showCompanyModal && <CompanyFormModal
           value={newCompanyName}
@@ -321,12 +344,21 @@ export default function AdminDashboardPage() {
 
               {/* New company */}
               <button onClick={() => setShowCompanyModal(true)} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg text-sm font-semibold transition">
-                <Plus className="w-4 h-4" /> Nueva Empresa
+                <Plus className="w-4 h-4" /> {t.adminNewCompany}
+              </button>
+              
+              {/* Sound Toggle */}
+              <button 
+                onClick={() => setAudioEnabled(!audioEnabled)} 
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition ${audioEnabled ? 'bg-blue-600 hover:bg-blue-500' : 'bg-slate-400/20 hover:bg-slate-400/40 text-blue-200'}`}
+                title="Activar/Desactivar Sonido"
+              >
+                {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <p className="text-blue-200 text-sm">Panel de Control General</p>
+          <p className="text-blue-200 text-sm">{t.adminPanel}</p>
         </div>
       </header>
 
@@ -337,7 +369,7 @@ export default function AdminDashboardPage() {
         <div className="md:col-span-1 space-y-4">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold flex items-center gap-2 text-slate-800"><Users className="w-5 h-5 text-blue-600" /> Mi Equipo</h3>
+              <h3 className="font-bold flex items-center gap-2 text-slate-800"><Users className="w-5 h-5 text-blue-600" /> {t.adminMyTeam}</h3>
               <button onClick={() => setShowTeamModal(true)} className="p-1.5 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100">
                 <Plus className="w-4 h-4" />
               </button>
@@ -363,7 +395,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold flex items-center gap-2 text-slate-800 text-sm">
-                <Key className="w-4 h-4 text-indigo-600" /> Invitaciones
+                <Key className="w-4 h-4 text-indigo-600" /> {t.adminInvites}
               </h3>
               <button
                 onClick={handleGenerateInvite}
@@ -371,7 +403,7 @@ export default function AdminDashboardPage() {
                 className="flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition disabled:opacity-60"
               >
                 {generatingInvite ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                Generar
+                {t.adminGenerateInfo}
               </button>
             </div>
 
@@ -414,21 +446,106 @@ export default function AdminDashboardPage() {
 
           {/* Danger Zone: Transfer */}
           <div className="bg-white rounded-2xl border border-red-100 p-4">
-            <h4 className="text-sm font-bold text-red-600 mb-2 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Zona de Peligro</h4>
+            <h4 className="text-sm font-bold text-red-600 mb-2 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> {t.adminDangerZone}</h4>
             <button
               onClick={() => setShowTransferModal(true)}
               className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl py-2 text-sm font-semibold transition"
             >
-              <ArrowRightLeft className="w-4 h-4" /> Ceder Empresa
+              <ArrowRightLeft className="w-4 h-4" /> {t.adminTransferCompany}
             </button>
           </div>
         </div>
 
-        {/* ── Tickets Column ── */}
-        <div className="md:col-span-2 space-y-4">
+        {/* ── Center/Right Column ── */}
+        <div className="md:col-span-2 space-y-6">
+
+          {/* ── Corporate Data UI ── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row gap-6">
+            <div className="flex-shrink-0 flex flex-col items-center">
+              <h3 className="font-bold text-sm text-slate-800 mb-2">{t.adminSetLogoTitle}</h3>
+              <div className="relative w-28 h-28 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50 overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors group">
+                {(corpLogoFile || corpLogoUrl) ? (
+                  <img src={corpLogoFile || corpLogoUrl} alt="Logo" className="w-full h-full object-contain p-2" crossOrigin="anonymous" />
+                ) : (
+                  <div className="text-slate-400 flex flex-col items-center">
+                    <Camera className="w-6 h-6 mb-1" />
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const toastId = toast.loading('Optimizando logo...', { duration: Infinity });
+                    try {
+                      const fileCompressed = await compressImage(file, { maxWidthOrHeight: 600, quality: 0.8 });
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setCorpLogoFile(reader.result as string);
+                        toast.success('Logo listo para guardar', { id: toastId });
+                      };
+                      reader.readAsDataURL(fileCompressed);
+                    } catch {
+                      toast.error('Error al procesar el logo', { id: toastId });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1 space-y-3">
+              <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-2">{t.adminCompanyData}</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">RUC Fiscal</label>
+                  <input 
+                    value={corpRuc} onChange={e => setCorpRuc(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Teléfono Fijo / Base</label>
+                  <input 
+                    value={corpPhone} onChange={e => setCorpPhone(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none"
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={async () => {
+                  if (!activeCompany) return;
+                  setSavingCorp(true);
+                  try {
+                    let finalUrl = corpLogoUrl;
+                    if (corpLogoFile) {
+                      finalUrl = await uploadCompanyLogo(activeCompany.id, corpLogoFile);
+                    }
+                    await updateCompanyProfile(activeCompany.id, {
+                      ruc: corpRuc, phone: corpPhone, logoUrl: finalUrl
+                    });
+                    toast.success('Empresa actualizada. Se reflejará en todos los reportes de tu equipo.');
+                    setCorpLogoUrl(finalUrl);
+                    setCorpLogoFile(null);
+                  } catch {
+                    toast.error('Error guardando empresa');
+                  } finally {
+                    setSavingCorp(false);
+                  }
+                }}
+                disabled={savingCorp}
+                className="w-full mt-2 py-2 bg-blue-50 text-blue-700 font-bold text-sm rounded-lg hover:bg-blue-100 transition flex justify-center items-center gap-2 disabled:opacity-50"
+              >
+                {savingCorp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Guardar Empresa
+              </button>
+            </div>
+          </div>
+
           <h3 className="font-bold flex items-center gap-2 text-slate-800 mb-2">
             <TicketIcon className="w-5 h-5 text-indigo-600" />
-            Bandeja de Tickets
+            {t.adminTicketInbox}
             {newCount > 0 && (
               <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
                 {newCount} nuevo{newCount > 1 ? 's' : ''}
@@ -441,8 +558,8 @@ export default function AdminDashboardPage() {
           ) : tickets.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
               <TicketIcon className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-              <p className="text-slate-400 font-medium">No hay tickets reportados.</p>
-              <p className="text-slate-400 text-sm mt-1">Comparte tu portal público para recibir solicitudes de soporte.</p>
+              <p className="text-slate-400 font-medium">{t.adminNoTickets}</p>
+              <p className="text-slate-400 text-sm mt-1">{t.adminSharePortalDesc}</p>
             </div>
           ) : (
             tickets.map(ticket => (

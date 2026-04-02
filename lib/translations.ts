@@ -178,6 +178,25 @@ const es = {
   installPrompt: 'Instala esta app en tu pantalla de inicio para acceso rápido y sin internet.',
   notNow: 'Ahora no',
 
+  // Admin Panel
+  adminActivateCompany: 'Activa tu Empresa',
+  adminActivateDesc: 'Crea tu primera organización para invitar técnicos y recibir tickets de tus clientes.',
+  adminCreateCompany: 'Crear Organización',
+  adminNewCompany: 'Nueva Empresa',
+  adminMyTeam: 'Mi Equipo',
+  adminInviteTech: 'Invitar técnico',
+  adminInvites: 'Invitaciones',
+  adminGenerateInfo: 'Generar',
+  adminDangerZone: 'Zona de Peligro',
+  adminTransferCompany: 'Ceder Empresa',
+  adminTicketInbox: 'Bandeja de Tickets',
+  adminNoTickets: 'No hay tickets reportados.',
+  adminSharePortalDesc: 'Comparte tu portal público para recibir solicitudes de soporte.',
+  adminAssignTech: 'Asignar a Técnico',
+  adminSetLogoTitle: 'Logo Corporativo',
+  adminCompanyData: 'Datos de Facturación Opcionales',
+  adminSettings: 'Ajustes',
+
   // Generic
   loading: 'Cargando...',
   error: 'Error',
@@ -347,6 +366,25 @@ const en: typeof es = {
   notNow: 'Not now',
 
 
+  // Admin Panel
+  adminActivateCompany: 'Activate your Company',
+  adminActivateDesc: 'Create your first organization to invite technicians and receive client tickets.',
+  adminCreateCompany: 'Create Organization',
+  adminNewCompany: 'New Company',
+  adminMyTeam: 'My Team',
+  adminInviteTech: 'Invite technician',
+  adminInvites: 'Invites',
+  adminGenerateInfo: 'Generate',
+  adminDangerZone: 'Danger Zone',
+  adminTransferCompany: 'Transfer Company',
+  adminTicketInbox: 'Ticket Inbox',
+  adminNoTickets: 'No tickets reported yet.',
+  adminSharePortalDesc: 'Share your public portal to receive support requests.',
+  adminAssignTech: 'Assign Technician',
+  adminSetLogoTitle: 'Corporate Logo',
+  adminCompanyData: 'Optional Billing Data',
+  adminSettings: 'Settings',
+
   loading: 'Loading...',
   error: 'Error',
   back: 'Back',
@@ -514,6 +552,25 @@ const pap: typeof es = {
   installPrompt: 'Agrega e aplikashon aki na bo pantaya di inisio pa akseso rapido i offline.',
   notNow: 'Awor no',
 
+
+  // Admin Panel
+  adminActivateCompany: 'Aktiva Bo Empresa',
+  adminActivateDesc: 'Krea bo prome organisashon pa invita teknikonan i resibi ticketnan di klientenan.',
+  adminCreateCompany: 'Krea Organisashon',
+  adminNewCompany: 'Empresa Nobo',
+  adminMyTeam: 'Mi Ekipo',
+  adminInviteTech: 'Invita tekniko',
+  adminInvites: 'Invitashonnan',
+  adminGenerateInfo: 'Genera',
+  adminDangerZone: 'Zona di Peliger',
+  adminTransferCompany: 'Trespasa Empresa',
+  adminTicketInbox: 'Bandeha di Ticket',
+  adminNoTickets: 'Ningun ticket reporta ainda.',
+  adminSharePortalDesc: 'Komparti bo portal publiko pa resibi petishonnan di soporte.',
+  adminAssignTech: 'Asigna Tekniko',
+  adminSetLogoTitle: 'Logo Korporativo',
+  adminCompanyData: 'Dato di Fakturashon Opshonal',
+  adminSettings: 'Setings',
 
   loading: 'Kargando...',
   error: 'Error',

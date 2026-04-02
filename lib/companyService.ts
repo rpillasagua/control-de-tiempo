@@ -61,3 +61,24 @@ export async function transferCompanyOwnership(companyId: string, newAdminEmail:
   const ref = doc(db, 'companies', companyId);
   await updateDoc(ref, { adminEmail: newAdminEmail, updatedAt: new Date().toISOString() });
 }
+
+// Actualiza los datos base de la empresa (ruc, phone, name)
+export async function updateCompanyProfile(companyId: string, data: Partial<Company>): Promise<void> {
+  const ref = doc(db, 'companies', companyId);
+  await updateDoc(ref, { ...data, updatedAt: new Date().toISOString() });
+}
+
+// Sube el logo corporativo maestro
+export async function uploadCompanyLogo(companyId: string, base64Image: string): Promise<string> {
+  const { ref: storageRef, uploadString, getDownloadURL, getStorage } = await import('firebase/storage');
+  const filePath = `companies/${companyId}_logo.webp`;
+  const storage = getStorage();
+  const fileRef = storageRef(storage, filePath);
+  
+  await uploadString(fileRef, base64Image, 'data_url');
+  const downloadUrl = await getDownloadURL(fileRef);
+  
+  await updateCompanyProfile(companyId, { logoUrl: downloadUrl });
+  
+  return downloadUrl;
+}
