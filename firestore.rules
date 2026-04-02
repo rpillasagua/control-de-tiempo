@@ -30,6 +30,17 @@ service cloud.firestore {
     }
 
     // ──────────────────────────────────────────────
+    // 0.1 INVITACIONES (invites)
+    // ──────────────────────────────────────────────
+    match /invites/{code} {
+      // Lectura pública: se necesita para validar el código antes de login
+      allow read: if true;
+      // Cualquier autenticado puede crear (el admin lo hace desde su panel)
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // ──────────────────────────────────────────────
     // 0.5 TICKETS DE SOPORTE (tickets)
     // ──────────────────────────────────────────────
     match /tickets/{ticketId} {

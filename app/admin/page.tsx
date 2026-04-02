@@ -8,11 +8,12 @@ import {
   transferCompanyOwnership
 } from '@/lib/companyService';
 import { getTicketsByCompany, updateTicketStatus } from '@/lib/ticketService';
-import { Company, Ticket } from '@/lib/types';
+import { createInvite, getCompanyInvites } from '@/lib/inviteService';
+import { Company, Ticket, Invite } from '@/lib/types';
 import {
   Loader2, Plus, Users, Building2, MapPin, Phone,
   Trash2, Link as LinkIcon, Bell, ChevronDown,
-  ArrowRightLeft, Ticket as TicketIcon, AlertCircle
+  ArrowRightLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -52,8 +53,13 @@ export default function AdminDashboardPage() {
   // Tickets
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
-  // Alert badge: count of unseen PENDIENTE tickets
+  // Alert badge
   const [newCount, setNewCount] = useState(0);
+
+  // Invites
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
 
   // Modals
   const [showCompanyModal, setShowCompanyModal] = useState(false);
@@ -93,7 +99,10 @@ export default function AdminDashboardPage() {
     try {
       const list = await getTicketsByCompany(selectedCompanyId);
       setTickets(list);
-      setNewCount(0); // clear badge once admin opens the inbox
+      setNewCount(0);
+      // Also refresh active invites
+      const inviteList = await getCompanyInvites(selectedCompanyId);
+      setInvites(inviteList);
     } catch {
       toast.error('Error cargando tickets');
     } finally {
@@ -186,6 +195,31 @@ export default function AdminDashboardPage() {
     } catch {
       toast.error('Error asignando ticket');
     }
+  };
+
+  // ── Generate invite ─────────────────────────────────────
+  const handleGenerateInvite = async () => {
+    if (!activeCompany) return;
+    setGeneratingInvite(true);
+    try {
+      const inv = await createInvite(activeCompany.id, activeCompany.name, user!.email);
+      setInvites(prev => [inv, ...prev]);
+      setShowInvitePanel(true);
+      toast.success(`Código ${inv.code} generado (válido 48h)`);
+    } catch {
+      toast.error('Error generando código');
+    } finally {
+      setGeneratingInvite(false);
+    }
+  };
+
+  const copyInviteLink = (code: string) => {
+    const url = `${window.location.origin}/unirse/${code}`;
+    navigator.clipboard.writeText(url).then(() => toast.success('Enlace copiado'));
+  };
+
+  const copyInviteCode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => toast.success(`Código ${code} copiado`));
   };
 
   // ── Transfer ownership ──────────────────
@@ -323,6 +357,59 @@ export default function AdminDashboardPage() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Invite codes panel */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold flex items-center gap-2 text-slate-800 text-sm">
+                <Key className="w-4 h-4 text-indigo-600" /> Invitaciones
+              </h3>
+              <button
+                onClick={handleGenerateInvite}
+                disabled={generatingInvite}
+                className="flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition disabled:opacity-60"
+              >
+                {generatingInvite ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                Generar
+              </button>
+            </div>
+
+            {invites.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-3">
+                Sin códigos activos. Genera uno para invitar técnicos.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {invites.map(inv => {
+                  const expiresIn = Math.max(0, Math.round((new Date(inv.expiresAt).getTime() - Date.now()) / 3600000));
+                  return (
+                    <div key={inv.code} className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono font-bold text-indigo-800 text-lg tracking-widest">{inv.code}</span>
+                        <span className="text-[10px] text-indigo-500 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />{expiresIn}h restantes
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => copyInviteCode(inv.code)}
+                          className="flex-1 flex items-center justify-center gap-1 border border-indigo-200 text-indigo-700 text-xs font-semibold py-1.5 rounded-lg hover:bg-indigo-100 transition"
+                        >
+                          <Copy className="w-3 h-3" /> Código
+                        </button>
+                        <button
+                          onClick={() => copyInviteLink(inv.code)}
+                          className="flex-1 flex items-center justify-center gap-1 border border-indigo-200 text-indigo-700 text-xs font-semibold py-1.5 rounded-lg hover:bg-indigo-100 transition"
+                        >
+                          <LinkIcon className="w-3 h-3" /> Link
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Danger Zone: Transfer */}

@@ -27,6 +27,23 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================
+// INVITACIONES (códigos para unirse a empresa)
+// ============================================
+export type InviteRole = 'TECHNICIAN';
+
+export interface Invite {
+  code: string;       // 6 chars, también es el ID del documento
+  companyId: string;
+  companyName: string;
+  createdBy: string;  // email del admin
+  role: InviteRole;
+  expiresAt: string;  // ISO — válido 48 h
+  usedAt?: string;
+  usedBy?: string;    // email del técnico que lo usó
+}
+
 export interface GeoPoint {
   lat: number;
   lng: number;

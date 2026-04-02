@@ -3,8 +3,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { getActiveVisit, getVisitsByTechnician } from '@/lib/visitService';
 import { getTicketsByTechnician } from '@/lib/ticketService';
+import { getUserCompany } from '@/lib/companyService';
 import { Visit, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -171,12 +173,14 @@ function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean
 export default function DashboardPage() {
   const { user, loading: authLoading, login } = useAuth();
   const { t } = useTranslation();
+  const router = useRouter();
   const [loginLoading, setLoginLoading] = useState(false);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [assignedTickets, setAssignedTickets] = useState<Ticket[]>([]);
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
   const [metrics, setMetrics] = useState({ total: 0, completed: 0, hours: 0 });
   const [dataLoading, setDataLoading] = useState(false);
+  const [roleChecked, setRoleChecked] = useState(false);
 
   const loadVisits = useCallback(async () => {
     if (!user) return;
@@ -227,9 +231,20 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  // After login, check if user belongs to a company; redirect new users to /bienvenida
   useEffect(() => {
-    if (user) loadVisits();
-  }, [user, loadVisits]);
+    if (!user || roleChecked) return;
+    getUserCompany(user.email).then(({ role }) => {
+      setRoleChecked(true);
+      if (role === 'none') {
+        router.replace('/bienvenida');
+      }
+    }).catch(() => setRoleChecked(true));
+  }, [user, roleChecked, router]);
+
+  useEffect(() => {
+    if (user && roleChecked) loadVisits();
+  }, [user, roleChecked, loadVisits]);
 
   if (authLoading) {
     return (

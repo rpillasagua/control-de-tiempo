@@ -17,6 +17,25 @@ export async function getCompanyByTechnician(technicianEmail: string): Promise<C
   return snap.docs[0].data() as Company;
 }
 
+// Determina el rol del usuario: ¿es admin, técnico, o nuevo?
+export async function getUserCompany(email: string): Promise<{
+  company: Company | null;
+  role: 'admin' | 'technician' | 'none';
+}> {
+  // Check admin first
+  const adminList = await getCompaniesByAdmin(email);
+  if (adminList.length > 0) {
+    return { company: adminList[0], role: 'admin' };
+  }
+  // Check technician
+  const techCompany = await getCompanyByTechnician(email);
+  if (techCompany) {
+    return { company: techCompany, role: 'technician' };
+  }
+  return { company: null, role: 'none' };
+}
+
+
 // Obtiene una compañía por su ID (útil para la carga del portal público)
 export async function getCompanyById(companyId: string): Promise<Company | null> {
   const ref = doc(db, 'companies', companyId);
