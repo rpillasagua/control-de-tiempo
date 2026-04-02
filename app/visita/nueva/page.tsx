@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Loader2, Camera, User, ChevronDown } from 'lucide-react';
+import React, { useState, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, MapPin, Loader2, Camera, User, ChevronDown, Ticket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { createVisit, getActiveVisit } from '@/lib/visitService';
@@ -16,17 +16,24 @@ import { compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
-
-export default function NuevaVisitaPage() {
+// Wrap the form in a subcomponent so useSearchParams can be wrapped in Suspense (Next.js requirement)
+function NuevaVisitaForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { t } = useTranslation();
   const { loading: geoLoading, capture: captureGeo } = useGeolocation();
   const isOnline = useNetworkStatus();
   const inputFileRef = useRef<HTMLInputElement>(null);
 
-  const [clientName, setClientName] = useState('');
-  const [clientAddress, setClientAddress] = useState('');
+  // Read assigned ticket query params
+  const ticketId = searchParams.get('ticketId') || undefined;
+  const companyId = searchParams.get('companyId') || undefined;
+  const preClientName = searchParams.get('clientName') || '';
+  const preClientAddress = searchParams.get('clientAddress') || '';
+
+  const [clientName, setClientName] = useState(preClientName);
+  const [clientAddress, setClientAddress] = useState(preClientAddress);
   const [clients, setClients] = useState<Client[]>([]);
   const [saving, setSaving] = useState(false);
   const [arrivalPhoto, setArrivalPhoto] = useState<string | null>(null); // base64 preview
@@ -161,7 +168,9 @@ export default function NuevaVisitaPage() {
         clientName.trim(),
         arrival,
         selectedClient?.id, // ID real en vez de undefined
-        clientAddress.trim() || undefined
+        clientAddress.trim() || undefined,
+        companyId,
+        ticketId
       );
 
       // 4. (Offline-only) Re-link the saved IDB photo from tempId to the REAL visitId
@@ -214,31 +223,50 @@ export default function NuevaVisitaPage() {
           </ul>
         </div>
 
-        {/* Client selector */}
-        <div>
-          <div className="flex justify-between items-end mb-1">
-            <label className="block text-sm font-semibold text-slate-700">
-              {t.clientName} <span className="text-red-500">*</span>
-            </label>
-            <Link href="/clientes/nuevo" className="text-xs text-blue-600 font-medium hover:underline">
-              + {t.newClientTitle || 'Nuevo Cliente'}
-            </Link>
+        {/* Client selector - Block if it's a pre-assigned ticket */}
+        {ticketId ? (
+          <div>
+            <div className="flex justify-between items-end mb-1">
+              <label className="block text-sm font-semibold text-slate-700">
+                 {t.clientName} (Reporte de Ticket)
+              </label>
+            </div>
+            <div className="relative">
+              <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={clientName}
+                readOnly
+                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none bg-indigo-50 text-indigo-900 font-semibold"
+              />
+            </div>
           </div>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <select
-              value={clientName}
-              onChange={handleClientChange}
-              className="w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800 appearance-none"
-            >
-              <option value="" disabled>Selecciona un cliente...</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.name}>{c.name}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        ) : (
+          <div>
+            <div className="flex justify-between items-end mb-1">
+              <label className="block text-sm font-semibold text-slate-700">
+                {t.clientName} <span className="text-red-500">*</span>
+              </label>
+              <Link href="/clientes/nuevo" className="text-xs text-blue-600 font-medium hover:underline">
+                + {t.newClientTitle || 'Nuevo Cliente'}
+              </Link>
+            </div>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <select
+                value={clientName}
+                onChange={handleClientChange}
+                className="w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800 appearance-none"
+              >
+                <option value="" disabled>Selecciona un cliente...</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Address */}
         <div>
@@ -326,5 +354,13 @@ export default function NuevaVisitaPage() {
       </main>
       )}
     </div>
+  );
+}
+
+export default function NuevaVisitaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin"/></div>}>
+      <NuevaVisitaForm />
+    </Suspense>
   );
 }

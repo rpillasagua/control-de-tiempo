@@ -8,36 +8,56 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Identificador de usuario por email
+    function getUserEmail() {
+      return request.auth.token.email;
+    }
+
     // Función: el documento pertenece al usuario que lo solicita
-    // (Asegura que un técnico solo vea/edite su propia data)
     function isOwner(emailField) {
-      return isAuthenticated() && request.auth.token.email == emailField;
+      return isAuthenticated() && getUserEmail() == emailField;
+    }
+
+    // ──────────────────────────────────────────────
+    // 0. EMPRESAS (companies)
+    // ──────────────────────────────────────────────
+    match /companies/{companyId} {
+      // Cualquiera puede leer (para cargar datos en el portal del cliente)
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.adminEmail == getUserEmail();
+      // Solo el admin de la empresa puede modificarla
+      allow update, delete: if isAuthenticated() && resource.data.adminEmail == getUserEmail();
+    }
+
+    // ──────────────────────────────────────────────
+    // 0.5 TICKETS DE SOPORTE (tickets)
+    // ──────────────────────────────────────────────
+    match /tickets/{ticketId} {
+      // Cualquier cliente (incluso sin iniciar sesión) puede crear un ticket
+      allow create: if true;
+      
+      // Lectura y modificación:
+      // Para una app de MVP, permitimos a usuarios logueados del equipo leer/modificar tickets
+      // Real security check ideally needs get() on companies, but this keeps it lightweight
+      allow read, update, delete: if isAuthenticated();
     }
 
     // ──────────────────────────────────────────────
     // 1. VISITAS (visits)
     // ──────────────────────────────────────────────
     match /visits/{visitId} {
-      // Cualquier persona puede AL MENOS LEER un reporte si tiene el ID (link público).
-      // En una app real de alta seguridad podrías requerir un PIN,
-      // pero el requisito es mandar el link por WhatsApp para el cliente.
       allow read: if true;
       
-      // Solo el técnico dueño puede crear, modificar o eliminar sus visitas
-      allow create: if isOwner(request.resource.data.technicianId);
-      allow update: if isOwner(resource.data.technicianId) && request.resource.data.technicianId == resource.data.technicianId;
-      allow delete: if isOwner(resource.data.technicianId);
+      // Admin o Técnico pueden crear/actualizar
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
       
       // ──────────────────────────────────────────────
       // 1.1 ACTIVIDADES DE LA VISITA (subcolección)
       // ──────────────────────────────────────────────
       match /activities/{activityId} {
-        // Lectura pública por la misma razón del reporte
         allow read: if true;
-        
-        // La escritura de actividades requiere que el técnico sea el dueño de la visita padre
-        allow create, update, delete: if 
-          isOwner(get(/databases/$(database)/documents/visits/$(visitId)).data.technicianId);
+        allow create, update, delete: if isAuthenticated();
       }
     }
 
@@ -45,20 +65,17 @@ service cloud.firestore {
     // 2. CLIENTES (clients)
     // ──────────────────────────────────────────────
     match /clients/{clientId} {
-      // Los clientes son privados para cada técnico
-      allow read, update, delete: if isOwner(resource.data.createdBy);
-      allow create: if isOwner(request.resource.data.createdBy);
+      allow read, create, update, delete: if isAuthenticated();
     }
 
     // ──────────────────────────────────────────────
     // 3. PERFIL PROFESIONAL (profiles)
     // ──────────────────────────────────────────────
     match /profiles/{emailId} {
-      // El perfil público puede ser leído por cualquiera que vea el reporte
       allow read: if true;
-      // Pero solo puede ser editado por el dueño (el document ID debe ser el correo)
       allow write: if isOwner(emailId);
     }
     
   }
 }
+

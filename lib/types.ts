@@ -2,8 +2,31 @@
 // TIPOS DEL SISTEMA — BITÁCORA TÉCNICA
 // ============================================
 
+export interface Company {
+  id: string; // Auto-generated ID (used for the public portal URL)
+  name: string;
+  adminEmail: string; // Dueño / Administrador principal
+  technicianEmails: string[]; // Lista de correos autorizados como técnicos
+  createdAt: string;
+  updatedAt: string;
+}
 
+export type TicketStatus = 'PENDIENTE' | 'REVISADO' | 'ASIGNADO' | 'CERRADO';
 
+export interface Ticket {
+  id: string;
+  companyId: string; // A qué empresa va dirigido
+  clientName: string;
+  clientPhone: string;
+  clientAddress: string;
+  issueDescription: string;
+  photoUrl?: string; // Evidencia subida por el cliente
+  status: TicketStatus;
+  assignedTo?: string; // email del técnico asignado
+  visitId?: string;    // ID de la visita técnica generada a partir del ticket
+  createdAt: string;
+  updatedAt: string;
+}
 export interface GeoPoint {
   lat: number;
   lng: number;
@@ -50,6 +73,10 @@ export interface Visit {
   id: string;
   technicianId: string;   // email del técnico
   technicianName: string;
+
+  // Empresa & Origen
+  companyId?: string;     // si pertenece a una empresa registrada
+  ticketId?: string;      // si fue generada a partir de un ticket de cliente
 
   // Cliente
   clientId?: string;

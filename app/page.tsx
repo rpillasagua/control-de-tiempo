@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getActiveVisit, getVisitsByTechnician } from '@/lib/visitService';
-import { Visit } from '@/lib/types';
+import { getTicketsByTechnician } from '@/lib/ticketService';
+import { Visit, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { SyncHubIndicator } from '@/components/SyncHubIndicator';
@@ -172,6 +173,7 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const [loginLoading, setLoginLoading] = useState(false);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [assignedTickets, setAssignedTickets] = useState<Ticket[]>([]);
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
   const [metrics, setMetrics] = useState({ total: 0, completed: 0, hours: 0 });
   const [dataLoading, setDataLoading] = useState(false);
@@ -188,12 +190,14 @@ export default function DashboardPage() {
       todayStart.setHours(0, 0, 0, 0);
       const todayISO = todayStart.toISOString();
 
-      const [active, recentVisits] = await Promise.all([
+      const [active, recentVisits, myTickets] = await Promise.all([
         getActiveVisit(user.email),
-        getVisitsByTechnician(user.email, weekAgo.toISOString())
+        getVisitsByTechnician(user.email, weekAgo.toISOString()),
+        getTicketsByTechnician(user.email)
       ]);
       
       setActiveVisit(active);
+      setAssignedTickets(myTickets);
 
       let completed = 0;
       let totalTime = 0;
@@ -322,25 +326,58 @@ export default function DashboardPage() {
           </Link>
         )}
 
+        {/* ASIGNACIONES (Tickets) */}
+        {assignedTickets.length > 0 && !activeVisit && (
+          <div className="mt-6 mb-2">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 mb-3">
+              <MapPin className="w-5 h-5 text-indigo-500" />
+              {t.assignedTickets} ({assignedTickets.length})
+            </h2>
+            <div className="space-y-3">
+              {assignedTickets.map(ticket => (
+                <Link key={ticket.id} href={`/visita/nueva?ticketId=${ticket.id}&clientName=${encodeURIComponent(ticket.clientName)}&clientAddress=${encodeURIComponent(ticket.clientAddress)}&companyId=${ticket.companyId}`}>
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex justify-between items-center hover:bg-indigo-100 transition shadow-sm cursor-pointer">
+                    <div>
+                      <span className="text-[10px] font-bold text-indigo-600 mb-1 tracking-wider uppercase inline-block bg-indigo-100 px-2 py-0.5 rounded-md">Ticket Nuevo</span>
+                      <p className="font-bold text-slate-800 text-lg leading-tight">{ticket.clientName}</p>
+                      <p className="text-sm text-slate-500 line-clamp-1 mt-0.5">{ticket.issueDescription}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-full shadow-sm text-blue-600 flex-shrink-0 ml-2">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions Menu */}
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <Link href="/clientes" className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
+        <div className="grid border-t border-slate-100 mt-6 pt-5 grid-cols-3 gap-3">
+          <Link href="/clientes" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-1">
               <Users className="w-5 h-5" />
             </div>
-            <span className="text-sm font-semibold text-slate-700">{t.myClients}</span>
+            <span className="text-xs font-semibold text-slate-700 text-center">{t.myClients}</span>
           </Link>
           
-          <Link href="/perfil" className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center">
+          <Link href="/perfil" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mb-1">
               <Settings className="w-5 h-5" />
             </div>
-            <span className="text-sm font-semibold text-slate-700">{t.myProfile}</span>
+            <span className="text-xs font-semibold text-slate-700 text-center">{t.myProfile}</span>
+          </Link>
+
+          <Link href="/admin" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-1">
+              <User className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-slate-700 text-center">{t.adminPanel}</span>
           </Link>
         </div>
 
         {/* Today's visits */}
-        <div>
+        <div className="pt-2">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-slate-700">{t.todayVisits}</h3>
             <Link href="/historial" className="text-sm text-blue-600 hover:underline">{t.viewHistory}</Link>

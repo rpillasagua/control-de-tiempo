@@ -13,6 +13,7 @@ import { db } from './firebase';
 import { Visit, Activity, TimeStamp, VisitStatus, VisitPause } from './types';
 import { logger } from './logger';
 import { deletePendingPhoto } from './idb';
+import { updateTicketStatus } from './ticketService';
 
 const COLLECTION = 'visits';
 
@@ -32,7 +33,9 @@ export async function createVisit(
   clientName: string,
   arrival: TimeStamp,
   clientId?: string,
-  clientAddress?: string
+  clientAddress?: string,
+  companyId?: string,
+  ticketId?: string
 ): Promise<string> {
   const now = new Date().toISOString();
   const visitData = {
@@ -41,6 +44,8 @@ export async function createVisit(
     clientId: clientId ?? null,
     clientName,
     clientAddress: clientAddress ?? null,
+    companyId: companyId ?? null,
+    ticketId: ticketId ?? null,
     arrival,
     departure: null,
     activities: [],
@@ -56,6 +61,17 @@ export async function createVisit(
   if (typeof window !== 'undefined') {
     localStorage.setItem(`active_visit_${technicianId}`, docRef.id);
   }
+
+  // Si proviene de un ticket asimilado, cerramos el ticket y cruzamos los referidos
+  if (ticketId) {
+    try {
+      await updateTicketStatus(ticketId, { status: 'CERRADO', visitId: docRef.id });
+      logger.log(`Ticket ${ticketId} marcado como CERRADO.`);
+    } catch (err) {
+      logger.error('Error cerrando ticket asignado', err);
+    }
+  }
+
   logger.log(`✅ Visita creada: ${docRef.id}`);
   return docRef.id;
 }
