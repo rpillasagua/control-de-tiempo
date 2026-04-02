@@ -181,6 +181,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState({ total: 0, completed: 0, hours: 0 });
   const [dataLoading, setDataLoading] = useState(false);
   const [roleChecked, setRoleChecked] = useState(false);
+  const [userRole, setUserRole] = useState<'admin'|'technician'|'none'|null>(null);
 
   const loadVisits = useCallback(async () => {
     if (!user) return;
@@ -231,20 +232,25 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  // After login, check if user belongs to a company; redirect new users to /bienvenida
+  // After login, check company membership; redirect new users to /bienvenida
   useEffect(() => {
     if (!user || roleChecked) return;
     getUserCompany(user.email).then(({ role }) => {
+      setUserRole(role);
       setRoleChecked(true);
       if (role === 'none') {
         router.replace('/bienvenida');
       }
-    }).catch(() => setRoleChecked(true));
+    }).catch(() => {
+      setUserRole('technician'); // fallback: treat as technician, let Firestore rules decide
+      setRoleChecked(true);
+    });
   }, [user, roleChecked, router]);
 
   useEffect(() => {
-    if (user && roleChecked) loadVisits();
-  }, [user, roleChecked, loadVisits]);
+    // Only load if role is confirmed and user belongs to a company
+    if (user && roleChecked && userRole !== 'none' && userRole !== null) loadVisits();
+  }, [user, roleChecked, userRole, loadVisits]);
 
   if (authLoading) {
     return (
