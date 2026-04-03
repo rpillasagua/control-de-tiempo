@@ -52,12 +52,17 @@ export default function ProfilePage() {
       } else {
         setFormData(prev => ({ ...prev, name: user.name || '' }));
       }
-    } catch {
-      toast.error(t.error);
+    } catch (error: any) {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        toast.info('Sin conexión. Estás viendo tu perfil guardado en el dispositivo.');
+      } else {
+        console.error('Error cargando perfil:', error);
+        toast.error(t.error || 'Error cargando el perfil');
+      }
     } finally {
       setProfileLoading(false);
     }
-  }, [user]);
+  }, [user, t.error]);
 
   useEffect(() => { 
     if (!authLoading) {
