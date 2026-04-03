@@ -207,9 +207,13 @@ export async function getVisit(visitId: string): Promise<Visit | null> {
       return { id: cacheSnap.id, ...cacheSnap.data() } as Visit;
     }
   } catch { /* cache miss */ }
-  const snap = await getDoc(docRef);
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Visit;
+  try {
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as Visit;
+  } catch (err: any) {
+    return null;
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -240,12 +244,16 @@ export async function getVisitsByTechnician(
   } catch { /* cache miss */ }
 
   // 2. Network fetch
-  const snap = await getDocs(q);
-  let visits: Visit[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
-  if (dateFrom) {
-    visits = visits.filter(v => v.createdAt >= dateFrom);
+  try {
+    const snap = await getDocs(q);
+    let visits: Visit[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
+    if (dateFrom) {
+      visits = visits.filter(v => v.createdAt >= dateFrom);
+    }
+    return visits;
+  } catch (err: any) {
+    return [];
   }
-  return visits;
 }
 
 // ──────────────────────────────────────────────
@@ -276,9 +284,13 @@ export async function getActiveVisit(technicianId: string): Promise<Visit | null
     }
   } catch { /* cache miss */ }
   // 2. Network
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return { id: snap.docs[0].id, ...snap.docs[0].data() } as Visit;
+  try {
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return { id: snap.docs[0].id, ...snap.docs[0].data() } as Visit;
+  } catch (err: any) {
+    return null;
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -354,10 +366,14 @@ export async function getPaginatedVisits(
   ];
 
   const q = query(col, ...constraints);
-  const snap = await getDocs(q);
-  const visits = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
-  const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
-  return { visits, lastDoc: newLastDoc };
+  try {
+    const snap = await getDocs(q);
+    const visits = snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
+    const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+    return { visits, lastDoc: newLastDoc };
+  } catch (err: any) {
+    return { visits: [], lastDoc: null };
+  }
 }
 
 // ──────────────────────────────────────────────

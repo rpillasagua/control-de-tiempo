@@ -100,7 +100,7 @@ export async function getClients(technicianId: string): Promise<Client[]> {
     logger.log('⚠️ Firestore offline, usando caché localStorage de clientes');
     const cached = getCachedClients(technicianId);
     if (cached) return cached;
-    throw err;
+    return []; // Return empty instead of throwing to prevent crashing UI
   }
 }
 
