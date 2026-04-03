@@ -441,7 +441,7 @@ export default function DashboardPage() {
         )}
 
         {/* Quick Actions Menu */}
-        <div className={`grid border-t border-slate-100 mt-6 pt-5 gap-3 ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <div className="grid border-t border-slate-100 mt-6 pt-5 grid-cols-2 sm:grid-cols-3 gap-3">
           <Link href="/clientes" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-1">
               <Users className="w-5 h-5" />
@@ -455,15 +455,6 @@ export default function DashboardPage() {
             </div>
             <span className="text-xs font-semibold text-slate-700 text-center">{t.myProfile}</span>
           </Link>
-
-          {userCompanyId && (
-            <Link href={`/soporte/${userCompanyId}`} target="_blank" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-full flex items-center justify-center mb-1">
-                <TicketIcon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 text-center">Crear Orden</span>
-            </Link>
-          )}
 
           {userRole === 'admin' && (
             <Link href="/admin" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">

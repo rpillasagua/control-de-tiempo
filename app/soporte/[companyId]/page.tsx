@@ -10,6 +10,9 @@ import { compressImage } from '@/lib/imageCompression';
 import { Company } from '@/lib/types';
 import { useTranslation } from '@/lib/i18n';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
 export default function PublicSupportPage() {
   const params = useParams();
@@ -29,6 +32,7 @@ export default function PublicSupportPage() {
   const [rawFile, setRawFile] = useState<File | null>(null);
   const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -228,16 +232,37 @@ export default function PublicSupportPage() {
                 />
                 <button 
                   type="button" 
-                  onClick={handleGetLocation} 
-                  disabled={fetchingLocation}
+                  onClick={() => setShowMap(true)} 
                   className={`flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 text-xs font-semibold transition-colors ${location ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}
                 >
+                  <MapPin className="w-4 h-4" />
+                  {location ? 'Ver en Mapa' : 'Elegir en Mapa'}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleGetLocation} 
+                  disabled={fetchingLocation}
+                  className="flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-semibold transition-colors hover:bg-slate-50"
+                  title="Usar GPS actual"
+                >
                   {fetchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                  {location ? 'Actual GPS' : 'Compartir GPS'}
                 </button>
               </div>
             </div>
           </div>
+          
+          {showMap && (
+            <MapPicker
+              defaultLocation={location || undefined}
+              onClose={() => setShowMap(false)}
+              onLocationSelect={(loc) => {
+                setLocation(loc);
+                setLocationUrl(`https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`);
+                setShowMap(false);
+                toast.success('Coordenadas capturadas del mapa');
+              }}
+            />
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">
