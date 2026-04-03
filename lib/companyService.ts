@@ -1,20 +1,46 @@
-import { collection, doc, getDoc, getDocs, setDoc, query, where, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, query, where, updateDoc, getDocsFromCache } from 'firebase/firestore';
 import { db } from './firebase';
 import { Company } from './types';
 
-// Obtiene las compañías administradas por un usuario
+// Obtiene las compañías administradas por un usuario (Offline tolerante)
 export async function getCompaniesByAdmin(adminEmail: string): Promise<Company[]> {
   const q = query(collection(db, 'companies'), where('adminEmail', '==', adminEmail));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => doc.data() as Company);
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {});
+      return cacheSnap.docs.map(doc => doc.data() as Company);
+    }
+  } catch { /* cache miss */ }
+  
+  try {
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => doc.data() as Company);
+  } catch (err: any) {
+    if (err?.code !== 'failed-precondition') console.error(err);
+    return []; // Return empty gracefully if offline and no cache
+  }
 }
 
-// Obtiene la compañía a la que pertenece un técnico
+// Obtiene la compañía a la que pertenece un técnico (Offline tolerante)
 export async function getCompanyByTechnician(technicianEmail: string): Promise<Company | null> {
   const q = query(collection(db, 'companies'), where('technicianEmails', 'array-contains', technicianEmail));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return snap.docs[0].data() as Company;
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {});
+      return cacheSnap.docs[0].data() as Company;
+    }
+  } catch { /* cache miss */ }
+
+  try {
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return snap.docs[0].data() as Company;
+  } catch (err: any) {
+    if (err?.code !== 'failed-precondition') console.error(err);
+    return null;
+  }
 }
 
 // Determina el rol del usuario: ¿es admin, técnico, o nuevo?

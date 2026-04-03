@@ -1,5 +1,5 @@
 import {
-  doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs
+  doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, getDocsFromCache
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Invite } from './types';
@@ -91,17 +91,32 @@ export async function acceptInvite(code: string, techEmail: string): Promise<{
   };
 }
 
-// ── Get active invites for a company ─────────────────────────────────────────
+// ── Get active invites for a company (Offline tolerante) ───────────────────
 export async function getCompanyInvites(companyId: string): Promise<Invite[]> {
   const q = query(
     collection(db, 'invites'),
     where('companyId', '==', companyId)
   );
-  const snap = await getDocs(q);
-  const all = snap.docs.map(d => d.data() as Invite);
-  const now = new Date();
-  // Return only unexpired + unused, sorted newest first
-  return all
-    .filter(i => !i.usedAt && new Date(i.expiresAt) > now)
-    .sort((a, b) => new Date(b.expiresAt).getTime() - new Date(a.expiresAt).getTime());
+  
+  const filterActive = (invites: Invite[]) => {
+    const now = new Date();
+    return invites
+      .filter(i => !i.usedAt && new Date(i.expiresAt) > now)
+      .sort((a, b) => new Date(b.expiresAt).getTime() - new Date(a.expiresAt).getTime());
+  };
+
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {});
+      return filterActive(cacheSnap.docs.map(doc => doc.data() as Invite));
+    }
+  } catch { /* cache miss */ }
+
+  try {
+    const snap = await getDocs(q);
+    return filterActive(snap.docs.map(d => d.data() as Invite));
+  } catch (err) {
+    return [];
+  }
 }

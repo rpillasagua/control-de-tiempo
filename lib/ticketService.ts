@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, deleteDoc, getDocsFromCache } from 'firebase/firestore';
 import { db } from './firebase';
 import { Ticket, TicketStatus } from './types';
 
@@ -17,28 +17,55 @@ export async function createTicket(ticket: Omit<Ticket, 'id' | 'createdAt' | 'up
   return newRef.id;
 }
 
-// Admins obteniendo todos los tickets de su empresa
+// Admins obteniendo todos los tickets de su empresa (Offline tolerante)
 export async function getTicketsByCompany(companyId: string): Promise<Ticket[]> {
   const q = query(
     collection(db, 'tickets'),
     where('companyId', '==', companyId)
   );
-  const snap = await getDocs(q);
-  const tickets = snap.docs.map(doc => doc.data() as Ticket);
-  // Ordenar por createdAt descendente
-  return tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  
+  const sortTickets = (tickets: Ticket[]) => 
+    tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {});
+      return sortTickets(cacheSnap.docs.map(doc => doc.data() as Ticket));
+    }
+  } catch { /* cache miss */ }
+
+  try {
+    const snap = await getDocs(q);
+    return sortTickets(snap.docs.map(doc => doc.data() as Ticket));
+  } catch (err) {
+    return [];
+  }
 }
 
-// Obteniendo tickets asignados a un técnico específico
+// Obteniendo tickets asignados a un técnico específico (Offline tolerante)
 export async function getTicketsByTechnician(technicianEmail: string): Promise<Ticket[]> {
   const q = query(
     collection(db, 'tickets'),
     where('assignedTo', '==', technicianEmail)
   );
-  const snap = await getDocs(q);
-  const allAssigned = snap.docs.map(doc => doc.data() as Ticket);
-  // Filtrar en memoria para evitar requerir un índice compuesto en Firestore
-  return allAssigned.filter(t => t.status === 'ASIGNADO');
+
+  const filterAssigned = (tickets: Ticket[]) => tickets.filter(t => t.status === 'ASIGNADO');
+
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {});
+      return filterAssigned(cacheSnap.docs.map(doc => doc.data() as Ticket));
+    }
+  } catch { /* cache miss */ }
+
+  try {
+    const snap = await getDocs(q);
+    return filterAssigned(snap.docs.map(doc => doc.data() as Ticket));
+  } catch (err) {
+    return [];
+  }
 }
 
 // Actualizar el estado del ticket (ej. pasar a asignado, y colocar assignedTo)
