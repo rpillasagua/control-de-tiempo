@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, deleteDoc, getDocsFromCache } from 'firebase/firestore';
 import { db } from './firebase';
-import { Ticket, TicketStatus } from './types';
+import { Ticket, TicketStatus, TicketPriority, GeoPoint } from './types';
 
 // Crear ticket (Por el cliente público)
 export async function createTicket(ticket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<string> {
@@ -16,6 +16,37 @@ export async function createTicket(ticket: Omit<Ticket, 'id' | 'createdAt' | 'up
   await setDoc(newRef, ticketData);
   return newRef.id;
 }
+
+// Crear ticket manualmente por el administrador (con prioridad, GPS, notas)
+export async function createTicketByAdmin(
+  companyId: string,
+  data: {
+    clientName: string;
+    clientPhone: string;
+    clientAddress: string;
+    issueDescription: string;
+    priority: TicketPriority;
+    notes?: string;
+    photoUrl?: string;
+    location?: GeoPoint;
+    assignedTo?: string;
+  }
+): Promise<string> {
+  const newRef = doc(collection(db, 'tickets'));
+  const now = new Date().toISOString();
+  const ticketData: Ticket = {
+    ...data,
+    id: newRef.id,
+    companyId,
+    status: data.assignedTo ? 'ASIGNADO' : 'PENDIENTE',
+    createdByAdmin: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await setDoc(newRef, ticketData);
+  return newRef.id;
+}
+
 
 // Admins obteniendo todos los tickets de su empresa (Offline tolerante)
 export async function getTicketsByCompany(companyId: string): Promise<Ticket[]> {

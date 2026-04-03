@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { SyncHubIndicator } from '@/components/SyncHubIndicator';
 import { useTranslation } from '@/lib/i18n';
+import { useTechnicianTicketMonitor } from '@/hooks/useTechnicianTicketMonitor';
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -252,6 +253,9 @@ export default function DashboardPage() {
     if (user && roleChecked && userRole !== 'none' && userRole !== null) loadVisits();
   }, [user, roleChecked, userRole, loadVisits]);
 
+  // Real-time notification hook for technicians
+  useTechnicianTicketMonitor(user?.email ?? null);
+
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -351,26 +355,77 @@ export default function DashboardPage() {
 
         {/* ASIGNACIONES (Tickets) */}
         {assignedTickets.length > 0 && !activeVisit && (
-          <div className="mt-6 mb-2">
+          <div className="mt-4 mb-2">
             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 mb-3">
-              <MapPin className="w-5 h-5 text-indigo-500" />
-              {t.assignedTickets} ({assignedTickets.length})
+              📋 {t.assignedTickets || 'Tareas Asignadas'} ({assignedTickets.length})
             </h2>
             <div className="space-y-3">
-              {assignedTickets.map(ticket => (
-                <Link key={ticket.id} href={`/visita/nueva?ticketId=${ticket.id}&clientName=${encodeURIComponent(ticket.clientName)}&clientAddress=${encodeURIComponent(ticket.clientAddress)}&companyId=${ticket.companyId}`}>
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex justify-between items-center hover:bg-indigo-100 transition shadow-sm cursor-pointer">
-                    <div>
-                      <span className="text-[10px] font-bold text-indigo-600 mb-1 tracking-wider uppercase inline-block bg-indigo-100 px-2 py-0.5 rounded-md">Ticket Nuevo</span>
-                      <p className="font-bold text-slate-800 text-lg leading-tight">{ticket.clientName}</p>
-                      <p className="text-sm text-slate-500 line-clamp-1 mt-0.5">{ticket.issueDescription}</p>
-                    </div>
-                    <div className="bg-white p-2 rounded-full shadow-sm text-blue-600 flex-shrink-0 ml-2">
-                      <Plus className="w-5 h-5" />
+              {assignedTickets.map(ticket => {
+                const priorityColors: Record<string, string> = {
+                  ALTA: 'bg-red-100 text-red-700 border-red-200',
+                  NORMAL: 'bg-blue-100 text-blue-700 border-blue-200',
+                  BAJA: 'bg-slate-100 text-slate-600 border-slate-200',
+                };
+                const priorityLabels: Record<string, string> = {
+                  ALTA: '🔴 Urgente', NORMAL: '🔵 Normal', BAJA: '⚫ Baja',
+                };
+                return (
+                  <div key={ticket.id} className={`bg-white rounded-2xl border-2 shadow-sm overflow-hidden ${
+                    ticket.priority === 'ALTA' ? 'border-red-200' : ticket.priority === 'BAJA' ? 'border-slate-200' : 'border-indigo-100'
+                  }`}>
+                    {/* Priority strip */}
+                    {ticket.priority && (
+                      <div className={`px-4 py-1.5 text-xs font-bold flex items-center justify-between ${priorityColors[ticket.priority]}`}>
+                        <span>{priorityLabels[ticket.priority]}</span>
+                        <span className="opacity-60">{new Date(ticket.createdAt).toLocaleDateString('es-EC')}</span>
+                      </div>
+                    )}
+
+                    {/* Photo if available */}
+                    {ticket.photoUrl && !ticket.photoUrl.startsWith('pending_') && (
+                      <img src={ticket.photoUrl} alt="evidencia" className="w-full h-32 object-cover" />
+                    )}
+
+                    <div className="p-4">
+                      <p className="font-bold text-slate-800 text-base leading-tight">{ticket.clientName}</p>
+                      {ticket.clientAddress && (
+                        <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-indigo-400" />
+                          {ticket.clientAddress}
+                        </p>
+                      )}
+                      <p className="text-sm text-slate-600 mt-2 line-clamp-2">{ticket.issueDescription}</p>
+
+                      {/* Notes from admin */}
+                      {ticket.notes && (
+                        <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 mt-2">
+                          📝 {ticket.notes}
+                        </p>
+                      )}
+
+                      {/* Action row */}
+                      <div className="flex gap-2 mt-3">
+                        {ticket.clientAddress && (
+                          <a
+                            href={`https://maps.google.com/?q=${encodeURIComponent(ticket.clientAddress)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-medium hover:bg-slate-200 transition"
+                          >
+                            <MapPin className="w-3.5 h-3.5" /> Navegar
+                          </a>
+                        )}
+                        <Link
+                          href={`/visita/nueva?ticketId=${ticket.id}&clientName=${encodeURIComponent(ticket.clientName)}&clientAddress=${encodeURIComponent(ticket.clientAddress ?? '')}&companyId=${ticket.companyId}`}
+                          className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-bold py-2 rounded-xl hover:bg-indigo-700 transition"
+                        >
+                          <Plus className="w-4 h-4" /> Iniciar Visita
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

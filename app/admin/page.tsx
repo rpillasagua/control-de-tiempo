@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTicketMonitor } from '@/hooks/useTicketMonitor';
 import {
@@ -9,13 +9,16 @@ import {
 } from '@/lib/companyService';
 import { useTranslation } from '@/lib/i18n';
 import { compressImage } from '@/lib/imageCompression';
-import { getTicketsByCompany, updateTicketStatus } from '@/lib/ticketService';
+import { getTicketsByCompany, updateTicketStatus, createTicketByAdmin } from '@/lib/ticketService';
 import { createInvite, getCompanyInvites } from '@/lib/inviteService';
-import { Company, Ticket, Invite } from '@/lib/types';
+import { uploadPhotoToStorage } from '@/lib/storageService';
+import { dataUrlToFile } from '@/lib/utils';
+import { Company, Ticket, Invite, TicketPriority } from '@/lib/types';
 import {
   Loader2, Plus, Users, Building2, MapPin, Phone,
   Trash2, Link as LinkIcon, Bell, ChevronDown,
-  ArrowRightLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock, Camera, Save, Volume2, VolumeX
+  ArrowRightLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock, Camera, Save, Volume2, VolumeX,
+  Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -69,6 +72,7 @@ export default function AdminDashboardPage() {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showNewTicketModal, setShowNewTicketModal] = useState(false);
 
   // Forms
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -212,11 +216,58 @@ export default function AdminDashboardPage() {
     try {
       await updateTicketStatus(showAssignModal, { status: 'ASIGNADO', assignedTo: selectedTech });
       toast.success('Ticket asignado a ' + selectedTech);
+
+      // Fire native notification to admin browser warning the tech was notified
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('✅ Tarea Asignada', {
+          body: `La tarea fue asignada al técnico: ${selectedTech}`,
+          icon: '/icon-192.png',
+        });
+      } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+
       setShowAssignModal(null);
       setSelectedTech('');
       loadTickets();
     } catch {
       toast.error('Error asignando ticket');
+    }
+  };
+
+  // ── Create manual ticket ─────────────────
+  const handleCreateManualTicket = async (data: {
+    clientName: string;
+    clientPhone: string;
+    clientAddress: string;
+    issueDescription: string;
+    priority: TicketPriority;
+    notes?: string;
+    photoDataUrl?: string;
+    assignedTo?: string;
+  }) => {
+    if (!activeCompany) return;
+    try {
+      let photoUrl: string | undefined;
+      if (data.photoDataUrl) {
+        const file = dataUrlToFile(data.photoDataUrl, `ticket_admin_${Date.now()}.jpg`);
+        photoUrl = await uploadPhotoToStorage(file, `tickets/${activeCompany.id}/${Date.now()}.jpg`);
+      }
+      await createTicketByAdmin(activeCompany.id, {
+        clientName: data.clientName,
+        clientPhone: data.clientPhone,
+        clientAddress: data.clientAddress,
+        issueDescription: data.issueDescription,
+        priority: data.priority,
+        notes: data.notes,
+        photoUrl,
+        assignedTo: data.assignedTo || undefined,
+      });
+      toast.success('✅ Orden creada correctamente');
+      setShowNewTicketModal(false);
+      loadTickets();
+    } catch {
+      toast.error('Error creando la orden');
     }
   };
 
@@ -551,6 +602,12 @@ export default function AdminDashboardPage() {
                 {newCount} nuevo{newCount > 1 ? 's' : ''}
               </span>
             )}
+            <button
+              onClick={() => setShowNewTicketModal(true)}
+              className="ml-auto flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Nueva Orden
+            </button>
           </h3>
 
           {ticketsLoading ? (
@@ -562,7 +619,16 @@ export default function AdminDashboardPage() {
               <p className="text-slate-400 text-sm mt-1">{t.adminSharePortalDesc}</p>
             </div>
           ) : (
-            tickets.map(ticket => (
+            tickets.map(ticket => {
+              const priorityColors: Record<string, string> = {
+                ALTA: 'bg-red-100 text-red-700',
+                NORMAL: 'bg-blue-100 text-blue-700',
+                BAJA: 'bg-slate-100 text-slate-600',
+              };
+              const priorityLabels: Record<string, string> = {
+                ALTA: '🔴 Urgente', NORMAL: '🔵 Normal', BAJA: '⚫ Baja',
+              };
+              return (
               <div key={ticket.id} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3 relative overflow-hidden">
                 {/* Status bar */}
                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -576,28 +642,43 @@ export default function AdminDashboardPage() {
                     <h4 className="font-bold text-slate-800 text-lg">{ticket.clientName}</h4>
                     <p className="text-xs text-slate-400">{new Date(ticket.createdAt).toLocaleString('es-EC')}</p>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${
-                    ticket.status === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
-                    ticket.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-700' :
-                    ticket.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {ticket.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${
+                      ticket.status === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
+                      ticket.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-700' :
+                      ticket.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {ticket.status}
+                    </span>
+                    {ticket.priority && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${priorityColors[ticket.priority] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {priorityLabels[ticket.priority]}
+                      </span>
+                    )}
+                    {ticket.createdByAdmin && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">Admin</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="pl-2 space-y-1">
                   {ticket.clientPhone && <p className="text-sm text-slate-600 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientPhone}</p>}
                   {ticket.clientAddress && <p className="text-sm text-slate-600 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientAddress}</p>}
+                  {ticket.notes && (
+                    <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1">📝 {ticket.notes}</p>
+                  )}
                 </div>
 
                 <div className="pl-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <p className="text-sm text-slate-700 whitespace-pre-wrap">{ticket.issueDescription}</p>
-                  {ticket.photoUrl && (
-                    <a href={ticket.photoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 mt-2 inline-block font-semibold hover:underline">
-                      📎 Ver evidencia fotográfica
-                    </a>
-                  )}
                 </div>
+
+                {/* Client photo evidence */}
+                {ticket.photoUrl && (
+                  <div className="pl-2">
+                    <img src={ticket.photoUrl} alt="Evidencia" className="w-full h-36 object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => window.open(ticket.photoUrl, '_blank')} />
+                  </div>
+                )}
 
                 {ticket.assignedTo && (
                   <p className="text-xs font-semibold text-slate-500 pl-2">
@@ -605,18 +686,31 @@ export default function AdminDashboardPage() {
                   </p>
                 )}
 
-                {(ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO') && activeCompany && (
-                  <div className="pl-2 pt-2 border-t border-slate-100 flex justify-end">
+                <div className="pl-2 pt-2 border-t border-slate-100 flex flex-wrap gap-2 justify-end">
+                  {/* Share tracking link with client */}
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/ticket/${ticket.id}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success('Link de seguimiento copiado — envíaselo al cliente por WhatsApp');
+                    }}
+                    className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition"
+                  >
+                    <Share2 className="w-3.5 h-3.5" /> Compartir tracking
+                  </button>
+
+                  {(ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO') && activeCompany && (
                     <button
                       onClick={() => setShowAssignModal(ticket.id)}
-                      className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-100 transition"
+                      className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-100 transition"
                     >
-                      Asignar a Técnico
+                      👤 Asignar Técnico
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>
@@ -689,6 +783,15 @@ export default function AdminDashboardPage() {
           </form>
         </div>
       )}
+
+      {/* New Manual Ticket Modal */}
+      {showNewTicketModal && activeCompany && (
+        <NewTicketModal
+          technicianEmails={activeCompany.technicianEmails}
+          onClose={() => setShowNewTicketModal(false)}
+          onSubmit={handleCreateManualTicket}
+        />
+      )}
     </div>
   );
 }
@@ -717,6 +820,181 @@ function CompanyFormModal({
         <div className="flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600">Cancelar</button>
           <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Crear</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// NewTicketModal — Manual order creation by admin
+// ─────────────────────────────────────────
+function NewTicketModal({
+  technicianEmails,
+  onClose,
+  onSubmit,
+}: {
+  technicianEmails: string[];
+  onClose: () => void;
+  onSubmit: (data: {
+    clientName: string;
+    clientPhone: string;
+    clientAddress: string;
+    issueDescription: string;
+    priority: TicketPriority;
+    notes?: string;
+    photoDataUrl?: string;
+    assignedTo?: string;
+  }) => void;
+}) {
+  const [clientName, setClientName] = React.useState('');
+  const [clientPhone, setClientPhone] = React.useState('');
+  const [clientAddress, setClientAddress] = React.useState('');
+  const [issueDescription, setIssueDescription] = React.useState('');
+  const [priority, setPriority] = React.useState<TicketPriority>('NORMAL');
+  const [notes, setNotes] = React.useState('');
+  const [assignedTo, setAssignedTo] = React.useState('');
+  const [photoDataUrl, setPhotoDataUrl] = React.useState<string | undefined>();
+  const [saving, setSaving] = React.useState(false);
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { compressImage } = await import('@/lib/imageCompression');
+    const compressed = await compressImage(file);
+    const reader = new FileReader();
+    reader.onload = () => setPhotoDataUrl(reader.result as string);
+    reader.readAsDataURL(compressed);
+    e.target.value = '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientName.trim() || !issueDescription.trim()) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        clientName: clientName.trim(),
+        clientPhone: clientPhone.trim(),
+        clientAddress: clientAddress.trim(),
+        issueDescription: issueDescription.trim(),
+        priority,
+        notes: notes.trim() || undefined,
+        photoDataUrl,
+        assignedTo: assignedTo || undefined,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 w-full max-w-lg text-left space-y-4 my-4 shadow-2xl">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold text-slate-800">📋 Nueva Orden de Trabajo</h2>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+        </div>
+
+        {/* Priority */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Prioridad</label>
+          <div className="flex gap-2">
+            {(['ALTA', 'NORMAL', 'BAJA'] as TicketPriority[]).map(p => (
+              <button
+                key={p} type="button"
+                onClick={() => setPriority(p)}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition ${
+                  priority === p
+                    ? p === 'ALTA' ? 'border-red-500 bg-red-50 text-red-700'
+                      : p === 'NORMAL' ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-slate-400 bg-slate-50 text-slate-700'
+                    : 'border-slate-200 bg-white text-slate-400'
+                }`}
+              >
+                {p === 'ALTA' ? '🔴 Urgente' : p === 'NORMAL' ? '🔵 Normal' : '⚫ Baja'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Client Name */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente *</label>
+            <input required value={clientName} onChange={e => setClientName(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Nombre del cliente" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+            <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="099..." />
+          </div>
+        </div>
+
+        {/* Address */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
+          <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Calle, número, sector..." />
+        </div>
+
+        {/* Issue */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción del Problema *</label>
+          <textarea required rows={3} value={issueDescription} onChange={e => setIssueDescription(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+            placeholder="Describe el fallo o trabajo a realizar..." />
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas Internas (solo admin)</label>
+          <input value={notes} onChange={e => setNotes(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Ej: Llevar switch 24 puertos, pedir factura..." />
+        </div>
+
+        {/* Photo */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Foto de referencia</label>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          {photoDataUrl ? (
+            <div className="relative">
+              <img src={photoDataUrl} alt="Preview" className="w-full h-32 object-cover rounded-xl border border-slate-200" />
+              <button type="button" onClick={() => setPhotoDataUrl(undefined)} className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Eliminar</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="w-full border-2 border-dashed border-slate-200 rounded-xl py-4 text-slate-400 text-sm hover:border-blue-300 hover:text-blue-500 transition flex items-center justify-center gap-2">
+              <Camera className="w-4 h-4" /> Adjuntar foto
+            </button>
+          )}
+        </div>
+
+        {/* Assign directly */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Asignar directamente a técnico (opcional)</label>
+          <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+            <option value="">— Sin asignar (PENDIENTE) —</option>
+            {technicianEmails.map(email => (
+              <option key={email} value={email}>{email}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium">Cancelar</button>
+          <button type="submit" disabled={saving}
+            className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {saving ? 'Creando...' : 'Crear Orden'}
+          </button>
         </div>
       </form>
     </div>

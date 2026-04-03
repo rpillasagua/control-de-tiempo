@@ -14,6 +14,7 @@ export interface Company {
   updatedAt: string;
 }
 
+export type TicketPriority = 'ALTA' | 'NORMAL' | 'BAJA';
 export type TicketStatus = 'PENDIENTE' | 'REVISADO' | 'ASIGNADO' | 'CERRADO';
 
 export interface Ticket {
@@ -23,13 +24,18 @@ export interface Ticket {
   clientPhone: string;
   clientAddress: string;
   issueDescription: string;
-  photoUrl?: string; // Evidencia subida por el cliente
+  photoUrl?: string;         // Evidencia subida por el cliente o admin
+  priority?: TicketPriority; // Nueva: prioridad del ticket
+  location?: GeoPoint;       // Nueva: GPS del lugar del problema
+  notes?: string;            // Nueva: notas internas del admin
+  createdByAdmin?: boolean;  // Nueva: si fue creado manualmente por admin
   status: TicketStatus;
-  assignedTo?: string; // email del técnico asignado
-  visitId?: string;    // ID de la visita técnica generada a partir del ticket
+  assignedTo?: string;       // email del técnico asignado
+  visitId?: string;          // ID de la visita técnica generada
   createdAt: string;
   updatedAt: string;
 }
+
 
 // ============================================
 // INVITACIONES (códigos para unirse a empresa)
