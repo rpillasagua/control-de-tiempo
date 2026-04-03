@@ -4,7 +4,7 @@
  */
 
 import {
-  collection, doc, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
+  collection, doc, setDoc, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
   query, where, orderBy, serverTimestamp, Timestamp,
   limit, startAfter, DocumentSnapshot,
   getDocsFromCache, getDocFromCache
@@ -23,6 +23,18 @@ const COLLECTION = 'visits';
 // ──────────────────────────────────────────────
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+// ──────────────────────────────────────────────
+// Helper: Fire-and-forget write to provide instant offline-first UX
+// Firebase promises hang on Lie-Fi. We trigger the write and let it sync in bg.
+// ──────────────────────────────────────────────
+async function fireAndForgetWrite<T>(writePromise: Promise<T>): Promise<void> {
+  // We trigger the promise but do not await server sync.
+  // Catch errors silently so it doesn't crash if network drops during sync.
+  writePromise.catch(() => {});
+  // Wait just 50ms to let the Firebase local cache synchronous listeners trigger
+  await new Promise(resolve => setTimeout(resolve, 50));
 }
 
 // ──────────────────────────────────────────────
@@ -58,10 +70,15 @@ export async function createVisit(
     _serverCreatedAt: serverTimestamp()
   };
 
-  const docRef = await addDoc(collection(db, COLLECTION), visitData);
+  const colRef = collection(db, COLLECTION);
+  const docRef = doc(colRef);
+  
   if (typeof window !== 'undefined') {
     localStorage.setItem(`active_visit_${technicianId}`, docRef.id);
   }
+
+  // Fire and forget so we don't block on network
+  await fireAndForgetWrite(setDoc(docRef, visitData));
 
   // Si proviene de un ticket asimilado, cerramos el ticket y cruzamos los referidos
   if (ticketId) {
@@ -95,10 +112,10 @@ export async function addActivity(
     id: generateId()
   };
 
-  await updateDoc(ref, {
+  await fireAndForgetWrite(updateDoc(ref, {
     activities: [...activities, newActivity],
     updatedAt: new Date().toISOString()
-  });
+  }));
 
   logger.log(`✅ Actividad agregada a visita ${visitId}`);
 }
@@ -128,14 +145,14 @@ export async function closeVisit(
 
   const totalDurationMin = Math.max(0, Math.round((departureTime - arrivalTime - pausedMs) / 60000));
 
-  await updateDoc(ref, {
+  await fireAndForgetWrite(updateDoc(ref, {
     departure,
     summary: summary ?? null,
     totalDurationMin,
     status: 'FINALIZADA' as VisitStatus,
     updatedAt: new Date().toISOString(),
     _serverUpdatedAt: serverTimestamp()
-  });
+  }));
 
   if (typeof window !== 'undefined') {
     localStorage.removeItem(`active_visit_${visit.technicianId}`);
@@ -155,11 +172,11 @@ export async function pauseVisit(visitId: string, reason: string): Promise<void>
   const pauses: VisitPause[] = snap.data().pauses ?? [];
   const newPause: VisitPause = { startTime: new Date().toISOString(), reason };
 
-  await updateDoc(ref, {
+  await fireAndForgetWrite(updateDoc(ref, {
     pauses: [...pauses, newPause],
     status: 'PAUSADA' as VisitStatus,
     updatedAt: new Date().toISOString(),
-  });
+  }));
   logger.log(`⏸ Visita ${visitId} pausada. Motivo: ${reason}`);
 }
 
@@ -176,11 +193,11 @@ export async function resumeVisit(visitId: string): Promise<void> {
     i === pauses.length - 1 && !p.endTime ? { ...p, endTime: new Date().toISOString() } : p
   );
 
-  await updateDoc(ref, {
+  await fireAndForgetWrite(updateDoc(ref, {
     pauses: updated,
     status: 'EN_PROGRESO' as VisitStatus,
     updatedAt: new Date().toISOString(),
-  });
+  }));
   logger.log(`▶️ Visita ${visitId} reanudada`);
 }
 
@@ -189,7 +206,7 @@ export async function resumeVisit(visitId: string): Promise<void> {
 // ──────────────────────────────────────────────
 export async function saveClientSignature(visitId: string, signatureBase64: string): Promise<void> {
   const ref = doc(db, COLLECTION, visitId);
-  await updateDoc(ref, { clientSignature: signatureBase64, updatedAt: new Date().toISOString() });
+  await fireAndForgetWrite(updateDoc(ref, { clientSignature: signatureBase64, updatedAt: new Date().toISOString() }));
   logger.log(`✒️ Firma del cliente guardada en visita ${visitId}`);
 }
 
@@ -304,7 +321,7 @@ export async function getActiveVisit(technicianId: string): Promise<Visit | null
 // ──────────────────────────────────────────────
 export async function updateVisitSummary(visitId: string, summary: string): Promise<void> {
   const ref = doc(db, COLLECTION, visitId);
-  await updateDoc(ref, { summary, updatedAt: new Date().toISOString() });
+  await fireAndForgetWrite(updateDoc(ref, { summary, updatedAt: new Date().toISOString() }));
 }
 
 // ──────────────────────────────────────────────
@@ -324,7 +341,7 @@ export async function updateActivity(
     a.id === activityId ? { ...a, description: newDescription } : a
   );
 
-  await updateDoc(ref, { activities: updated, updatedAt: new Date().toISOString() });
+  await fireAndForgetWrite(updateDoc(ref, { activities: updated, updatedAt: new Date().toISOString() }));
   logger.log(`✅ Actividad ${activityId} actualizada`);
 }
 
@@ -343,7 +360,7 @@ export async function deleteActivity(
   const target = activities.find(a => a.id === activityId);
   const filtered = activities.filter(a => a.id !== activityId);
 
-  await updateDoc(ref, { activities: filtered, updatedAt: new Date().toISOString() });
+  await fireAndForgetWrite(updateDoc(ref, { activities: filtered, updatedAt: new Date().toISOString() }));
 
   // 🧹 Fix Storage Leak: clean up any pending offline photos from IndexedDB
   if (target?.photoUrls) {
