@@ -280,6 +280,27 @@ export async function getVisitsByTechnician(
 }
 
 // ──────────────────────────────────────────────
+// Get visits by client phone
+// ──────────────────────────────────────────────
+export async function getVisitsByClientPhone(companyId: string, phone: string): Promise<Visit[]> {
+  const col = collection(db, COLLECTION);
+  const constraints: any[] = [
+    where('companyId', '==', companyId),
+    where('clientPhone', '==', phone),
+    orderBy('createdAt', 'desc')
+  ];
+  const q = query(col, ...constraints);
+  
+  try {
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Visit));
+  } catch (err: any) {
+    console.error('Error fetching getVisitsByClientPhone', err);
+    return [];
+  }
+}
+
+// ──────────────────────────────────────────────
 // Get today's visits
 // ──────────────────────────────────────────────
 export async function getTodayVisits(technicianId: string): Promise<Visit[]> {

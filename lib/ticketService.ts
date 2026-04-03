@@ -74,6 +74,26 @@ export async function getTicketsByCompany(companyId: string): Promise<Ticket[]> 
   }
 }
 
+// Obteniendo tickets por número de teléfono en una empresa y ordenados cronológicamente
+export async function getTicketsByClientPhone(companyId: string, phone: string): Promise<Ticket[]> {
+  const col = collection(db, 'tickets');
+  const constraints = [
+    where('companyId', '==', companyId),
+    where('clientPhone', '==', phone),
+    orderBy('createdAt', 'desc')
+  ];
+  
+  const q = query(col, ...constraints);
+
+  try {
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => doc.data() as Ticket);
+  } catch (err) {
+    console.error('Error in getTicketsByClientPhone', err);
+    return [];
+  }
+}
+
 // Obteniendo tickets asignados a un técnico específico (Offline tolerante)
 export async function getTicketsByTechnician(technicianEmail: string): Promise<Ticket[]> {
   const q = query(

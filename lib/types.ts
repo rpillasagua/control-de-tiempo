@@ -107,6 +107,7 @@ export interface Visit {
   // Cliente
   clientId?: string;
   clientName: string;
+  clientPhone?: string;
   clientAddress?: string;
 
   // Evidencia

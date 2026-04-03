@@ -44,9 +44,6 @@ export async function validateInvite(code: string): Promise<Invite | null> {
   // Expired?
   if (new Date(invite.expiresAt) < new Date()) return null;
 
-  // Already used?
-  if (invite.usedAt) return null;
-
   return invite;
 }
 
@@ -59,7 +56,7 @@ export async function acceptInvite(code: string, techEmail: string): Promise<{
 }> {
   const invite = await validateInvite(code);
   if (!invite) {
-    return { success: false, message: 'Código inválido, expirado o ya utilizado.' };
+    return { success: false, message: 'Código inválido o ya ha expirado.' };
   }
 
   // Load the company to get current members

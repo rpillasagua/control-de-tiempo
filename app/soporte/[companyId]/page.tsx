@@ -26,6 +26,8 @@ export default function PublicSupportPage() {
   const [issueDescription, setIssueDescription] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [rawFile, setRawFile] = useState<File | null>(null);
+  const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -61,6 +63,27 @@ export default function PublicSupportPage() {
     e.target.value = '';
   };
 
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocalización no soportada');
+      return;
+    }
+    setFetchingLocation(true);
+    toast.info('Buscando señal GPS...', { id: 'gps' });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setFetchingLocation(false);
+        toast.success('Ubicación obtenida exitosamente', { id: 'gps' });
+      },
+      (err) => {
+        setFetchingLocation(false);
+        toast.error('Error al obtener ubicación. Revisa los permisos.', { id: 'gps' });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !issueDescription.trim()) {
@@ -84,7 +107,8 @@ export default function PublicSupportPage() {
         clientPhone: clientPhone.trim(),
         clientAddress: clientAddress.trim(),
         issueDescription: issueDescription.trim(),
-        photoUrl: photoUrl || undefined
+        photoUrl: photoUrl || undefined,
+        location: location || undefined
       });
 
       setSuccess(true);
@@ -126,7 +150,7 @@ export default function PublicSupportPage() {
           {t.supportSuccessMsg(company.name)}
         </p>
         <button 
-          onClick={() => { setSuccess(false); setIssueDescription(''); setPhotoPreview(null); setRawFile(null); }}
+          onClick={() => { setSuccess(false); setIssueDescription(''); setPhotoPreview(null); setRawFile(null); setLocation(null); }}
           className="mt-10 bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-50"
         >
           {t.supportSendAnother}
@@ -137,8 +161,14 @@ export default function PublicSupportPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
-      <div className="bg-blue-600 text-white pt-10 pb-20 px-4 rounded-b-[2.5rem] shadow-sm">
-        <div className="max-w-xl mx-auto text-center">
+      <div className="bg-blue-600 text-white pt-10 pb-20 px-4 rounded-b-[2.5rem] shadow-sm relative">
+        <button 
+          onClick={() => window.location.href = `/soporte/${companyId}/historial`}
+          className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2"
+        >
+          <UserIcon className="w-4 h-4" /> Mi Historial
+        </button>
+        <div className="max-w-xl mx-auto text-center mt-4">
           {company.logoUrl ? (
             <img src={company.logoUrl} alt={company.name} className="w-16 h-16 mx-auto rounded-xl bg-white object-contain p-1.5 shadow-sm mb-3" crossOrigin="anonymous" />
           ) : (
@@ -187,6 +217,15 @@ export default function PublicSupportPage() {
                   className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
+              <button 
+                type="button" 
+                onClick={handleGetLocation} 
+                disabled={fetchingLocation}
+                className={`mt-2 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors ${location ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}
+              >
+                 {fetchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                 {location ? 'Coordenadas GPS capturadas' : 'Incluir mi Ubicación GPS'}
+              </button>
             </div>
           </div>
 
