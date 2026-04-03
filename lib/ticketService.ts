@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, deleteDoc, getDocsFromCache } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, deleteDoc, getDocsFromCache, addDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Ticket, TicketStatus, TicketPriority, GeoPoint } from './types';
 
@@ -14,6 +14,31 @@ export async function createTicket(ticket: Omit<Ticket, 'id' | 'createdAt' | 'up
     updatedAt: now,
   };
   await setDoc(newRef, ticketData);
+
+  // Auto-registrar cliente si no está en la base de datos de esta empresa
+  if (ticket.clientPhone) {
+    try {
+      const clientSnap = await getDocs(query(
+        collection(db, 'clients'), 
+        where('phone', '==', ticket.clientPhone),
+        where('companyId', '==', ticket.companyId) // Asume que migramos clients a companyId, temporalmente no fallará
+      ));
+      
+      if (clientSnap.empty) {
+        await addDoc(collection(db, 'clients'), {
+          name: ticket.clientName,
+          phone: ticket.clientPhone,
+          address: ticket.clientAddress || '',
+          companyId: ticket.companyId,
+          createdBy: 'PORTAL_PUBLICO', // Marcador para saber su origen
+          createdAt: now
+        });
+      }
+    } catch (e) {
+      console.warn('Error auto-registrando cliente', e);
+    }
+  }
+
   return newRef.id;
 }
 

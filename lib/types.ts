@@ -144,7 +144,8 @@ export interface Client {
   phone?: string;
   email?: string;
   notes?: string;
-  createdBy: string;   // email del técnico
+  companyId?: string;  // Nueva: vinculación al tenant de la empresa
+  createdBy: string;   // email del técnico o marcador de sistema
   createdAt: string;
 }
 
