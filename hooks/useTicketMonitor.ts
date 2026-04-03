@@ -32,13 +32,29 @@ export function useTicketMonitor(
         // First load: seed known IDs without firing alerts
         snap.docs.forEach((d) => knownIds.current.add(d.id));
         initialized.current = true;
+        
+        // Request notification permission on first load
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          if (Notification.permission === 'default') {
+            Notification.requestPermission();
+          }
+        }
         return;
       }
 
       snap.docs.forEach((d) => {
         if (!knownIds.current.has(d.id)) {
           knownIds.current.add(d.id);
-          stableCallback(d.data() as Ticket);
+          const ticket = d.data() as Ticket;
+          stableCallback(ticket);
+          
+          // Trigger native notification
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('Nuevo Ticket de Soporte', {
+              body: `Cliente: ${ticket.clientName}\nAsunto: ${ticket.issueDescription}`,
+              icon: '/icon-192.png'
+            });
+          }
         }
       });
     });

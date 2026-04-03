@@ -48,9 +48,10 @@ service cloud.firestore {
       allow create: if true;
       
       // Lectura y modificación:
-      // Para una app de MVP, permitimos a usuarios logueados del equipo leer/modificar tickets
-      // Real security check ideally needs get() on companies, but this keeps it lightweight
-      allow read, update, delete: if isAuthenticated();
+      // Para una app de MVP, permitimos a usuarios logueados del equipo modificar tickets.
+      // La lectura es pública para que el cliente acceda a su portal de estado usando el ID.
+      allow read: if true;
+      allow update, delete: if isAuthenticated();
     }
 
     // ──────────────────────────────────────────────

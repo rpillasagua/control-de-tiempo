@@ -54,3 +54,10 @@ export async function deleteTicket(ticketId: string): Promise<void> {
   const ref = doc(db, 'tickets', ticketId);
   await deleteDoc(ref);
 }
+
+export async function getTicketById(ticketId: string): Promise<Ticket | null> {
+  const ref = doc(db, 'tickets', ticketId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return snap.data() as Ticket;
+}

@@ -132,24 +132,30 @@ function NuevaVisitaForm() {
     }
 
     try {
-      // Foto de llegada (opcional)
-      const photoUrl = arrivalPhoto && isOnline
-        ? await (async () => {
-            try {
-              const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
-              const path = `visits/${tempId}/arrival.jpg`;
-              return await uploadPhotoToStorage(file, path);
-            } catch (err) {
-              console.error('Error subiendo foto de llegada', err);
-              toast.error('La visita se creará, pero falló la subida de foto');
-              return undefined;
-            }
-          })()
-        : undefined;
+      let finalPhotoUrl: string | undefined = undefined;
+      let uploadFailed = false;
 
-      // Guardar foto offline si corresponde
-      let finalPhotoUrl: string | undefined = photoUrl ?? undefined;
-      if (arrivalPhoto && !isOnline) {
+      // Si hay foto y hay red, intentamos subirla con timeout para evitar cuelgues (Lie-Fi)
+      if (arrivalPhoto && isOnline) {
+        try {
+          const file = dataUrlToFile(arrivalPhoto, `arrival_${tempId}.jpg`);
+          const path = `visits/${tempId}/arrival.jpg`;
+          
+          const uploadPromise = uploadPhotoToStorage(file, path);
+          const timeoutPromise = new Promise<string>((_, reject) => 
+             setTimeout(() => reject(new Error('Firebase Storage timeout')), 8000)
+          );
+          
+          finalPhotoUrl = await Promise.race([uploadPromise, timeoutPromise]);
+        } catch (err) {
+          console.warn('Lentitud o error en red, la foto se guardará offline', err);
+          uploadFailed = true;
+          toast.info('Señal débil. Guardando foto offline...');
+        }
+      }
+
+      // Guardar foto offline si corresponde (sin red o falló la subida)
+      if (arrivalPhoto && (!isOnline || uploadFailed)) {
         const pendingId = `pending_arrival_${tempId}`;
         await savePendingPhoto({
           id: pendingId,

@@ -57,21 +57,35 @@ export default function ActividadPage() {
 
       // Upload photos to Firebase Storage if any OR save to IDB
       if (photos.length > 0) {
+        let uploadFailed = false;
+        
         if (isOnline) {
-          setUploadProgress(`Subiendo fotos...`);
-          const uploads = await Promise.all(
-            photos.map(async (dataUrl, i) => {
-              setUploadProgress(`Subiendo foto ${i + 1} de ${photos.length}...`);
-              const file = dataUrlToFile(dataUrl, `actividad_${Date.now()}_${i}.jpg`);
-              const path = `visits/${visitId}/${Date.now()}_${i}.jpg`;
-              return uploadPhotoToStorage(file, path);
-            })
-          );
-          photoUrls = uploads;
-          toast.success(`📸 ${photos.length} foto${photos.length > 1 ? 's' : ''} subida${photos.length > 1 ? 's' : ''}`);
-        } else {
+          try {
+            setUploadProgress(`Subiendo fotos...`);
+            const uploads = await Promise.all(
+              photos.map(async (dataUrl, i) => {
+                setUploadProgress(`Subiendo foto ${i + 1} de ${photos.length}...`);
+                const file = dataUrlToFile(dataUrl, `actividad_${Date.now()}_${i}.jpg`);
+                const path = `visits/${visitId}/${Date.now()}_${i}.jpg`;
+                
+                const uploadPromise = uploadPhotoToStorage(file, path);
+                const timeoutPromise = new Promise<string>((_, reject) => 
+                   setTimeout(() => reject(new Error('Firebase Storage timeout')), 10000)
+                );
+                return Promise.race([uploadPromise, timeoutPromise]);
+              })
+            );
+            photoUrls = uploads;
+            toast.success(`📸 ${photos.length} foto${photos.length > 1 ? 's' : ''} subida${photos.length > 1 ? 's' : ''}`);
+          } catch (err) {
+            console.warn('Lentitud o error en red, las fotos se guardarán offline', err);
+            uploadFailed = true;
+          }
+        } 
+        
+        if (!isOnline || uploadFailed) {
           // Offline mode! Save locally directly as dataUrls
-          toast.info('Modo sin conexión: Guardando fotos localmente para subirlas después...', { duration: 4000 });
+          toast.info('Sin red estabilizada: Guardando fotos localmente para subir después...', { duration: 4000 });
           const pendingIds = await Promise.all(
             photos.map(async (dataUrl, i) => {
               const pendingId = `pending_act_${Date.now()}_${i}`;
