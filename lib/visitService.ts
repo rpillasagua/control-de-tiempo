@@ -193,26 +193,32 @@ export async function saveClientSignature(visitId: string, signatureBase64: stri
   logger.log(`✒️ Firma del cliente guardada en visita ${visitId}`);
 }
 
+import { documentId } from 'firebase/firestore';
+
 // ──────────────────────────────────────────────
 // Get a single visit (cache-first)
 // ──────────────────────────────────────────────
 export async function getVisit(visitId: string): Promise<Visit | null> {
   const docRef = doc(db, COLLECTION, visitId);
-  // Try cache first for instant offline
+  
+  // 1. Hack for Firebase pending writes: getDocFromCache throws on purely local pending writes.
+  // getDocsFromCache with documentId() successfully returns them!
   try {
-    const cacheSnap = await getDocFromCache(docRef);
-    if (cacheSnap.exists()) {
-      // Background refresh
-      getDoc(docRef).catch(() => {});
-      return { id: cacheSnap.id, ...cacheSnap.data() } as Visit;
+    const q = query(collection(db, COLLECTION), where(documentId(), '==', visitId));
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDoc(docRef).catch(() => {}); // Trigger background sync
+      return { id: cacheSnap.docs[0].id, ...cacheSnap.docs[0].data() } as Visit;
     }
   } catch { /* cache miss */ }
+
+  // 2. Network fetch fallback
   try {
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as Visit;
   } catch (err: any) {
-    return null;
+    return null; // Don't crash UI if offline
   }
 }
 
