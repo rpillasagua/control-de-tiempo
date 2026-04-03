@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User, Users, Settings } from 'lucide-react';
+import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User, Users, Settings, Ticket as TicketIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { getActiveVisit, getVisitsByTechnician } from '@/lib/visitService';
@@ -183,6 +183,7 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(false);
   const [roleChecked, setRoleChecked] = useState(false);
   const [userRole, setUserRole] = useState<'admin'|'technician'|'none'|null>(null);
+  const [userCompanyId, setUserCompanyId] = useState<string | null>(null);
 
   const loadVisits = useCallback(async () => {
     if (!user) return;
@@ -236,8 +237,9 @@ export default function DashboardPage() {
   // After login, check company membership; redirect new users to /bienvenida
   useEffect(() => {
     if (!user || roleChecked) return;
-    getUserCompany(user.email).then(({ role }) => {
+    getUserCompany(user.email).then(({ role, company }) => {
       setUserRole(role);
+      setUserCompanyId(company?.id || null);
       setRoleChecked(true);
       if (role === 'none') {
         router.replace('/bienvenida');
@@ -288,12 +290,16 @@ export default function DashboardPage() {
             <img src="/icon-192.png" alt="Logo" className="w-7 h-7 rounded-sm shadow-sm" />
             <h1 className="font-bold text-slate-800 text-lg">{t.appName}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <SyncHubIndicator />
+            <div className="text-right hidden sm:block mr-1">
+              <p className="text-sm font-bold text-slate-800 leading-tight">{user.name.split(' ')[0]}</p>
+              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{userRole === 'admin' ? 'Administrador' : 'Técnico'}</p>
+            </div>
             <Link href="/perfil" className="block">
               {user.picture
-                ? <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full border border-slate-200 hover:ring-2 hover:ring-blue-400 transition-shadow" />
-                : <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center hover:ring-2 hover:ring-blue-400 transition-shadow">
+                ? <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full border-2 border-slate-200 hover:ring-2 hover:ring-blue-400 transition-shadow" />
+                : <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border-2 border-slate-200 hover:ring-2 hover:ring-blue-400 transition-shadow">
                     <User className="w-5 h-5 text-blue-600" />
                   </div>
               }
@@ -431,7 +437,7 @@ export default function DashboardPage() {
         )}
 
         {/* Quick Actions Menu */}
-        <div className="grid border-t border-slate-100 mt-6 pt-5 grid-cols-3 gap-3">
+        <div className={`grid border-t border-slate-100 mt-6 pt-5 gap-3 ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <Link href="/clientes" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-1">
               <Users className="w-5 h-5" />
@@ -445,6 +451,15 @@ export default function DashboardPage() {
             </div>
             <span className="text-xs font-semibold text-slate-700 text-center">{t.myProfile}</span>
           </Link>
+
+          {userCompanyId && (
+            <Link href={`/soporte/${userCompanyId}`} target="_blank" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-full flex items-center justify-center mb-1">
+                <TicketIcon className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-slate-700 text-center">Crear Orden</span>
+            </Link>
+          )}
 
           {userRole === 'admin' && (
             <Link href="/admin" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
