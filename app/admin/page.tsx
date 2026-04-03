@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTicketMonitor } from '@/hooks/useTicketMonitor';
 import {
   getCompaniesByAdmin, createCompany, updateTechnicians,
-  transferCompanyOwnership, updateCompanyProfile, uploadCompanyLogo
+  transferCompanyOwnership, updateCompanyProfile, uploadCompanyLogo,
+  getUserCompany
 } from '@/lib/companyService';
 import { useTranslation } from '@/lib/i18n';
 import { compressImage } from '@/lib/imageCompression';
@@ -100,11 +101,16 @@ export default function AdminDashboardPage() {
     }
   }, [activeCompany]);
 
+  const [userRole, setUserRole] = useState<'admin'|'technician'|'none'|null>(null);
+
   // ── Load companies ──────────────────────
   const loadCompanies = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
+      const { role } = await getUserCompany(user.email);
+      setUserRole(role);
+
       const list = await getCompaniesByAdmin(user.email);
       setCompanies(list);
       if (list.length > 0 && !selectedCompanyId) {
@@ -330,6 +336,21 @@ export default function AdminDashboardPage() {
 
   // ── No companies yet ────────────────────
   if (companies.length === 0) {
+    if (userRole === 'technician') {
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+          <AlertCircle className="w-16 h-16 text-amber-500 mb-4" />
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">Acceso Denegado</h1>
+          <p className="text-slate-500 mb-8 max-w-sm">
+            Ingresaste como técnico de una empresa registrada. Este panel es exclusivo para administradores de empresas.
+          </p>
+          <button onClick={() => window.location.href = '/'} className="bg-blue-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition">
+            Ir a mi Tablero
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <Building2 className="w-16 h-16 text-blue-500 mb-4" />

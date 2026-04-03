@@ -446,12 +446,14 @@ export default function DashboardPage() {
             <span className="text-xs font-semibold text-slate-700 text-center">{t.myProfile}</span>
           </Link>
 
-          <Link href="/admin" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-1">
-              <User className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-semibold text-slate-700 text-center">{t.adminPanel}</span>
-          </Link>
+          {userRole === 'admin' && (
+            <Link href="/admin" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-1">
+                <User className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-slate-700 text-center">{t.adminPanel}</span>
+            </Link>
+          )}
         </div>
 
         {/* Today's visits */}
