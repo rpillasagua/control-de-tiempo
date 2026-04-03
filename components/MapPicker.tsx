@@ -35,6 +35,7 @@ function LocationMarker({ position, setPosition }: any) {
   }, [position, map]);
 
   return position === null ? null : (
+    // @ts-ignore
     <Marker position={position} icon={icon}></Marker>
   );
 }
