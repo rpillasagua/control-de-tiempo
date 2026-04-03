@@ -411,12 +411,16 @@ export default function DashboardPage() {
 
                       {/* Action row */}
                       <div className="flex gap-2 mt-3">
-                        {ticket.clientAddress && (
+                        {(ticket.locationUrl || ticket.location || ticket.clientAddress) && (
                           <a
-                            href={`https://maps.google.com/?q=${encodeURIComponent(ticket.clientAddress)}`}
+                            href={
+                              ticket.locationUrl ? ticket.locationUrl : 
+                              (ticket.location ? `https://www.google.com/maps/search/?api=1&query=${ticket.location.lat},${ticket.location.lng}` : 
+                              `https://maps.google.com/?q=${encodeURIComponent(ticket.clientAddress || '')}`)
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-medium hover:bg-slate-200 transition"
+                            className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-medium hover:bg-slate-200 transition whitespace-nowrap"
                           >
                             <MapPin className="w-3.5 h-3.5" /> Navegar
                           </a>

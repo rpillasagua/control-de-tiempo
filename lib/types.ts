@@ -26,7 +26,8 @@ export interface Ticket {
   issueDescription: string;
   photoUrl?: string;         // Evidencia subida por el cliente o admin
   priority?: TicketPriority; // Nueva: prioridad del ticket
-  location?: GeoPoint;       // Nueva: GPS del lugar del problema
+  location?: GeoPoint;       // GPS del lugar del problema
+  locationUrl?: string;      // Enlace manual de Google Maps
   notes?: string;            // Nueva: notas internas del admin
   createdByAdmin?: boolean;  // Nueva: si fue creado manualmente por admin
   status: TicketStatus;

@@ -23,6 +23,7 @@ export default function PublicSupportPage() {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientAddress, setClientAddress] = useState('');
+  const [locationUrl, setLocationUrl] = useState('');
   const [issueDescription, setIssueDescription] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [rawFile, setRawFile] = useState<File | null>(null);
@@ -73,6 +74,7 @@ export default function PublicSupportPage() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationUrl(`https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`);
         setFetchingLocation(false);
         toast.success('Ubicación obtenida exitosamente', { id: 'gps' });
       },
@@ -108,7 +110,8 @@ export default function PublicSupportPage() {
         clientAddress: clientAddress.trim(),
         issueDescription: issueDescription.trim(),
         photoUrl: photoUrl || undefined,
-        location: location || undefined
+        location: location || undefined,
+        locationUrl: locationUrl.trim() || undefined
       });
 
       setSuccess(true);
@@ -217,15 +220,22 @@ export default function PublicSupportPage() {
                   className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
-              <button 
-                type="button" 
-                onClick={handleGetLocation} 
-                disabled={fetchingLocation}
-                className={`mt-2 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors ${location ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}
-              >
-                 {fetchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                 {location ? 'Coordenadas GPS capturadas' : 'Incluir mi Ubicación GPS'}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <input 
+                  type="url" value={locationUrl} onChange={e => setLocationUrl(e.target.value)}
+                  placeholder="https://maps.app.goo.gl/..."
+                  className="flex-1 bg-slate-50 border border-slate-200 px-4 py-2 bg-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                />
+                <button 
+                  type="button" 
+                  onClick={handleGetLocation} 
+                  disabled={fetchingLocation}
+                  className={`flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 text-xs font-semibold transition-colors ${location ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}
+                >
+                  {fetchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                  {location ? 'Actual GPS' : 'Compartir GPS'}
+                </button>
+              </div>
             </div>
           </div>
 
