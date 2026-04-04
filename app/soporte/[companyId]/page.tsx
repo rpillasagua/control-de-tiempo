@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Loader2, Send, Camera, Building2, CheckCircle2, Image as ImageIcon, MapPin, Phone, User as UserIcon } from 'lucide-react';
+import { Loader2, Send, Building2, CheckCircle2, Image as ImageIcon, MapPin, Phone, User as UserIcon, Copy, ExternalLink, FileText } from 'lucide-react';
 import { getCompanyById } from '@/lib/companyService';
 import { createTicket } from '@/lib/ticketService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
@@ -25,6 +25,7 @@ export default function PublicSupportPage() {
   // Form State
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [clientRuc, setClientRuc] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [locationUrl, setLocationUrl] = useState('');
   const [issueDescription, setIssueDescription] = useState('');
@@ -36,6 +37,7 @@ export default function PublicSupportPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [createdTicketId, setCreatedTicketId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,10 +109,11 @@ export default function PublicSupportPage() {
         photoUrl = await uploadPhotoToStorage(rawFile, `tickets/${companyId}/${tempId}.jpg`);
       }
 
-      await createTicket({
+      const newTicketId = await createTicket({
         companyId,
         clientName: clientName.trim(),
         clientPhone: clientPhone.trim(),
+        clientRuc: clientRuc.trim() || undefined,
         clientAddress: clientAddress.trim(),
         issueDescription: issueDescription.trim(),
         photoUrl: photoUrl || undefined,
@@ -118,6 +121,7 @@ export default function PublicSupportPage() {
         locationUrl: locationUrl.trim() || undefined
       });
 
+      setCreatedTicketId(newTicketId);
       setSuccess(true);
     } catch (error) {
       console.error(error);
@@ -146,21 +150,60 @@ export default function PublicSupportPage() {
     );
   }
 
-  if (success) {
+  if (success && createdTicketId) {
+    const trackingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/ticket/${createdTicketId}`;
     return (
-      <div className="min-h-screen bg-blue-600 flex flex-col items-center justify-center p-6 text-center text-white">
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex flex-col items-center justify-center p-6 text-center text-white">
         <div className="bg-white/20 p-6 rounded-full mb-6 backdrop-blur-md">
           <CheckCircle2 className="w-20 h-20" />
         </div>
-        <h1 className="text-2xl font-bold mb-3">{t.supportSuccessTitle}</h1>
-        <p className="text-blue-100 max-w-sm text-lg">
-          {t.supportSuccessMsg(company.name)}
+        <h1 className="text-2xl font-bold mb-2">¡Reporte Enviado!</h1>
+        <p className="text-blue-100 max-w-sm text-base mb-8">
+          {company.name} recibió tu solicitud. Te contactaremos pronto.
         </p>
+
+        {/* Tracking Card */}
+        <div className="bg-white rounded-2xl p-5 w-full max-w-sm text-left shadow-xl">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <p className="font-bold text-slate-800 text-sm">Seguimiento de tu Ticket</p>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">Guarda este enlace para ver el estado de tu reporte en cualquier momento:</p>
+          
+          <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3">
+            <span className="text-xs text-blue-600 font-mono flex-1 truncate">{trackingUrl}</span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(trackingUrl);
+                toast.success('Enlace copiado');
+              }}
+              className="flex-shrink-0 bg-blue-600 text-white p-1.5 rounded-lg hover:bg-blue-700"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <a
+            href={trackingUrl}
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 transition"
+          >
+            <ExternalLink className="w-4 h-4" /> Ver estado del ticket
+          </a>
+        </div>
+
         <button 
-          onClick={() => { setSuccess(false); setIssueDescription(''); setPhotoPreview(null); setRawFile(null); setLocation(null); }}
-          className="mt-10 bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-50"
+          onClick={() => { 
+            setSuccess(false); 
+            setCreatedTicketId(null);
+            setIssueDescription(''); 
+            setPhotoPreview(null); 
+            setRawFile(null); 
+            setLocation(null);
+            setClientRuc('');
+          }}
+          className="mt-6 text-blue-200 hover:text-white text-sm underline"
         >
-          {t.supportSendAnother}
+          Enviar otro reporte
         </button>
       </div>
     );
@@ -202,7 +245,8 @@ export default function PublicSupportPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Row: Phone + RUC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">{t.supportPhone}</label>
               <div className="relative">
@@ -215,39 +259,48 @@ export default function PublicSupportPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.supportAddress}</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">RUC / Cédula</label>
               <div className="relative">
-                <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">🪪</span>
                 <input 
-                  type="text" value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-                  placeholder={t.supportAddressPlaceholder}
+                  type="text" value={clientRuc} onChange={e => setClientRuc(e.target.value)}
+                  placeholder="Ej: 0912345678001"
                   className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                <input 
-                  type="url" value={locationUrl} onChange={e => setLocationUrl(e.target.value)}
-                  placeholder="https://maps.app.goo.gl/..."
-                  className="flex-1 bg-slate-50 border border-slate-200 px-4 py-2 bg-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowMap(true)} 
-                  className={`flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 text-xs font-semibold transition-colors ${location ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}
-                >
-                  <MapPin className="w-4 h-4" />
-                  {location ? 'Ver en Mapa' : 'Elegir en Mapa'}
-                </button>
-                <button 
-                  type="button" 
-                  onClick={handleGetLocation} 
-                  disabled={fetchingLocation}
-                  className="flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-semibold transition-colors hover:bg-slate-50"
-                  title="Usar GPS actual"
-                >
-                  {fetchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                </button>
-              </div>
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">{t.supportAddress}</label>
+            <div className="relative mb-2">
+              <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" value={clientAddress} onChange={e => setClientAddress(e.target.value)}
+                placeholder={t.supportAddressPlaceholder}
+                className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={handleGetLocation} 
+                disabled={fetchingLocation}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors ${
+                  location ? 'border-emerald-400 text-emerald-700 bg-emerald-50' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {fetchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                {location ? '✅ GPS capturado' : 'Capturar mi GPS'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowMap(true)} 
+                className="flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-blue-100 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition-colors"
+              >
+                <MapPin className="w-4 h-4" /> Elegir en Mapa
+              </button>
             </div>
           </div>
           
