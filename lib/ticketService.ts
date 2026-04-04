@@ -126,7 +126,7 @@ export async function getTicketsByTechnician(technicianEmail: string): Promise<T
     where('assignedTo', '==', technicianEmail)
   );
 
-  const filterAssigned = (tickets: Ticket[]) => tickets.filter(t => t.status === 'ASIGNADO');
+  const filterAssigned = (tickets: Ticket[]) => tickets.filter(t => t.status === 'ASIGNADO' || t.status === 'EN_CAMINO');
 
   try {
     const cacheSnap = await getDocsFromCache(q);
@@ -149,6 +149,15 @@ export async function updateTicketStatus(ticketId: string, updates: Partial<Tick
   const ref = doc(db, 'tickets', ticketId);
   await updateDoc(ref, {
     ...updates,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+// Técnico acepta la orden: cambia estado a EN_CAMINO
+export async function acceptTicket(ticketId: string): Promise<void> {
+  const ref = doc(db, 'tickets', ticketId);
+  await updateDoc(ref, {
+    status: 'EN_CAMINO',
     updatedAt: new Date().toISOString()
   });
 }

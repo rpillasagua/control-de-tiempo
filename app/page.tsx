@@ -5,7 +5,7 @@ import { Loader2, Plus, Clock, MapPin, CheckCircle, ChevronRight, Calendar, User
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { getActiveVisit, getVisitsByTechnician } from '@/lib/visitService';
-import { getTicketsByTechnician } from '@/lib/ticketService';
+import { getTicketsByTechnician, acceptTicket } from '@/lib/ticketService';
 import { getUserCompany } from '@/lib/companyService';
 import { Visit, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
@@ -165,6 +165,129 @@ function LoginPage({ onLogin, loading }: { onLogin: () => void; loading: boolean
         <p className="text-xs text-center text-slate-400 mt-6">{t.sessionPersistent}</p>
       </div>
     </main>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// TicketCard: Tarjeta de orden asignada con flujo Uber
+// ─────────────────────────────────────────────────────────
+function TicketCard({ ticket, onRefresh }: { ticket: Ticket; onRefresh: () => void }) {
+  const [accepting, setAccepting] = useState(false);
+  const isEnCamino = ticket.status === 'EN_CAMINO';
+
+  const mapsUrl = ticket.location
+    ? `https://www.google.com/maps/search/?api=1&query=${ticket.location.lat},${ticket.location.lng}`
+    : ticket.locationUrl
+    ? ticket.locationUrl
+    : `https://maps.google.com/?q=${encodeURIComponent(ticket.clientAddress || '')}`;
+
+  const hasLocation = !!(ticket.location || ticket.locationUrl || ticket.clientAddress);
+
+  const priorityColors: Record<string, string> = {
+    ALTA: 'bg-red-100 text-red-700',
+    NORMAL: 'bg-blue-100 text-blue-700',
+    BAJA: 'bg-slate-100 text-slate-600',
+  };
+  const priorityLabels: Record<string, string> = {
+    ALTA: '🔴 Urgente', NORMAL: '🔵 Normal', BAJA: '⚫ Baja',
+  };
+
+  const handleAccept = async () => {
+    setAccepting(true);
+    try {
+      await acceptTicket(ticket.id);
+      toast.success('¡Orden aceptada! Estás en camino 🚘');
+      onRefresh();
+    } catch {
+      toast.error('Error al aceptar la orden');
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  return (
+    <div className={`bg-white rounded-2xl border-2 shadow-sm overflow-hidden ${
+      isEnCamino ? 'border-emerald-400' :
+      ticket.priority === 'ALTA' ? 'border-red-200' :
+      ticket.priority === 'BAJA' ? 'border-slate-200' : 'border-indigo-100'
+    }`}>
+      {/* Status banner for EN_CAMINO */}
+      {isEnCamino && (
+        <div className="bg-emerald-500 text-white px-4 py-2 flex items-center justify-between">
+          <span className="font-bold text-sm flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse inline-block" />
+            🚘 En camino...
+          </span>
+          <span className="text-xs opacity-80">Orden aceptada</span>
+        </div>
+      )}
+
+      {/* Priority strip */}
+      {!isEnCamino && ticket.priority && (
+        <div className={`px-4 py-1.5 text-xs font-bold flex items-center justify-between ${priorityColors[ticket.priority]}`}>
+          <span>{priorityLabels[ticket.priority]}</span>
+          <span className="opacity-60">{new Date(ticket.createdAt).toLocaleDateString('es-EC')}</span>
+        </div>
+      )}
+
+      {/* Photo */}
+      {ticket.photoUrl && !ticket.photoUrl.startsWith('pending_') && (
+        <img src={ticket.photoUrl} alt="evidencia" className="w-full h-32 object-cover" />
+      )}
+
+      <div className="p-4">
+        <p className="font-bold text-slate-800 text-base leading-tight">{ticket.clientName}</p>
+        {ticket.clientAddress && (
+          <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-indigo-400" />
+            {ticket.clientAddress}
+          </p>
+        )}
+        <p className="text-sm text-slate-600 mt-2 line-clamp-2">{ticket.issueDescription}</p>
+
+        {ticket.notes && (
+          <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 mt-2">
+            📝 {ticket.notes}
+          </p>
+        )}
+
+        <div className="flex gap-2 mt-4">
+          {/* Navegar button — always visible if there's a location */}
+          {hasLocation && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm bg-slate-100 text-slate-700 px-3 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition whitespace-nowrap"
+            >
+              <MapPin className="w-4 h-4" /> Navegar
+            </a>
+          )}
+
+          {/* Main CTA */}
+          {isEnCamino ? (
+            <Link
+              href={`/visita/nueva?ticketId=${ticket.id}&clientName=${encodeURIComponent(ticket.clientName)}&clientAddress=${encodeURIComponent(ticket.clientAddress ?? '')}&companyId=${ticket.companyId}`}
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition active:scale-[0.98]"
+            >
+              <CheckCircle className="w-4 h-4" /> Ya llegué — Registrar
+            </Link>
+          ) : (
+            <button
+              onClick={handleAccept}
+              disabled={accepting}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-emerald-600 transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {accepting ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Aceptando...</>
+              ) : (
+                <>✅ Acepto — Voy en camino</>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -366,76 +489,9 @@ export default function DashboardPage() {
               📋 {t.assignedTickets || 'Tareas Asignadas'} ({assignedTickets.length})
             </h2>
             <div className="space-y-3">
-              {assignedTickets.map(ticket => {
-                const priorityColors: Record<string, string> = {
-                  ALTA: 'bg-red-100 text-red-700 border-red-200',
-                  NORMAL: 'bg-blue-100 text-blue-700 border-blue-200',
-                  BAJA: 'bg-slate-100 text-slate-600 border-slate-200',
-                };
-                const priorityLabels: Record<string, string> = {
-                  ALTA: '🔴 Urgente', NORMAL: '🔵 Normal', BAJA: '⚫ Baja',
-                };
-                return (
-                  <div key={ticket.id} className={`bg-white rounded-2xl border-2 shadow-sm overflow-hidden ${
-                    ticket.priority === 'ALTA' ? 'border-red-200' : ticket.priority === 'BAJA' ? 'border-slate-200' : 'border-indigo-100'
-                  }`}>
-                    {/* Priority strip */}
-                    {ticket.priority && (
-                      <div className={`px-4 py-1.5 text-xs font-bold flex items-center justify-between ${priorityColors[ticket.priority]}`}>
-                        <span>{priorityLabels[ticket.priority]}</span>
-                        <span className="opacity-60">{new Date(ticket.createdAt).toLocaleDateString('es-EC')}</span>
-                      </div>
-                    )}
-
-                    {/* Photo if available */}
-                    {ticket.photoUrl && !ticket.photoUrl.startsWith('pending_') && (
-                      <img src={ticket.photoUrl} alt="evidencia" className="w-full h-32 object-cover" />
-                    )}
-
-                    <div className="p-4">
-                      <p className="font-bold text-slate-800 text-base leading-tight">{ticket.clientName}</p>
-                      {ticket.clientAddress && (
-                        <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-indigo-400" />
-                          {ticket.clientAddress}
-                        </p>
-                      )}
-                      <p className="text-sm text-slate-600 mt-2 line-clamp-2">{ticket.issueDescription}</p>
-
-                      {/* Notes from admin */}
-                      {ticket.notes && (
-                        <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 mt-2">
-                          📝 {ticket.notes}
-                        </p>
-                      )}
-
-                      {/* Action row */}
-                      <div className="flex gap-2 mt-3">
-                        {(ticket.locationUrl || ticket.location || ticket.clientAddress) && (
-                          <a
-                            href={
-                              ticket.locationUrl ? ticket.locationUrl : 
-                              (ticket.location ? `https://www.google.com/maps/search/?api=1&query=${ticket.location.lat},${ticket.location.lng}` : 
-                              `https://maps.google.com/?q=${encodeURIComponent(ticket.clientAddress || '')}`)
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-medium hover:bg-slate-200 transition whitespace-nowrap"
-                          >
-                            <MapPin className="w-3.5 h-3.5" /> Navegar
-                          </a>
-                        )}
-                        <Link
-                          href={`/visita/nueva?ticketId=${ticket.id}&clientName=${encodeURIComponent(ticket.clientName)}&clientAddress=${encodeURIComponent(ticket.clientAddress ?? '')}&companyId=${ticket.companyId}`}
-                          className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-bold py-2 rounded-xl hover:bg-indigo-700 transition"
-                        >
-                          <Plus className="w-4 h-4" /> Iniciar Visita
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {assignedTickets.map(ticket => (
+                <TicketCard key={ticket.id} ticket={ticket} onRefresh={loadVisits} />
+              ))}
             </div>
           </div>
         )}

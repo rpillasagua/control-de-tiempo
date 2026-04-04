@@ -12,7 +12,7 @@ import { useTranslation } from '@/lib/i18n';
 import { compressImage } from '@/lib/imageCompression';
 import { getTicketsByCompany, updateTicketStatus, createTicketByAdmin } from '@/lib/ticketService';
 import { createInvite, getCompanyInvites } from '@/lib/inviteService';
-import { getClientsByCompany } from '@/lib/clientService';
+import { getClients, getClientsByCompany } from '@/lib/clientService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
 import { Company, Ticket, Invite, TicketPriority, Client } from '@/lib/types';
@@ -152,7 +152,9 @@ export default function AdminDashboardPage() {
       setNewCount(0);
       
       const clientList = await getClientsByCompany(selectedCompanyId);
-      setClients(clientList);
+      const myClients = await getClients(user!.email);
+      const merged = [...clientList, ...myClients].filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i);
+      setClients(merged);
 
       // Also refresh active invites
       const inviteList = await getCompanyInvites(selectedCompanyId);
@@ -693,9 +695,10 @@ export default function AdminDashboardPage() {
                     <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${
                       ticket.status === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
                       ticket.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-700' :
-                      ticket.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      ticket.status === 'EN_CAMINO' ? 'bg-emerald-100 text-emerald-700 animate-pulse' :
+                      ticket.status === 'CERRADO' ? 'bg-slate-200 text-slate-600' : 'bg-slate-100 text-slate-600'
                     }`}>
-                      {ticket.status}
+                      {ticket.status === 'EN_CAMINO' ? '🚗 En camino' : ticket.status}
                     </span>
                     {ticket.priority && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${priorityColors[ticket.priority] ?? 'bg-slate-100 text-slate-600'}`}>
@@ -974,74 +977,105 @@ function NewTicketModal({
           </div>
         </div>
 
-        {/* Client Name & Phone */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 sm:col-span-1 border border-slate-200 rounded-xl p-3 bg-slate-50/50">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente *</label>
-            <select
-              value={selectedClientId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setSelectedClientId(id);
-                if (id === 'NEW' || id === '') {
-                  setClientName('');
-                  setClientPhone('');
-                  setClientAddress('');
-                  setLocation(null);
-                } else {
-                  const c = clients.find(cl => cl.id === id);
-                  if (c) {
-                    setClientName(c.name);
-                    setClientPhone(c.phone || '');
-                    setClientAddress(c.address || '');
-                    setLocation(c.location || null);
-                  }
+        {/* Client Selector & Details */}
+        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente *</label>
+          <select
+            value={selectedClientId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedClientId(id);
+              if (id === 'NEW' || id === '') {
+                setClientName('');
+                setClientPhone('');
+                setClientAddress('');
+                setLocation(null);
+              } else {
+                const c = clients.find(cl => cl.id === id);
+                if (c) {
+                  setClientName(c.name);
+                  setClientPhone(c.phone || '');
+                  setClientAddress(c.address || '');
+                  setLocation(c.location || null);
                 }
-              }}
-              className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white mb-2 shadow-sm"
-            >
-              <option value="">— Selecionar Cliente Registrado —</option>
-              <option value="NEW">➕ Cliente Nuevo (Escritura Manual)</option>
-              <optgroup label="Tus Clientes">
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </optgroup>
-            </select>
+              }
+            }}
+            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm"
+          >
+            <option value="">— Buscar o Seleccionar Cliente —</option>
+            <option value="NEW">➕ Registrar Nuevo Cliente</option>
+            <optgroup label="Tus Clientes">
+              {clients.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </optgroup>
+          </select>
 
-            {(selectedClientId === 'NEW' || selectedClientId === '') && (
-              <input required value={clientName} onChange={e => setClientName(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                placeholder="Nombre del cliente" />
-            )}
-          </div>
-          <div className="col-span-2 sm:col-span-1 flex items-end">
-            <div className="w-full">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-              <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                placeholder="099..." />
+          {/* New Client Form Block */}
+          {(selectedClientId === 'NEW' || selectedClientId === '') && (
+            <div className="mt-4 p-4 bg-white border border-blue-100 rounded-xl shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4" /> Datos del Nuevo Cliente
+              </h3>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre y Apellido *</label>
+                <input required value={clientName} onChange={e => setClientName(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Ej: Juan Pérez" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="099..." />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección / Link GPS</label>
+                <div className="flex flex-col gap-2">
+                  <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Ej: Mapasingue Este Mz 4..." />
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker(true)}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    {location ? `Ubicación Fijada (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})` : 'Seleccionar Ubicación Exacta en Mapa'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Address */}
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección / Link</label>
-          <div className="flex flex-col gap-2">
-            <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Ej: Mapasingue Este Mz 4..." />
-            
-            <button
-              type="button"
-              onClick={() => setShowMapPicker(true)}
-              className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-            >
-              <MapPin className="w-4 h-4" />
-              {location ? `Ubicación Fijada (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})` : 'Seleccionar Ubicación Exacta en Mapa'}
-            </button>
-          </div>
+          {/* Existing Client Details Inline */}
+          {selectedClientId !== 'NEW' && selectedClientId !== '' && (
+            <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 gap-4">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono vinculado</label>
+                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm outline-none bg-white font-medium text-slate-700" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección / Ref</label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
+                    className="flex-1 border border-slate-200 rounded-xl p-2.5 text-sm outline-none bg-white font-medium text-slate-700" />
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker(true)}
+                    className={`whitespace-nowrap flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-600 border-slate-200'}`}
+                  >
+                    <MapPin className="w-4 h-4" /> {location ? 'GPS Fijado' : '+ GPS'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Issue */}
