@@ -70,10 +70,14 @@ export default function AdminDashboardPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
-  const [visitCache, setVisitCache] = useState<Record<string, Visit | null>>({});
+  const [visitCache, setVisitCache] = useState<Record<string, Visit | null | 'NOT_FOUND'>>({});
   const [ticketFilter, setTicketFilter] = useState<'TODOS'|'PENDIENTE'|'ASIGNADO'|'EN_PROGRESO'|'CERRADO'>('TODOS');
+  const [ticketSearch, setTicketSearch] = useState('');
   // Alert badge
   const [newCount, setNewCount] = useState(0);
+
+  // UI state
+  const [showCorpPanel, setShowCorpPanel] = useState(false);
 
   // Clients
   const [clients, setClients] = useState<Client[]>([]);
@@ -150,32 +154,27 @@ export default function AdminDashboardPage() {
     }
   }, [loading, activeCompany]);
 
-  // ── Load tickets when company changes ──
+  // ── Load clients + invites when company changes ──
   const loadTickets = useCallback(async () => {
     if (!selectedCompanyId) return;
-    setTicketsLoading(true);
     try {
-      // Tickets are now loaded via real-time onSnapshot (see below)
-      
       const clientList = await getAllClientsForCompany(selectedCompanyId, activeCompany?.technicianEmails || [user!.email]);
       setClients(clientList);
-
-      // Also refresh active invites
       const inviteList = await getCompanyInvites(selectedCompanyId);
       setInvites(inviteList);
     } catch {
-      toast.error('Error cargando tickets o clientes');
-    } finally {
-      setTicketsLoading(false);
+      toast.error('Error cargando clientes o invitaciones');
     }
   }, [selectedCompanyId]);
 
   useEffect(() => { loadTickets(); }, [selectedCompanyId]);
 
-  // ── Real-time Tickets Monitor (replaces getTicketsByCompany) ──
+  // ── Real-time Tickets Monitor ──
   useEffect(() => {
     if (!selectedCompanyId) return;
     setTicketsLoading(true);
+    setExpandedTicketId(null); // reset on company change
+    setTicketSearch('');
     const q = query(
       collection(db, 'tickets'),
       where('companyId', '==', selectedCompanyId),
@@ -185,7 +184,7 @@ export default function AdminDashboardPage() {
       const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
       setTickets(list);
       setTicketsLoading(false);
-    });
+    }, () => setTicketsLoading(false));
     return () => unsub();
   }, [selectedCompanyId]);
 
@@ -488,8 +487,8 @@ export default function AdminDashboardPage() {
       {/* ── Main ── */}
       <main className="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* ── Team Column ── */}
-        <div className="md:col-span-1 space-y-4">
+        {/* ── Tickets Column (LEFT on mobile, RIGHT on desktop) ── */}
+        <div className="md:col-span-2 md:order-2 space-y-4">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold flex items-center gap-2 text-slate-800"><Users className="w-5 h-5 text-blue-600" /> {t.adminMyTeam}</h3>
@@ -579,12 +578,27 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── Center/Right Column ── */}
-        <div className="md:col-span-2 space-y-6">
+        {/* ── Sidebar Column (team + invites + settings) ── */}
+        <div className="md:col-span-1 md:order-1 space-y-4">
 
-          {/* ── Corporate Data UI ── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row gap-6">
-            <div className="flex-shrink-0 flex flex-col items-center">
+          {/* ── Corporate Data — Collapsible ── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <button
+              onClick={() => setShowCorpPanel(!showCorpPanel)}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition"
+            >
+              <span className="font-bold text-sm text-slate-700 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-500" /> Datos de la Empresa
+              </span>
+              {showCorpPanel
+                ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                : <ChevronDown className="w-4 h-4 text-slate-400" />
+              }
+            </button>
+
+            {showCorpPanel && (
+              <div className="border-t border-slate-100 p-5 flex flex-col md:flex-row gap-6">
+                <div className="flex-shrink-0 flex flex-col items-center">
               <h3 className="font-bold text-sm text-slate-800 mb-2">{t.adminSetLogoTitle}</h3>
               <div className="relative w-28 h-28 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50 overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors group">
                 {(corpLogoFile || corpLogoUrl) ? (
@@ -665,25 +679,69 @@ export default function AdminDashboardPage() {
               </button>
             </div>
           </div>
-
-          <h3 className="font-bold flex items-center gap-2 text-slate-800 mb-2">
-            <TicketIcon className="w-5 h-5 text-indigo-600" />
-            {t.adminTicketInbox}
-            {newCount > 0 && (
-              <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                {newCount} nuevo{newCount > 1 ? 's' : ''}
-              </span>
             )}
+          </div>
+
+          {/* ── KPI Summary Row ── */}
+          {!ticketsLoading && tickets.length > 0 && (() => {
+            const open = tickets.filter(t => t.status === 'PENDIENTE' || t.status === 'REVISADO').length;
+            const active = tickets.filter(t => t.status === 'ASIGNADO' || t.status === 'EN_CAMINO' || t.status === 'EN_PROGRESO').length;
+            const today = new Date(); today.setHours(0,0,0,0);
+            const closedToday = tickets.filter(t => t.status === 'CERRADO' && new Date(t.updatedAt) >= today).length;
+            return (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-700">{open}</p>
+                  <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mt-0.5">Pendientes</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-blue-700">{active}</p>
+                  <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wide mt-0.5">En curso</p>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-emerald-700">{closedToday}</p>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide mt-0.5">Cerrados hoy</p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Inbox header ── */}
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold flex items-center gap-2 text-slate-800">
+              <TicketIcon className="w-5 h-5 text-indigo-600" />
+              {t.adminTicketInbox}
+              {newCount > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                  {newCount} nuevo{newCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </h3>
             <button
               onClick={() => setShowNewTicketModal(true)}
               className="ml-auto flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition"
             >
               <Plus className="w-3.5 h-3.5" /> Nueva Orden
             </button>
-          </h3>
+          </div>
+
+          {/* ── Search bar ── */}
+          <div className="relative">
+            <input
+              type="text"
+              value={ticketSearch}
+              onChange={e => setTicketSearch(e.target.value)}
+              placeholder="🔍 Buscar por cliente, descripción o RUC..."
+              className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none bg-white shadow-sm"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">🔍</span>
+            {ticketSearch && (
+              <button onClick={() => setTicketSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm">×</button>
+            )}
+          </div>
 
           {/* Status filter tabs */}
-          <div className="flex gap-2 flex-wrap mb-3">
+          <div className="flex gap-2 flex-wrap">
             {(['TODOS', 'PENDIENTE', 'ASIGNADO', 'EN_PROGRESO', 'CERRADO'] as const).map(f => (
               <button
                 key={f}
@@ -715,12 +773,24 @@ export default function AdminDashboardPage() {
           ) : (
             tickets
               .filter(ticket => {
-                if (ticketFilter === 'TODOS') return true;
-                if (ticketFilter === 'PENDIENTE') return ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO';
-                if (ticketFilter === 'ASIGNADO') return ticket.status === 'ASIGNADO' || ticket.status === 'EN_CAMINO';
-                if (ticketFilter === 'EN_PROGRESO') return ticket.status === 'EN_PROGRESO';
-                if (ticketFilter === 'CERRADO') return ticket.status === 'CERRADO';
-                return true;
+                // Status filter
+                const statusOk = (
+                  ticketFilter === 'TODOS' ||
+                  (ticketFilter === 'PENDIENTE' && (ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO')) ||
+                  (ticketFilter === 'ASIGNADO' && (ticket.status === 'ASIGNADO' || ticket.status === 'EN_CAMINO')) ||
+                  (ticketFilter === 'EN_PROGRESO' && ticket.status === 'EN_PROGRESO') ||
+                  (ticketFilter === 'CERRADO' && ticket.status === 'CERRADO')
+                );
+                // Search filter
+                if (!statusOk) return false;
+                if (!ticketSearch.trim()) return true;
+                const q = ticketSearch.toLowerCase();
+                return (
+                  ticket.clientName.toLowerCase().includes(q) ||
+                  ticket.issueDescription.toLowerCase().includes(q) ||
+                  (ticket.clientPhone || '').includes(q) ||
+                  ((ticket as any).clientRuc || '').includes(q)
+                );
               })
               .map(ticket => {
               const priorityColors: Record<string, string> = {
@@ -751,7 +821,7 @@ export default function AdminDashboardPage() {
                     // Load visit if we're expanding and ticket has a visitId
                     if (nextId && ticket.visitId && visitCache[ticket.visitId] === undefined) {
                       const v = await getVisit(ticket.visitId);
-                      setVisitCache(prev => ({ ...prev, [ticket.visitId!]: v }));
+                      setVisitCache(prev => ({ ...prev, [ticket.visitId!]: v ?? 'NOT_FOUND' }));
                     }
                   }}
                   className="w-full text-left p-5 space-y-1"
@@ -796,6 +866,7 @@ export default function AdminDashboardPage() {
                   <div className="px-5 pb-5 space-y-3 border-t border-slate-100">
                     <div className="pt-3 pl-2 space-y-1">
                       {ticket.clientPhone && <p className="text-sm text-slate-600 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientPhone}</p>}
+                      {(ticket as any).clientRuc && <p className="text-sm text-slate-600 flex items-center gap-1.5"><span className="text-base flex-shrink-0">🪪</span>RUC: {(ticket as any).clientRuc}</p>}
                       {ticket.clientAddress && <p className="text-sm text-slate-600 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientAddress}</p>}
                       {ticket.notes && (
                         <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1">📝 {ticket.notes}</p>
@@ -821,10 +892,13 @@ export default function AdminDashboardPage() {
                     {/* Visit real-time status */}
                     {ticket.visitId && (() => {
                       const visit = visitCache[ticket.visitId];
-                      if (!visit) return (
+                      if (visit === undefined) return (
                         <div className="flex items-center gap-2 pl-2 text-xs text-slate-400">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando visita...
                         </div>
+                      );
+                      if (visit === 'NOT_FOUND') return (
+                        <p className="text-xs text-slate-400 pl-2">⚠️ Visita no encontrada</p>
                       );
                       const isWorking = visit.status === 'EN_PROGRESO';
                       const isDone = visit.status === 'FINALIZADA';
@@ -898,7 +972,7 @@ export default function AdminDashboardPage() {
                       )}
 
                       {/* Ver Reporte — cuando la visita está finalizada */}
-                      {ticket.visitId && visitCache[ticket.visitId]?.status === 'FINALIZADA' && (
+                      {ticket.visitId && visitCache[ticket.visitId] !== 'NOT_FOUND' && (visitCache[ticket.visitId] as Visit | null)?.status === 'FINALIZADA' && (
                         <a
                           href={`/visita/${ticket.visitId}`}
                           target="_blank"
@@ -924,7 +998,7 @@ export default function AdminDashboardPage() {
                       )}
 
                       {/* Corregir estado — ticket mal cerrado */}
-                      {ticket.status === 'CERRADO' && ticket.visitId && visitCache[ticket.visitId]?.status !== 'FINALIZADA' && (
+                      {ticket.status === 'CERRADO' && ticket.visitId && visitCache[ticket.visitId] !== 'NOT_FOUND' && (visitCache[ticket.visitId] as Visit | null)?.status !== 'FINALIZADA' && (
                         <button
                           onClick={async () => {
                             await updateTicketStatus(ticket.id, { status: 'EN_PROGRESO' });
