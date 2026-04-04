@@ -25,6 +25,9 @@ import {
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 
+import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
 // ─────────────────────────────────────────
@@ -60,6 +63,7 @@ export default function AdminDashboardPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const activeCompany = companies.find(c => c.id === selectedCompanyId) ?? null;
+  const router = useRouter();
 
   // Tickets
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -147,9 +151,7 @@ export default function AdminDashboardPage() {
     if (!selectedCompanyId) return;
     setTicketsLoading(true);
     try {
-      const list = await getTicketsByCompany(selectedCompanyId);
-      setTickets(list);
-      setNewCount(0);
+      // Tickets are now loaded via real-time onSnapshot (see below)
       
       const clientList = await getAllClientsForCompany(selectedCompanyId, activeCompany?.technicianEmails || [user!.email]);
       setClients(clientList);
@@ -165,6 +167,23 @@ export default function AdminDashboardPage() {
   }, [selectedCompanyId]);
 
   useEffect(() => { loadTickets(); }, [selectedCompanyId]);
+
+  // ── Real-time Tickets Monitor (replaces getTicketsByCompany) ──
+  useEffect(() => {
+    if (!selectedCompanyId) return;
+    setTicketsLoading(true);
+    const q = query(
+      collection(db, 'tickets'),
+      where('companyId', '==', selectedCompanyId),
+      orderBy('createdAt', 'desc')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
+      setTickets(list);
+      setTicketsLoading(false);
+    });
+    return () => unsub();
+  }, [selectedCompanyId]);
 
   // ── Real-time alert monitor ─────────────
   const handleNewTicket = useCallback((ticket: Ticket) => {
@@ -256,7 +275,6 @@ export default function AdminDashboardPage() {
 
       setShowAssignModal(null);
       setSelectedTech('');
-      loadTickets();
     } catch {
       toast.error('Error asignando ticket');
     }
@@ -294,7 +312,6 @@ export default function AdminDashboardPage() {
       });
       toast.success('✅ Orden creada correctamente');
       setShowNewTicketModal(false);
-      loadTickets();
     } catch {
       toast.error('Error creando la orden');
     }
@@ -367,7 +384,7 @@ export default function AdminDashboardPage() {
           <p className="text-slate-500 mb-8 max-w-sm">
             Ingresaste como técnico de una empresa registrada. Este panel es exclusivo para administradores de empresas.
           </p>
-          <button onClick={() => window.location.href = '/'} className="bg-blue-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition">
+          <button onClick={() => router.push('/')} className="bg-blue-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition">
             Ir a mi Tablero
           </button>
         </div>
@@ -399,7 +416,7 @@ export default function AdminDashboardPage() {
       {/* ── Header ── */}
       <header className="bg-blue-700 text-white pt-6 pb-6 px-4">
         <div className="max-w-4xl mx-auto space-y-3">
-          <button onClick={() => window.location.href = '/'} className="flex items-center gap-1.5 text-blue-200 hover:text-white transition text-sm font-medium mb-3">
+          <button onClick={() => router.push('/')} className="flex items-center gap-1.5 text-blue-200 hover:text-white transition text-sm font-medium mb-3">
             <ArrowLeft className="w-4 h-4" /> Volver al Inicio
           </button>
           {/* Company selector */}
@@ -423,7 +440,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-2">
               {/* Notification badge */}
               <button
-                onClick={loadTickets}
+                onClick={() => setNewCount(0)}
                 className="relative flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg text-sm font-semibold transition"
               >
                 <Bell className="w-4 h-4" />
@@ -774,8 +791,8 @@ export default function AdminDashboardPage() {
       )}
 
       {showTeamModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleAddTech} className="bg-white rounded-2xl p-6 w-full max-w-md text-left">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <form onSubmit={handleAddTech} className="m-auto bg-white rounded-2xl p-6 w-full max-w-md text-left shadow-2xl">
             <h2 className="text-lg font-bold mb-1">Invitar técnico</h2>
             <p className="text-sm text-slate-500 mb-4">Agrega el correo de Google que el técnico usará para ingresar a la app.</p>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico</label>
@@ -793,8 +810,8 @@ export default function AdminDashboardPage() {
       )}
 
       {showAssignModal && activeCompany && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleAssignTicket} className="bg-white rounded-2xl p-6 w-full max-w-sm text-left">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <form onSubmit={handleAssignTicket} className="m-auto bg-white rounded-2xl p-6 w-full max-w-sm text-left shadow-2xl">
             <h2 className="text-lg font-bold mb-4">Asignar Ticket</h2>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Selecciona un técnico:</label>
             <div className="space-y-2 mb-6">
@@ -814,8 +831,8 @@ export default function AdminDashboardPage() {
       )}
 
       {showTransferModal && activeCompany && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleTransfer} className="bg-white rounded-2xl p-6 w-full max-w-sm text-left">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <form onSubmit={handleTransfer} className="m-auto bg-white rounded-2xl p-6 w-full max-w-sm text-left shadow-2xl">
             <h2 className="text-lg font-bold text-red-600 mb-1 flex items-center gap-2"><ArrowRightLeft className="w-5 h-5" /> Ceder Empresa</h2>
             <p className="text-sm text-slate-500 mb-4">Ingresa el correo Gmail del nuevo administrador de <strong>{activeCompany.name}</strong>. Perderás tu acceso de jefe.</p>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Nuevo Administrador</label>
@@ -946,8 +963,8 @@ function NewTicketModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 w-full max-w-lg text-left space-y-4 my-4 shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <form onSubmit={handleSubmit} className="m-auto bg-white rounded-2xl p-6 w-full max-w-lg text-left space-y-4 shadow-2xl">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-bold text-slate-800">📋 Nueva Orden de Trabajo</h2>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>

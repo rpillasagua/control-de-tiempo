@@ -506,12 +506,12 @@ export default function DashboardPage() {
           </Link>
           
           {userRole === 'admin' && (
-            <button onClick={() => window.location.href = '/admin?newTicket=1'} className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
+            <Link href="/admin?newTicket=1" className="bg-white border border-slate-100 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-1">
                 <TicketIcon className="w-5 h-5" />
               </div>
               <span className="text-xs font-semibold text-slate-700 text-center">Asignar Tarea</span>
-            </button>
+            </Link>
           )}
 
           {userRole === 'admin' && (
