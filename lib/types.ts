@@ -15,7 +15,7 @@ export interface Company {
 }
 
 export type TicketPriority = 'ALTA' | 'NORMAL' | 'BAJA';
-export type TicketStatus = 'PENDIENTE' | 'REVISADO' | 'ASIGNADO' | 'EN_CAMINO' | 'CERRADO';
+export type TicketStatus = 'PENDIENTE' | 'REVISADO' | 'ASIGNADO' | 'EN_CAMINO' | 'EN_PROGRESO' | 'CERRADO';
 
 export interface Ticket {
   id: string;

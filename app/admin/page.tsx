@@ -710,10 +710,11 @@ export default function AdminDashboardPage() {
                     <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${
                       ticket.status === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
                       ticket.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-700' :
-                      ticket.status === 'EN_CAMINO' ? 'bg-emerald-100 text-emerald-700 animate-pulse' :
-                      ticket.status === 'CERRADO' ? 'bg-slate-200 text-slate-600' : 'bg-slate-100 text-slate-600'
+                      ticket.status === 'EN_CAMINO' ? 'bg-indigo-100 text-indigo-700 animate-pulse' :
+                      ticket.status === 'EN_PROGRESO' ? 'bg-orange-100 text-orange-700 animate-pulse' :
+                      ticket.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
                     }`}>
-                      {ticket.status === 'EN_CAMINO' ? '🚗 En camino' : ticket.status}
+                      {ticket.status === 'EN_CAMINO' ? '🚗 En camino' : ticket.status === 'EN_PROGRESO' ? '⚙️ Trabajando' : ticket.status}
                     </span>
                     {ticket.priority && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${priorityColors[ticket.priority] ?? 'bg-slate-100 text-slate-600'}`}>

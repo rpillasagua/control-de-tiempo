@@ -82,7 +82,7 @@ export default function TicketTrackingPage() {
   let mainStep = 0;
   if (ticket.status === 'REVISADO') mainStep = 1;
   if (ticket.status === 'ASIGNADO' || ticket.status === 'EN_CAMINO') mainStep = 2;
-  if (ticket.status === 'CERRADO') mainStep = 3;
+  if (ticket.status === 'EN_PROGRESO' || ticket.status === 'CERRADO') mainStep = 3;
 
   // ── Sub-status text for "Técnico Asignado" ──
   let techSubStatus = '';
@@ -96,7 +96,7 @@ export default function TicketTrackingPage() {
       techSubStatus = '🚗 En camino al punto';
       techSubIcon = <CircleDot className="w-3.5 h-3.5" />;
       techSubPulse = true;
-    } else if (ticket.status === 'CERRADO' && visit) {
+    } else if ((ticket.status === 'EN_PROGRESO' || ticket.status === 'CERRADO') && visit) {
       techSubStatus = '✅ Llegada registrada';
       techSubIcon = <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />;
     }

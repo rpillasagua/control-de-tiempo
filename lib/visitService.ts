@@ -80,11 +80,11 @@ export async function createVisit(
   // Fire and forget so we don't block on network
   await fireAndForgetWrite(setDoc(docRef, visitData));
 
-  // Si proviene de un ticket asimilado, cerramos el ticket y cruzamos los referidos
+  // Si proviene de un ticket asimilado, cruzamos los referidos y lo ponemos en progreso
   if (ticketId) {
     try {
-      await updateTicketStatus(ticketId, { status: 'CERRADO', visitId: docRef.id });
-      logger.log(`Ticket ${ticketId} marcado como CERRADO.`);
+      await updateTicketStatus(ticketId, { status: 'EN_PROGRESO', visitId: docRef.id });
+      logger.log(`Ticket ${ticketId} marcado como EN_PROGRESO.`);
     } catch (err) {
       logger.error('Error cerrando ticket asignado', err);
     }
@@ -156,6 +156,16 @@ export async function closeVisit(
 
   if (typeof window !== 'undefined') {
     localStorage.removeItem(`active_visit_${visit.technicianId}`);
+  }
+
+  // Cerrar el ticket vinculado a esta visita
+  if (visit.ticketId) {
+    try {
+      await updateTicketStatus(visit.ticketId, { status: 'CERRADO' });
+      logger.log(`Ticket vinculado ${visit.ticketId} marcado como CERRADO.`);
+    } catch (err) {
+      logger.error('Error cerrando ticket asignado a la visita', err);
+    }
   }
 
   logger.log(`✅ Visita ${visitId} cerrada. Duración neta: ${totalDurationMin} min`);
