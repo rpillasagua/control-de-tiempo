@@ -24,6 +24,7 @@ export default function ProfilePage() {
     phone: '',
   });
   const [hasCompany, setHasCompany] = useState(false);
+  const [userRole, setUserRole] = useState<'admin'|'technician'|'none'|null>(null);
 
   const load = useCallback(async () => {
     if (!user) return; // Wait for useAuth to provide the user
@@ -32,6 +33,7 @@ export default function ProfilePage() {
       const p = await getProfile(email);
       const cInfo = await getUserCompany(email);
       setHasCompany(cInfo.company !== null);
+      setUserRole(cInfo.role);
 
       if (cInfo.company) {
         setFormData({
@@ -170,7 +172,14 @@ export default function ProfilePage() {
             </button>
           )}
           <h2 className="font-bold text-slate-800 text-lg">{user?.name}</h2>
-          <p className="text-slate-500 text-sm mb-2">{user?.email}</p>
+          <p className="text-slate-500 text-sm">{user?.email}</p>
+          {userRole && userRole !== 'none' && (
+            <div className="mt-2">
+              <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full inline-block ${userRole === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'}`}>
+                 {userRole === 'admin' ? 'Administrador' : 'Técnico'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-5">

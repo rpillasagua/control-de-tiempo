@@ -103,7 +103,6 @@ export default function AdminDashboardPage() {
 
   const [userRole, setUserRole] = useState<'admin'|'technician'|'none'|null>(null);
 
-  // ── Load companies ──────────────────────
   const loadCompanies = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -124,6 +123,17 @@ export default function AdminDashboardPage() {
   }, [user, selectedCompanyId]);
 
   useEffect(() => { loadCompanies(); }, [user]);
+
+  // Open modal if ?newTicket=1 is in URL
+  useEffect(() => {
+    if (!loading && activeCompany) {
+      if (typeof window !== 'undefined' && window.location.search.includes('newTicket=1')) {
+        setShowNewTicketModal(true);
+        // Clean URL to prevent re-opening on reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [loading, activeCompany]);
 
   // ── Load tickets when company changes ──
   const loadTickets = useCallback(async () => {

@@ -13,7 +13,8 @@
 import { useState, useEffect } from 'react';
 import {
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
   User
@@ -48,6 +49,11 @@ export function useAuth() {
       setLoading(false);
     });
 
+    // Check for redirect result errors early on
+    getRedirectResult(auth).catch((error) => {
+      logger.error('❌ Error en redirect login:', error);
+    });
+
     return () => unsubscribe();
   }, []);
 
@@ -56,10 +62,10 @@ export function useAuth() {
     provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      logger.log('✅ Login Firebase exitoso:', result.user.displayName);
+      await signInWithRedirect(auth, provider);
+      // El resultado se manejará al recargar la página vía onAuthStateChanged
     } catch (error) {
-      logger.error('❌ Error en login:', error);
+      logger.error('❌ Error iniciando redirect:', error);
       throw error;
     }
   };
