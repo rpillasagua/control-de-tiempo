@@ -186,7 +186,7 @@ export default function PublicSupportPage() {
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto px-4 -mt-10">
+      <div className="relative z-10 max-w-xl mx-auto px-4 -mt-10">
         <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-lg p-6 space-y-5">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">

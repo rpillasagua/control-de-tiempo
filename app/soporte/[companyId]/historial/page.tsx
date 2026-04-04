@@ -98,13 +98,13 @@ export default function ClientHistoryPage() {
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto px-4 -mt-8">
+      <div className="relative z-10 max-w-xl mx-auto px-4 -mt-8">
         <form onSubmit={handleSearch} className="bg-white rounded-3xl shadow-lg p-6 mb-6">
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Ingresa tu Número Celular exacto</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Ingresa tu RUC o Número Celular exacto</label>
           <div className="flex gap-2">
             <input 
-              type="tel" required value={phone} onChange={e => setPhone(e.target.value)}
-              placeholder="099..."
+              type="text" required value={phone} onChange={e => setPhone(e.target.value)}
+              placeholder="Ej. 17... / 099..."
               className="flex-1 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
             />
             <button 
@@ -114,7 +114,7 @@ export default function ClientHistoryPage() {
               {isSearching ? <Loader2 className="w-5 h-5 animate-spin"/> : <Search className="w-5 h-5"/>}
             </button>
           </div>
-          <p className="text-xs text-slate-400 mt-2">Solo se mostrarán registros vinculados a este número.</p>
+          <p className="text-xs text-slate-400 mt-2">Solo se mostrarán registros vinculados a este identificador.</p>
         </form>
 
         {hasSearched && timelineItems.length === 0 && (
