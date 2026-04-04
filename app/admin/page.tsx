@@ -874,8 +874,8 @@ function CompanyFormModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <form onSubmit={onSubmit} className="bg-white rounded-2xl p-6 w-full max-w-md text-left">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <form onSubmit={onSubmit} className="mx-auto my-8 bg-white rounded-2xl p-6 w-full max-w-md text-left shadow-2xl">
         <h2 className="text-lg font-bold mb-4">Nueva Empresa</h2>
         <label className="block text-sm font-semibold text-slate-700 mb-1">Nombre Comercial</label>
         <input
@@ -917,6 +917,7 @@ function NewTicketModal({
   }) => void;
 }) {
   const [selectedClientId, setSelectedClientId] = React.useState('');
+  const [clientSearch, setClientSearch] = React.useState('');
   const [clientName, setClientName] = React.useState('');
   const [clientPhone, setClientPhone] = React.useState('');
   const [clientAddress, setClientAddress] = React.useState('');
@@ -973,7 +974,7 @@ function NewTicketModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="m-auto bg-white rounded-2xl p-6 w-full max-w-lg text-left space-y-4 shadow-2xl">
+      <form onSubmit={handleSubmit} className="mx-auto my-8 bg-white rounded-2xl p-6 w-full max-w-lg text-left space-y-4 shadow-2xl">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-bold text-slate-800">📋 Nueva Orden de Trabajo</h2>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
@@ -1004,39 +1005,50 @@ function NewTicketModal({
         {/* Client Selector & Details */}
         <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200">
           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente *</label>
-          <select
-            value={selectedClientId}
-            onChange={(e) => {
-              const id = e.target.value;
-              setSelectedClientId(id);
-              if (id === 'NEW' || id === '') {
-                setClientName('');
-                setClientPhone('');
-                setClientAddress('');
-                setLocation(null);
-              } else {
-                const c = clients.find(cl => cl.id === id);
-                if (c) {
-                  setClientName(c.name);
-                  setClientPhone(c.phone || '');
-                  setClientAddress(c.address || '');
-                  setLocation(c.location || null);
+          <div className="relative">
+            <input
+              list="clients-list"
+              type="text"
+              placeholder="🔍 Buscar por nombre o RUC/teléfono..."
+              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm"
+              value={clientSearch}
+              onChange={(e) => {
+                const val = e.target.value;
+                setClientSearch(val);
+                
+                if (!val.trim()) {
+                  setSelectedClientId('');
+                  setClientName('');
+                  setClientPhone('');
+                  setClientAddress('');
+                  setLocation(null);
+                  return;
                 }
-              }
-            }}
-            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm"
-          >
-            <option value="">— Buscar o Seleccionar Cliente —</option>
-            <option value="NEW">➕ Registrar Nuevo Cliente</option>
-            <optgroup label="Tus Clientes">
+
+                // Check if exact match from datalist
+                const found = clients.find(c => `${c.name} ${c.phone ? '- ' + c.phone : ''}` === val);
+                if (found) {
+                  setSelectedClientId(found.id);
+                  setClientName(found.name);
+                  setClientPhone(found.phone || '');
+                  setClientAddress(found.address || '');
+                  setLocation(found.location || null);
+                } else {
+                  // Not found in list, they are typing a new name
+                  setSelectedClientId('NEW');
+                  setClientName(val);
+                }
+              }}
+            />
+            <datalist id="clients-list">
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={`${c.name} ${c.phone ? '- ' + c.phone : ''}`} />
               ))}
-            </optgroup>
-          </select>
+            </datalist>
+          </div>
 
           {/* New Client Form Block */}
-          {(selectedClientId === 'NEW' || selectedClientId === '') && (
+          {(selectedClientId === 'NEW' || selectedClientId === '') && clientSearch.trim() !== '' && (
             <div className="mt-4 p-4 bg-white border border-blue-100 rounded-xl shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2">
                 <Users className="w-4 h-4" /> Datos del Nuevo Cliente
