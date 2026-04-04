@@ -20,8 +20,10 @@ export type TicketStatus = 'PENDIENTE' | 'REVISADO' | 'ASIGNADO' | 'EN_CAMINO' |
 export interface Ticket {
   id: string;
   companyId: string; // A qué empresa va dirigido
+  clientId?: string;         // ID del cliente vinculado (si existe en la BD)
   clientName: string;
   clientPhone: string;
+  clientRuc?: string;        // RUC del cliente (indexado para búsqueda)
   clientAddress: string;
   issueDescription: string;
   photoUrl?: string;         // Evidencia subida por el cliente o admin
@@ -140,6 +142,7 @@ export interface Visit {
 export interface Client {
   id: string;
   name: string;
+  ruc?: string;        // RUC o cédula (indexado para búsqueda en historial)
   address?: string;
   phone?: string;
   email?: string;

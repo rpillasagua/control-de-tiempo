@@ -71,6 +71,7 @@ export default function AdminDashboardPage() {
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
   const [visitCache, setVisitCache] = useState<Record<string, Visit | null>>({});
+  const [ticketFilter, setTicketFilter] = useState<'TODOS'|'PENDIENTE'|'ASIGNADO'|'EN_PROGRESO'|'CERRADO'>('TODOS');
   // Alert badge
   const [newCount, setNewCount] = useState(0);
 
@@ -285,6 +286,8 @@ export default function AdminDashboardPage() {
 
   // ── Create manual ticket ─────────────────
   const handleCreateManualTicket = async (data: {
+    clientId?: string;
+    clientRuc?: string;
     clientName: string;
     clientPhone: string;
     clientAddress: string;
@@ -303,6 +306,8 @@ export default function AdminDashboardPage() {
         photoUrl = await uploadPhotoToStorage(file, `tickets/${activeCompany.id}/${Date.now()}.jpg`);
       }
       await createTicketByAdmin(activeCompany.id, {
+        clientId: data.clientId,
+        clientRuc: data.clientRuc,
         clientName: data.clientName,
         clientPhone: data.clientPhone,
         clientAddress: data.clientAddress,
@@ -677,6 +682,28 @@ export default function AdminDashboardPage() {
             </button>
           </h3>
 
+          {/* Status filter tabs */}
+          <div className="flex gap-2 flex-wrap mb-3">
+            {(['TODOS', 'PENDIENTE', 'ASIGNADO', 'EN_PROGRESO', 'CERRADO'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setTicketFilter(f)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition border ${
+                  ticketFilter === f
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
+                }`}
+              >
+                {f === 'TODOS' ? `Todos (${tickets.length})` :
+                 f === 'PENDIENTE' ? `Pendientes (${tickets.filter(t=>t.status==='PENDIENTE'||t.status==='REVISADO').length})` :
+                 f === 'ASIGNADO' ? `Asignados (${tickets.filter(t=>t.status==='ASIGNADO'||t.status==='EN_CAMINO').length})` :
+                 f === 'EN_PROGRESO' ? `En progreso (${tickets.filter(t=>t.status==='EN_PROGRESO').length})` :
+                 `Cerrados (${tickets.filter(t=>t.status==='CERRADO').length})`
+                }
+              </button>
+            ))}
+          </div>
+
           {ticketsLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-7 h-7 animate-spin text-blue-500" /></div>
           ) : tickets.length === 0 ? (
@@ -686,7 +713,16 @@ export default function AdminDashboardPage() {
               <p className="text-slate-400 text-sm mt-1">{t.adminSharePortalDesc}</p>
             </div>
           ) : (
-            tickets.map(ticket => {
+            tickets
+              .filter(ticket => {
+                if (ticketFilter === 'TODOS') return true;
+                if (ticketFilter === 'PENDIENTE') return ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO';
+                if (ticketFilter === 'ASIGNADO') return ticket.status === 'ASIGNADO' || ticket.status === 'EN_CAMINO';
+                if (ticketFilter === 'EN_PROGRESO') return ticket.status === 'EN_PROGRESO';
+                if (ticketFilter === 'CERRADO') return ticket.status === 'CERRADO';
+                return true;
+              })
+              .map(ticket => {
               const priorityColors: Record<string, string> = {
                 ALTA: 'bg-red-100 text-red-700',
                 NORMAL: 'bg-blue-100 text-blue-700',
@@ -838,15 +874,56 @@ export default function AdminDashboardPage() {
                         <Share2 className="w-3.5 h-3.5" /> Compartir tracking
                       </button>
 
-                      {(ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO') && activeCompany && (
+                      {/* Revisar (PENDIENTE → REVISADO) */}
+                      {ticket.status === 'PENDIENTE' && (
+                        <button
+                          onClick={async () => {
+                            await updateTicketStatus(ticket.id, { status: 'REVISADO' });
+                            toast.success('Ticket marcado como Revisado');
+                          }}
+                          className="flex items-center gap-1 bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-100 transition border border-slate-200"
+                        >
+                          🔍 Marcar Revisado
+                        </button>
+                      )}
+
+                      {/* Asignar / Reasignar — visible en todos los estados activos */}
+                      {ticket.status !== 'CERRADO' && activeCompany && (
                         <button
                           onClick={() => setShowAssignModal(ticket.id)}
                           className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-100 transition"
                         >
-                          👤 Asignar Técnico
+                          👤 {ticket.assignedTo ? 'Reasignar' : 'Asignar Técnico'}
                         </button>
                       )}
 
+                      {/* Ver Reporte — cuando la visita está finalizada */}
+                      {ticket.visitId && visitCache[ticket.visitId]?.status === 'FINALIZADA' && (
+                        <a
+                          href={`/visita/${ticket.visitId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-100 transition"
+                        >
+                          📄 Ver Reporte
+                        </a>
+                      )}
+
+                      {/* Cancelar ticket — solo activos sin visita iniciada */}
+                      {(ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO') && !ticket.visitId && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm('¿Cancelar este ticket? No se puede deshacer.')) return;
+                            await updateTicketStatus(ticket.id, { status: 'CERRADO' });
+                            toast.success('Ticket cancelado');
+                          }}
+                          className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition"
+                        >
+                          ✕ Cancelar
+                        </button>
+                      )}
+
+                      {/* Corregir estado — ticket mal cerrado */}
                       {ticket.status === 'CERRADO' && ticket.visitId && visitCache[ticket.visitId]?.status !== 'FINALIZADA' && (
                         <button
                           onClick={async () => {
@@ -993,6 +1070,8 @@ function NewTicketModal({
   clients: Client[];
   onClose: () => void;
   onSubmit: (data: {
+    clientId?: string;
+    clientRuc?: string;
     clientName: string;
     clientPhone: string;
     clientAddress: string;
@@ -1009,6 +1088,7 @@ function NewTicketModal({
   const [showClientDropdown, setShowClientDropdown] = React.useState(false);
   const [clientName, setClientName] = React.useState('');
   const [clientPhone, setClientPhone] = React.useState('');
+  const [clientRuc, setClientRuc] = React.useState('');
   const [clientAddress, setClientAddress] = React.useState('');
   const [issueDescription, setIssueDescription] = React.useState('');
   const [priority, setPriority] = React.useState<TicketPriority>('NORMAL');
@@ -1046,6 +1126,8 @@ function NewTicketModal({
     setSaving(true);
     try {
       await onSubmit({
+        clientId: selectedClientId !== 'NEW' && selectedClientId !== '' ? selectedClientId : undefined,
+        clientRuc: clientRuc.trim() || undefined,
         clientName: clientName.trim(),
         clientPhone: clientPhone.trim(),
         clientAddress: clientAddress.trim(),
@@ -1094,41 +1176,46 @@ function NewTicketModal({
         {/* Client Selector & Details */}
         <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200">
           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente *</label>
+
+          {/* Search bar — solo para buscar clientes existentes */}
           <div className="relative">
             <input
               type="text"
-              placeholder="🔍 Buscar por nombre o RUC/teléfono..."
+              placeholder="🔍 Buscar por nombre, RUC o teléfono..."
               className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm"
               value={clientSearch}
               onFocus={() => setShowClientDropdown(true)}
-              onBlur={() => setShowClientDropdown(false)}
+              onBlur={() => setTimeout(() => setShowClientDropdown(false), 150)}
               onChange={(e) => {
                 const val = e.target.value;
                 setClientSearch(val);
                 setShowClientDropdown(true);
-                
-                if (!val.trim()) {
+                // Si borra la búsqueda y no hay cliente seleccionado, resetea
+                if (!val.trim() && selectedClientId !== 'NEW') {
                   setSelectedClientId('');
                   setClientName('');
                   setClientPhone('');
+                  setClientRuc('');
                   setClientAddress('');
                   setLocation(null);
-                  return;
                 }
-
-                // If typing manually, assume it's a NEW client until they select one
-                setSelectedClientId('NEW');
-                setClientName(val);
               }}
             />
-            
-            {showClientDropdown && (
-              <div 
+
+            {showClientDropdown && clientSearch.trim() !== '' && (
+              <div
                 className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
-                onMouseDown={(e) => e.preventDefault()} // prevent input blur before click
+                onMouseDown={(e) => e.preventDefault()}
               >
                 {clients
-                  .filter(c => `${c.name} ${c.phone || ''}`.toLowerCase().includes(clientSearch.toLowerCase()))
+                  .filter(c => {
+                    const q = clientSearch.toLowerCase();
+                    return (
+                      c.name.toLowerCase().includes(q) ||
+                      (c.phone || '').toLowerCase().includes(q) ||
+                      (c.ruc || '').toLowerCase().includes(q)
+                    );
+                  })
                   .slice(0, 4)
                   .map(c => (
                     <button
@@ -1139,6 +1226,7 @@ function NewTicketModal({
                         setClientSearch(c.name);
                         setClientName(c.name);
                         setClientPhone(c.phone || '');
+                        setClientRuc((c as any).ruc || '');
                         setClientAddress(c.address || '');
                         setLocation(c.location || null);
                         setShowClientDropdown(false);
@@ -1146,30 +1234,54 @@ function NewTicketModal({
                       className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100"
                     >
                       <div className="font-bold text-slate-800 text-sm">{c.name}</div>
-                      {c.phone && <div className="text-xs text-slate-500">{c.phone}</div>}
+                      <div className="text-xs text-slate-400 flex gap-3">
+                        {c.phone && <span>📞 {c.phone}</span>}
+                        {(c as any).ruc && <span>🪪 {(c as any).ruc}</span>}
+                      </div>
                     </button>
                   ))}
+                {/* Siempre muestra opción de crear nuevo */}
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedClientId('NEW');
+                    setClientName('');
+                    setClientPhone('');
+                    setClientRuc('');
+                    setClientAddress('');
                     setShowClientDropdown(false);
                   }}
                   className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50 bg-slate-50"
                 >
-                  ➕ Registrar "{clientSearch || 'Nuevo Cliente'}"
+                  ➕ Registrar nuevo cliente
                 </button>
               </div>
             )}
           </div>
 
-          {/* New Client Form Block */}
-          {(selectedClientId === 'NEW' || selectedClientId === '') && clientSearch.trim() !== '' && (
-            <div className="mt-4 p-4 bg-white border border-blue-100 rounded-xl shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4" /> Datos del Nuevo Cliente
+          {/* Indicador cliente seleccionado */}
+          {selectedClientId !== '' && selectedClientId !== 'NEW' && (
+            <div className="mt-2 flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+              <span className="text-sm font-bold text-emerald-700">✅ {clientName}</span>
+              <button type="button" onClick={() => {
+                setSelectedClientId('');
+                setClientSearch('');
+                setClientName('');
+                setClientPhone('');
+                setClientRuc('');
+                setClientAddress('');
+                setLocation(null);
+              }} className="text-xs text-slate-400 hover:text-red-500">✕ Cambiar</button>
+            </div>
+          )}
+
+          {/* Formulario Nuevo Cliente — aparece cuando selectedClientId = NEW */}
+          {selectedClientId === 'NEW' && (
+            <div className="mt-4 p-4 bg-white border border-blue-100 rounded-xl shadow-sm space-y-3">
+              <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                <Users className="w-4 h-4" /> Nuevo Cliente
               </h3>
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre y Apellido *</label>
                 <input required value={clientName} onChange={e => setClientName(e.target.value)}
@@ -1177,11 +1289,19 @@ function NewTicketModal({
                   placeholder="Ej: Juan Pérez" />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="099..." />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">RUC / Cédula</label>
+                  <input value={clientRuc} onChange={e => setClientRuc(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Ej: 0912345678001" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                  <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="099..." />
+                </div>
               </div>
 
               <div>
@@ -1190,27 +1310,32 @@ function NewTicketModal({
                   <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
                     className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     placeholder="Ej: Mapasingue Este Mz 4..." />
-                  
                   <button
                     type="button"
                     onClick={() => setShowMapPicker(true)}
                     className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
                   >
                     <MapPin className="w-4 h-4" />
-                    {location ? `Ubicación Fijada (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})` : 'Seleccionar Ubicación Exacta en Mapa'}
+                    {location ? `Ubicación fijada ✅` : 'Seleccionar en Mapa'}
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Existing Client Details Inline */}
+          {/* Cliente existente — editar datos vinculados */}
           {selectedClientId !== 'NEW' && selectedClientId !== '' && (
-            <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 gap-4">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono vinculado</label>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
                 <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl p-2.5 text-sm outline-none bg-white font-medium text-slate-700" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">RUC / Cédula</label>
+                <input value={clientRuc} onChange={e => setClientRuc(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm outline-none bg-white font-medium text-slate-700"
+                  placeholder="(vacío si no tiene)" />
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección / Ref</label>
@@ -1222,7 +1347,7 @@ function NewTicketModal({
                     onClick={() => setShowMapPicker(true)}
                     className={`whitespace-nowrap flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-600 border-slate-200'}`}
                   >
-                    <MapPin className="w-4 h-4" /> {location ? 'GPS Fijado' : '+ GPS'}
+                    <MapPin className="w-4 h-4" /> {location ? 'GPS ✅' : '+ GPS'}
                   </button>
                 </div>
               </div>

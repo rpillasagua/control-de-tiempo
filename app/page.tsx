@@ -483,7 +483,7 @@ export default function DashboardPage() {
         )}
 
         {/* ASIGNACIONES (Tickets) */}
-        {assignedTickets.length > 0 && !activeVisit && (
+        {assignedTickets.length > 0 && (
           <div className="mt-4 mb-2">
             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 mb-3">
               📋 {t.assignedTickets || 'Tareas Asignadas'} ({assignedTickets.length})

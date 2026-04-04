@@ -42,7 +42,7 @@ export function useTechnicianTicketMonitor(technicianEmail: string | null) {
     const q = query(
       collection(db, 'tickets'),
       where('assignedTo', '==', technicianEmail),
-      where('status', '==', 'ASIGNADO')
+      where('status', 'in', ['ASIGNADO', 'EN_CAMINO', 'EN_PROGRESO'])
     );
 
     const unsub = onSnapshot(q, (snap) => {

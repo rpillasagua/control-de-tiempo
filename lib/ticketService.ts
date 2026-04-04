@@ -49,6 +49,8 @@ export async function createTicketByAdmin(
     clientName: string;
     clientPhone: string;
     clientAddress: string;
+    clientId?: string;
+    clientRuc?: string;
     issueDescription: string;
     priority: TicketPriority;
     notes?: string;
@@ -69,6 +71,35 @@ export async function createTicketByAdmin(
     updatedAt: now,
   };
   await setDoc(newRef, ticketData);
+
+  // If new client was created, auto-save them to the clients collection
+  if (data.clientId === 'NEW' || !data.clientId) {
+    if (data.clientPhone || data.clientRuc) {
+      try {
+        const clientRef = doc(collection(db, 'clients'));
+        await setDoc(clientRef, {
+          id: clientRef.id,
+          name: data.clientName,
+          phone: data.clientPhone,
+          ruc: data.clientRuc || null,
+          address: data.clientAddress || '',
+          companyId,
+          createdBy: 'ADMIN',
+          createdAt: now,
+        });
+        // Update ticket with the real clientId
+        await updateDoc(newRef, { clientId: clientRef.id });
+      } catch (e) { console.warn('Error auto-saving client', e); }
+    }
+  } else {
+    // Existing client — update ruc if provided
+    if (data.clientRuc) {
+      try {
+        await updateDoc(doc(db, 'clients', data.clientId), { ruc: data.clientRuc });
+      } catch {}
+    }
+  }
+
   return newRef.id;
 }
 
@@ -99,20 +130,37 @@ export async function getTicketsByCompany(companyId: string): Promise<Ticket[]> 
   }
 }
 
-// Obteniendo tickets por número de teléfono en una empresa y ordenados cronológicamente
-export async function getTicketsByClientPhone(companyId: string, phone: string): Promise<Ticket[]> {
+// Obteniendo tickets por número de teléfono o RUC en una empresa
+export async function getTicketsByClientPhone(companyId: string, query_value: string): Promise<Ticket[]> {
   const col = collection(db, 'tickets');
-  const constraints = [
-    where('companyId', '==', companyId),
-    where('clientPhone', '==', phone),
-    orderBy('createdAt', 'desc')
-  ];
   
-  const q = query(col, ...constraints);
+  // Try searching by phone first
+  const byPhone = query(col,
+    where('companyId', '==', companyId),
+    where('clientPhone', '==', query_value),
+    orderBy('createdAt', 'desc')
+  );
+  
+  // Also try searching by RUC
+  const byRuc = query(col,
+    where('companyId', '==', companyId),
+    where('clientRuc', '==', query_value),
+    orderBy('createdAt', 'desc')
+  );
 
   try {
-    const snap = await getDocs(q);
-    return snap.docs.map(doc => doc.data() as Ticket);
+    const [phoneSnap, rucSnap] = await Promise.all([getDocs(byPhone), getDocs(byRuc)]);
+    const seenIds = new Set<string>();
+    const results: Ticket[] = [];
+    for (const snap of [phoneSnap, rucSnap]) {
+      for (const d of snap.docs) {
+        if (!seenIds.has(d.id)) {
+          seenIds.add(d.id);
+          results.push({ ...(d.data() as Ticket), id: d.id });
+        }
+      }
+    }
+    return results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (err) {
     console.error('Error in getTicketsByClientPhone', err);
     return [];
@@ -126,7 +174,7 @@ export async function getTicketsByTechnician(technicianEmail: string): Promise<T
     where('assignedTo', '==', technicianEmail)
   );
 
-  const filterAssigned = (tickets: Ticket[]) => tickets.filter(t => t.status === 'ASIGNADO' || t.status === 'EN_CAMINO');
+  const filterAssigned = (tickets: Ticket[]) => tickets.filter(t => t.status === 'ASIGNADO' || t.status === 'EN_CAMINO' || t.status === 'EN_PROGRESO');
 
   try {
     const cacheSnap = await getDocsFromCache(q);
