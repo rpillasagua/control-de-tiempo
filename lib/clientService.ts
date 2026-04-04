@@ -127,6 +127,28 @@ export async function getClientsByCompany(companyId: string): Promise<Client[]> 
   }
 }
 
+// Traer TODOS los clientes de una empresa: los que tienen companyId + los creados por cualquier técnico
+export async function getAllClientsForCompany(companyId: string, technicianEmails: string[]): Promise<Client[]> {
+  const seen = new Map<string, Client>();
+
+  // 1. Clientes con companyId
+  const byCompany = await getClientsByCompany(companyId);
+  for (const c of byCompany) seen.set(c.id, c);
+
+  // 2. Clientes creados por cada técnico (incluye admin)
+  for (const email of technicianEmails) {
+    try {
+      const list = await getClients(email);
+      for (const c of list) {
+        if (!seen.has(c.id)) seen.set(c.id, c);
+      }
+    } catch {}
+  }
+
+  // Ordenar alfabéticamente
+  return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export async function updateClient(
   clientId: string,
   data: Partial<Omit<Client, 'id' | 'createdBy' | 'createdAt'>>,

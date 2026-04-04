@@ -12,7 +12,7 @@ import { useTranslation } from '@/lib/i18n';
 import { compressImage } from '@/lib/imageCompression';
 import { getTicketsByCompany, updateTicketStatus, createTicketByAdmin } from '@/lib/ticketService';
 import { createInvite, getCompanyInvites } from '@/lib/inviteService';
-import { getClients, getClientsByCompany } from '@/lib/clientService';
+import { getClients, getClientsByCompany, getAllClientsForCompany } from '@/lib/clientService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
 import { Company, Ticket, Invite, TicketPriority, Client } from '@/lib/types';
@@ -151,10 +151,8 @@ export default function AdminDashboardPage() {
       setTickets(list);
       setNewCount(0);
       
-      const clientList = await getClientsByCompany(selectedCompanyId);
-      const myClients = await getClients(user!.email);
-      const merged = [...clientList, ...myClients].filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i);
-      setClients(merged);
+      const clientList = await getAllClientsForCompany(selectedCompanyId, activeCompany?.technicianEmails || [user!.email]);
+      setClients(clientList);
 
       // Also refresh active invites
       const inviteList = await getCompanyInvites(selectedCompanyId);
@@ -1097,7 +1095,7 @@ function NewTicketModal({
         {/* Photo */}
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Foto de referencia</label>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
           {photoDataUrl ? (
             <div className="relative">
               <img src={photoDataUrl} alt="Preview" className="w-full h-32 object-cover rounded-xl border border-slate-200" />
