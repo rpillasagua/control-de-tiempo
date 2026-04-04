@@ -11,16 +11,17 @@ import {
 import { useTranslation } from '@/lib/i18n';
 import { compressImage } from '@/lib/imageCompression';
 import { getTicketsByCompany, updateTicketStatus, createTicketByAdmin } from '@/lib/ticketService';
+import { getVisit } from '@/lib/visitService';
 import { createInvite, getCompanyInvites } from '@/lib/inviteService';
 import { getClients, getClientsByCompany, getAllClientsForCompany } from '@/lib/clientService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
-import { Company, Ticket, Invite, TicketPriority, Client } from '@/lib/types';
+import { Company, Ticket, Visit, Invite, TicketPriority, Client } from '@/lib/types';
 import {
   Loader2, Plus, Users, Building2, MapPin, Phone,
-  Trash2, Link as LinkIcon, Bell, ChevronDown,
+  Trash2, Link as LinkIcon, Bell, ChevronDown, ChevronUp,
   ArrowRightLeft, ArrowLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock, Camera, Save, Volume2, VolumeX,
-  Share2
+  Share2, Eye, CheckCircle, Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
@@ -68,6 +69,8 @@ export default function AdminDashboardPage() {
   // Tickets
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
+  const [visitCache, setVisitCache] = useState<Record<string, Visit | null>>({});
   // Alert badge
   const [newCount, setNewCount] = useState(0);
 
@@ -693,87 +696,171 @@ export default function AdminDashboardPage() {
                 ALTA: '🔴 Urgente', NORMAL: '🔵 Normal', BAJA: '⚫ Baja',
               };
               return (
-              <div key={ticket.id} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3 relative overflow-hidden">
+              <div key={ticket.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
                 {/* Status bar */}
                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${
                   ticket.status === 'PENDIENTE' ? 'bg-amber-400' :
                   ticket.status === 'ASIGNADO' ? 'bg-blue-500' :
+                  ticket.status === 'EN_CAMINO' ? 'bg-indigo-500' :
+                  ticket.status === 'EN_PROGRESO' ? 'bg-orange-400' :
                   ticket.status === 'CERRADO' ? 'bg-emerald-500' : 'bg-slate-300'
                 }`} />
 
-                <div className="flex justify-between items-start pl-2">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-lg">{ticket.clientName}</h4>
-                    <p className="text-xs text-slate-400">{new Date(ticket.createdAt).toLocaleString('es-EC')}</p>
+                {/* ── Collapsed header (always visible) ── */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const nextId = expandedTicketId === ticket.id ? null : ticket.id;
+                    setExpandedTicketId(nextId);
+                    // Load visit if we're expanding and ticket has a visitId
+                    if (nextId && ticket.visitId && visitCache[ticket.visitId] === undefined) {
+                      const v = await getVisit(ticket.visitId);
+                      setVisitCache(prev => ({ ...prev, [ticket.visitId!]: v }));
+                    }
+                  }}
+                  className="w-full text-left p-5 space-y-1"
+                >
+                  <div className="flex justify-between items-start pl-2">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <h4 className="font-bold text-slate-800 text-base truncate">{ticket.clientName}</h4>
+                      <p className="text-xs text-slate-400">{new Date(ticket.createdAt).toLocaleString('es-EC')}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                          ticket.status === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
+                          ticket.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-700' :
+                          ticket.status === 'EN_CAMINO' ? 'bg-indigo-100 text-indigo-700 animate-pulse' :
+                          ticket.status === 'EN_PROGRESO' ? 'bg-orange-100 text-orange-700 animate-pulse' :
+                          ticket.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {ticket.status === 'EN_CAMINO' ? '🚗 En camino' : ticket.status === 'EN_PROGRESO' ? '⚙️ Trabajando' : ticket.status === 'CERRADO' ? '✅ Cerrado' : ticket.status}
+                        </span>
+                        {ticket.priority && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${priorityColors[ticket.priority] ?? 'bg-slate-100 text-slate-600'}`}>
+                            {priorityLabels[ticket.priority]}
+                          </span>
+                        )}
+                      </div>
+                      {expandedTicketId === ticket.id
+                        ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                        : <ChevronDown className="w-4 h-4 text-slate-400" />
+                      }
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${
-                      ticket.status === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
-                      ticket.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-700' :
-                      ticket.status === 'EN_CAMINO' ? 'bg-indigo-100 text-indigo-700 animate-pulse' :
-                      ticket.status === 'EN_PROGRESO' ? 'bg-orange-100 text-orange-700 animate-pulse' :
-                      ticket.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {ticket.status === 'EN_CAMINO' ? '🚗 En camino' : ticket.status === 'EN_PROGRESO' ? '⚙️ Trabajando' : ticket.status}
-                    </span>
-                    {ticket.priority && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${priorityColors[ticket.priority] ?? 'bg-slate-100 text-slate-600'}`}>
-                        {priorityLabels[ticket.priority]}
-                      </span>
-                    )}
-                    {ticket.createdByAdmin && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">Admin</span>
-                    )}
-                  </div>
-                </div>
 
-                <div className="pl-2 space-y-1">
-                  {ticket.clientPhone && <p className="text-sm text-slate-600 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientPhone}</p>}
-                  {ticket.clientAddress && <p className="text-sm text-slate-600 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientAddress}</p>}
-                  {ticket.notes && (
-                    <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1">📝 {ticket.notes}</p>
+                  {/* Preview line — visible when collapsed */}
+                  {expandedTicketId !== ticket.id && (
+                    <p className="text-xs text-slate-500 pl-2 truncate">{ticket.issueDescription}</p>
                   )}
-                </div>
+                </button>
 
-                <div className="pl-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{ticket.issueDescription}</p>
-                </div>
+                {/* ── Expanded detail panel ── */}
+                {expandedTicketId === ticket.id && (
+                  <div className="px-5 pb-5 space-y-3 border-t border-slate-100">
+                    <div className="pt-3 pl-2 space-y-1">
+                      {ticket.clientPhone && <p className="text-sm text-slate-600 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientPhone}</p>}
+                      {ticket.clientAddress && <p className="text-sm text-slate-600 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{ticket.clientAddress}</p>}
+                      {ticket.notes && (
+                        <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1">📝 {ticket.notes}</p>
+                      )}
+                    </div>
 
-                {/* Client photo evidence */}
-                {ticket.photoUrl && (
-                  <div className="pl-2">
-                    <img src={ticket.photoUrl} alt="Evidencia" className="w-full h-36 object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => window.open(ticket.photoUrl, '_blank')} />
+                    <div className="pl-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{ticket.issueDescription}</p>
+                    </div>
+
+                    {ticket.photoUrl && (
+                      <div className="pl-2">
+                        <img src={ticket.photoUrl} alt="Evidencia" className="w-full h-36 object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => window.open(ticket.photoUrl, '_blank')} />
+                      </div>
+                    )}
+
+                    {ticket.assignedTo && (
+                      <p className="text-xs font-semibold text-slate-500 pl-2">
+                        👤 Asignado a: <span className="text-blue-600">{ticket.assignedTo}</span>
+                      </p>
+                    )}
+
+                    {/* Visit real-time status */}
+                    {ticket.visitId && (() => {
+                      const visit = visitCache[ticket.visitId];
+                      if (!visit) return (
+                        <div className="flex items-center gap-2 pl-2 text-xs text-slate-400">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando visita...
+                        </div>
+                      );
+                      const isWorking = visit.status === 'EN_PROGRESO';
+                      const isDone = visit.status === 'FINALIZADA';
+                      return (
+                        <div className="pl-2">
+                          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Visita del Técnico</p>
+                          <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <CheckCircle className={`w-4 h-4 ${isWorking || isDone ? 'text-emerald-500' : 'text-slate-300'}`} />
+                              <span className={isWorking || isDone ? 'text-slate-700 font-semibold' : 'text-slate-400'}>Llegada registrada</span>
+                              {visit.arrival?.localTime && <span className="text-xs text-slate-400 ml-auto">{new Date(visit.arrival.localTime).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Wrench className={`w-4 h-4 ${isDone ? 'text-emerald-500' : isWorking ? 'text-orange-400' : 'text-slate-300'}`} />
+                              <span className={isWorking ? 'text-orange-600 font-semibold animate-pulse' : isDone ? 'text-slate-700 font-semibold' : 'text-slate-400'}>
+                                {isWorking ? '⚙️ Trabajando en sitio' : isDone ? 'Trabajo finalizado' : 'Pendiente'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <CheckCircle className={`w-4 h-4 ${isDone ? 'text-emerald-500' : 'text-slate-300'}`} />
+                              <span className={isDone ? 'text-slate-700 font-semibold' : 'text-slate-400'}>Visita cerrada</span>
+                              {visit.departure?.localTime && <span className="text-xs text-slate-400 ml-auto">{new Date(visit.departure.localTime).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>}
+                            </div>
+                            {visit.activities && visit.activities.length > 0 && (
+                              <div className="pt-2 border-t border-slate-200 space-y-1">
+                                <p className="text-xs font-bold text-slate-500">Actividades ({visit.activities.length})</p>
+                                {visit.activities.slice(0, 3).map((act, i) => (
+                                  <p key={i} className="text-xs text-slate-600 truncate">• {act.description}</p>
+                                ))}
+                                {visit.activities.length > 3 && <p className="text-xs text-slate-400">+{visit.activities.length - 3} más...</p>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="pl-2 pt-2 border-t border-slate-100 flex flex-wrap gap-2 justify-end">
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/ticket/${ticket.id}`;
+                          navigator.clipboard.writeText(url);
+                          toast.success('Link de seguimiento copiado — envíaselo al cliente por WhatsApp');
+                        }}
+                        className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> Compartir tracking
+                      </button>
+
+                      {(ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO') && activeCompany && (
+                        <button
+                          onClick={() => setShowAssignModal(ticket.id)}
+                          className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-100 transition"
+                        >
+                          👤 Asignar Técnico
+                        </button>
+                      )}
+
+                      {ticket.status === 'CERRADO' && ticket.visitId && visitCache[ticket.visitId]?.status !== 'FINALIZADA' && (
+                        <button
+                          onClick={async () => {
+                            await updateTicketStatus(ticket.id, { status: 'EN_PROGRESO' });
+                            toast.success('Ticket reabierto como EN PROGRESO');
+                          }}
+                          className="flex items-center gap-1 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition"
+                        >
+                          ↩ Corregir estado
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
-
-                {ticket.assignedTo && (
-                  <p className="text-xs font-semibold text-slate-500 pl-2">
-                    👤 Asignado a: <span className="text-blue-600">{ticket.assignedTo}</span>
-                  </p>
-                )}
-
-                <div className="pl-2 pt-2 border-t border-slate-100 flex flex-wrap gap-2 justify-end">
-                  {/* Share tracking link with client */}
-                  <button
-                    onClick={() => {
-                      const url = `${window.location.origin}/ticket/${ticket.id}`;
-                      navigator.clipboard.writeText(url);
-                      toast.success('Link de seguimiento copiado — envíaselo al cliente por WhatsApp');
-                    }}
-                    className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition"
-                  >
-                    <Share2 className="w-3.5 h-3.5" /> Compartir tracking
-                  </button>
-
-                  {(ticket.status === 'PENDIENTE' || ticket.status === 'REVISADO') && activeCompany && (
-                    <button
-                      onClick={() => setShowAssignModal(ticket.id)}
-                      className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-100 transition"
-                    >
-                      👤 Asignar Técnico
-                    </button>
-                  )}
-                </div>
               </div>
               );
             })
