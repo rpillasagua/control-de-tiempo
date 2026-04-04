@@ -487,8 +487,8 @@ export default function AdminDashboardPage() {
       {/* ── Main ── */}
       <main className="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* ── Tickets Column (LEFT on mobile, RIGHT on desktop) ── */}
-        <div className="md:col-span-2 md:order-2 space-y-4">
+        {/* ── Sidebar: Team + Invites + Danger Zone (compact, goes right on desktop / bottom on mobile) ── */}
+        <div className="md:col-span-1 md:order-2 space-y-4">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold flex items-center gap-2 text-slate-800"><Users className="w-5 h-5 text-blue-600" /> {t.adminMyTeam}</h3>
@@ -578,8 +578,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── Sidebar Column (team + invites + settings) ── */}
-        <div className="md:col-span-1 md:order-1 space-y-4">
+        {/* ── Main Column: Tickets (wide, left on desktop / top on mobile) ── */}
+        <div className="md:col-span-2 md:order-1 space-y-4">
 
           {/* ── Corporate Data — Collapsible ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
