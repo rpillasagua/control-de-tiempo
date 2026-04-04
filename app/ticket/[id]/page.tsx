@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getTicketById } from '@/lib/ticketService';
 import { Ticket } from '@/lib/types';
-import { Loader2, CheckCircle, Clock, Search, MapPin, Calendar, CheckSquare, Share2, Phone } from 'lucide-react';
+import { Loader2, CheckCircle, Clock, Search, MapPin, Calendar, CheckSquare, Share2, Phone, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -16,17 +16,33 @@ export default function TicketTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [error, setError] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  useEffect(() => {
+  const fetchTicket = useCallback(async () => {
     if (!ticketId) return;
-    getTicketById(ticketId)
-      .then(data => {
-        if (data) setTicket(data);
-        else setError(true);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+    try {
+      const data = await getTicketById(ticketId);
+      if (data) {
+        setTicket(data);
+        setLastRefresh(new Date());
+      } else {
+        setError(true);
+      }
+    } catch {
+      if (!ticket) setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [ticketId]);
+
+  // Initial load
+  useEffect(() => { fetchTicket(); }, [fetchTicket]);
+
+  // Auto-refresh every 15 seconds for live tracking
+  useEffect(() => {
+    const interval = setInterval(fetchTicket, 15000);
+    return () => clearInterval(interval);
+  }, [fetchTicket]);
 
   if (loading) {
     return (
@@ -52,10 +68,11 @@ export default function TicketTrackingPage() {
   }
 
   const steps = [
-    { key: 'PENDIENTE', label: 'Recibido',  desc: 'Solicitud ingresada al sistema', icon: <Clock className="w-5 h-5" /> },
-    { key: 'REVISADO',  label: 'Revisado',  desc: 'En análisis por el equipo',      icon: <Search className="w-5 h-5" /> },
-    { key: 'ASIGNADO',  label: 'Asignado',  desc: 'Técnico asignado y en camino',   icon: <MapPin className="w-5 h-5" /> },
-    { key: 'CERRADO',   label: 'Resuelto',  desc: 'Visita técnica finalizada',      icon: <CheckSquare className="w-5 h-5" /> },
+    { key: 'PENDIENTE',  label: 'Recibido',   desc: 'Solicitud ingresada al sistema',  icon: <Clock className="w-5 h-5" /> },
+    { key: 'REVISADO',   label: 'Revisado',   desc: 'En análisis por el equipo',       icon: <Search className="w-5 h-5" /> },
+    { key: 'ASIGNADO',   label: 'Asignado',   desc: 'Técnico asignado a tu solicitud', icon: <MapPin className="w-5 h-5" /> },
+    { key: 'EN_CAMINO',  label: 'En Camino',  desc: 'El técnico va en camino 🚗',      icon: <Truck className="w-5 h-5" /> },
+    { key: 'CERRADO',    label: 'Resuelto',   desc: 'Visita técnica finalizada',       icon: <CheckSquare className="w-5 h-5" /> },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.key === ticket.status);
@@ -133,7 +150,13 @@ export default function TicketTrackingPage() {
 
       {/* Timeline tracker */}
       <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-4">
-        <h2 className="text-slate-500 text-xs uppercase tracking-wider font-bold mb-6">Progreso</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-slate-500 text-xs uppercase tracking-wider font-bold">Progreso</h2>
+          <span className="text-[10px] text-slate-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+            Actualizado {lastRefresh.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
         <div className="relative">
           <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-slate-100 -z-10" />
           <div className="space-y-6">
@@ -144,6 +167,8 @@ export default function TicketTrackingPage() {
               let iconBg = 'bg-slate-100 text-slate-400';
               if (isCompleted) iconBg = 'bg-blue-500 text-white';
               if (isCurrent)   iconBg = 'bg-blue-600 text-white shadow-md ring-4 ring-blue-50';
+              // Special pulsing green for EN_CAMINO when active
+              if (isCurrent && step.key === 'EN_CAMINO') iconBg = 'bg-emerald-500 text-white shadow-md ring-4 ring-emerald-50 animate-pulse';
               return (
                 <div key={step.key} className="flex items-start gap-4">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${iconBg}`}>
