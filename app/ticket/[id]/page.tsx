@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { getTicketById } from '@/lib/ticketService';
-import { Ticket } from '@/lib/types';
-import { Loader2, CheckCircle, Clock, Search, MapPin, Calendar, CheckSquare, Share2, Phone, Truck } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Ticket, Visit } from '@/lib/types';
+import { getVisit } from '@/lib/visitService';
+import {
+  Loader2, CheckCircle, Clock, Search, MapPin, Calendar,
+  CheckSquare, Share2, Phone, UserCheck, Wrench, CircleDot
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -15,34 +20,39 @@ export default function TicketTrackingPage() {
 
   const [loading, setLoading] = useState(true);
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [visit, setVisit] = useState<Visit | null>(null);
   const [error, setError] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  const fetchTicket = useCallback(async () => {
-    if (!ticketId) return;
-    try {
-      const data = await getTicketById(ticketId);
-      if (data) {
-        setTicket(data);
-        setLastRefresh(new Date());
-      } else {
-        setError(true);
-      }
-    } catch {
-      if (!ticket) setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [ticketId]);
-
-  // Initial load
-  useEffect(() => { fetchTicket(); }, [fetchTicket]);
-
-  // Auto-refresh every 15 seconds for live tracking
+  // Real-time listener — only fires when Firestore data changes
   useEffect(() => {
-    const interval = setInterval(fetchTicket, 15000);
-    return () => clearInterval(interval);
-  }, [fetchTicket]);
+    if (!ticketId) return;
+    const unsub = onSnapshot(
+      doc(db, 'tickets', ticketId),
+      async (snap) => {
+        if (!snap.exists()) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+        const data = snap.data() as Ticket;
+        setTicket({ ...data, id: snap.id });
+
+        // If visit exists, load it for sub-step info
+        if (data.visitId) {
+          try {
+            const v = await getVisit(data.visitId);
+            setVisit(v);
+          } catch {}
+        }
+        setLoading(false);
+      },
+      () => {
+        setError(true);
+        setLoading(false);
+      }
+    );
+    return () => unsub();
+  }, [ticketId]);
 
   if (loading) {
     return (
@@ -67,16 +77,67 @@ export default function TicketTrackingPage() {
     );
   }
 
-  const steps = [
-    { key: 'PENDIENTE',  label: 'Recibido',   desc: 'Solicitud ingresada al sistema',  icon: <Clock className="w-5 h-5" /> },
-    { key: 'REVISADO',   label: 'Revisado',   desc: 'En análisis por el equipo',       icon: <Search className="w-5 h-5" /> },
-    { key: 'ASIGNADO',   label: 'Asignado',   desc: 'Técnico asignado a tu solicitud', icon: <MapPin className="w-5 h-5" /> },
-    { key: 'EN_CAMINO',  label: 'En Camino',  desc: 'El técnico va en camino 🚗',      icon: <Truck className="w-5 h-5" /> },
-    { key: 'CERRADO',    label: 'Resuelto',   desc: 'Visita técnica finalizada',       icon: <CheckSquare className="w-5 h-5" /> },
-  ];
+  // ── Determine current main step ──
+  // 0=Recibido, 1=Revisado, 2=Técnico Asignado, 3=Resuelto
+  let mainStep = 0;
+  if (ticket.status === 'REVISADO') mainStep = 1;
+  if (ticket.status === 'ASIGNADO' || ticket.status === 'EN_CAMINO') mainStep = 2;
+  if (ticket.status === 'CERRADO') mainStep = 3;
 
-  const currentStepIndex = steps.findIndex(s => s.key === ticket.status);
-  const normalizedIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
+  // ── Sub-status text for "Técnico Asignado" ──
+  let techSubStatus = '';
+  let techSubIcon: React.ReactNode = null;
+  let techSubPulse = false;
+  if (mainStep >= 2) {
+    if (ticket.status === 'ASIGNADO') {
+      techSubStatus = 'Asignado — esperando confirmación';
+      techSubIcon = <Clock className="w-3.5 h-3.5" />;
+    } else if (ticket.status === 'EN_CAMINO') {
+      techSubStatus = '🚗 En camino al punto';
+      techSubIcon = <CircleDot className="w-3.5 h-3.5" />;
+      techSubPulse = true;
+    } else if (ticket.status === 'CERRADO' && visit) {
+      techSubStatus = '✅ Llegada registrada';
+      techSubIcon = <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />;
+    }
+  }
+
+  // ── Sub-steps for "Resuelto" ──
+  const visitStarted = !!visit;
+  const visitWorking = visit?.status === 'EN_PROGRESO' && (visit?.activities?.length ?? 0) > 0;
+  const visitDone = visit?.status === 'FINALIZADA';
+
+  const steps = [
+    {
+      label: 'Recibido',
+      desc: 'Solicitud ingresada al sistema',
+      icon: <Clock className="w-5 h-5" />,
+    },
+    {
+      label: 'En Revisión',
+      desc: 'Tu solicitud está siendo analizada por el equipo',
+      icon: <Search className="w-5 h-5" />,
+    },
+    {
+      label: 'Técnico Asignado',
+      desc: 'Un técnico fue designado para tu solicitud',
+      icon: <UserCheck className="w-5 h-5" />,
+      subStatus: techSubStatus,
+      subIcon: techSubIcon,
+      subPulse: techSubPulse,
+      assignedTo: ticket.assignedTo,
+    },
+    {
+      label: 'Resuelto',
+      desc: 'Visita técnica en proceso o finalizada',
+      icon: <CheckSquare className="w-5 h-5" />,
+      subSteps: [
+        { label: 'Llegada registrada', done: visitStarted },
+        { label: 'Trabajando en sitio', done: visitWorking || visitDone },
+        { label: 'Trabajo finalizado', done: visitDone },
+      ],
+    },
+  ];
 
   const priorityConfig: Record<string, { text: string; cls: string }> = {
     ALTA:   { text: '🔴 Urgente', cls: 'bg-red-100 text-red-700 border-red-200' },
@@ -91,7 +152,7 @@ export default function TicketTrackingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 flex flex-col items-center">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 py-8 px-4 flex flex-col items-center">
 
       {/* Header */}
       <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-4 text-center">
@@ -108,6 +169,10 @@ export default function TicketTrackingPage() {
             {priorityConfig[ticket.priority].text}
           </span>
         )}
+        <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-emerald-600">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+          Actualización en tiempo real
+        </div>
       </div>
 
       {/* Ticket info card */}
@@ -131,52 +196,75 @@ export default function TicketTrackingPage() {
             <p className="text-sm text-slate-700">"{ticket.issueDescription}"</p>
           </div>
           {ticket.photoUrl && (
-            <img
-              src={ticket.photoUrl}
-              alt="Evidencia"
-              className="w-full h-40 object-cover rounded-xl border border-slate-200"
-            />
-          )}
-          {ticket.assignedTo && (
-            <p className="text-xs text-slate-500 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
-              👤 Técnico asignado:{' '}
-              <span className="font-semibold text-blue-700">
-                {ticket.assignedTo.split('@')[0]}
-              </span>
-            </p>
+            <img src={ticket.photoUrl} alt="Evidencia" className="w-full h-40 object-cover rounded-xl border border-slate-200" />
           )}
         </div>
       </div>
 
       {/* Timeline tracker */}
       <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-slate-500 text-xs uppercase tracking-wider font-bold">Progreso</h2>
-          <span className="text-[10px] text-slate-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-            Actualizado {lastRefresh.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
+        <h2 className="text-slate-500 text-xs uppercase tracking-wider font-bold mb-6">Progreso</h2>
         <div className="relative">
-          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-slate-100 -z-10" />
-          <div className="space-y-6">
+          {/* Vertical line */}
+          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-slate-100" />
+          <div className="space-y-5">
             {steps.map((step, idx) => {
-              const isCompleted = idx <= normalizedIndex;
-              const isCurrent   = idx === normalizedIndex;
-              const isWaiting   = idx > normalizedIndex;
+              const isCompleted = idx < mainStep;
+              const isCurrent   = idx === mainStep;
+              const isWaiting   = idx > mainStep;
+
               let iconBg = 'bg-slate-100 text-slate-400';
               if (isCompleted) iconBg = 'bg-blue-500 text-white';
               if (isCurrent)   iconBg = 'bg-blue-600 text-white shadow-md ring-4 ring-blue-50';
-              // Special pulsing green for EN_CAMINO when active
-              if (isCurrent && step.key === 'EN_CAMINO') iconBg = 'bg-emerald-500 text-white shadow-md ring-4 ring-emerald-50 animate-pulse';
+
               return (
-                <div key={step.key} className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${iconBg}`}>
-                    {isCompleted && !isCurrent ? <CheckCircle className="w-6 h-6" /> : step.icon}
-                  </div>
-                  <div className="pt-2">
-                    <h3 className={`font-bold ${isWaiting ? 'text-slate-400' : 'text-slate-800'}`}>{step.label}</h3>
-                    <p className="text-xs text-slate-500">{step.desc}</p>
+                <div key={idx} className="relative z-10">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${iconBg}`}>
+                      {isCompleted ? <CheckCircle className="w-6 h-6" /> : step.icon}
+                    </div>
+                    <div className="pt-1.5 flex-1">
+                      <h3 className={`font-bold text-sm ${isWaiting ? 'text-slate-400' : 'text-slate-800'}`}>
+                        {step.label}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">{step.desc}</p>
+
+                      {/* Sub-status for Técnico Asignado */}
+                      {'subStatus' in step && step.subStatus && (isCurrent || isCompleted) && (
+                        <div className={`mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
+                          step.subPulse
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse'
+                            : 'bg-slate-50 text-slate-600 border border-slate-200'
+                        }`}>
+                          {step.subIcon} {step.subStatus}
+                        </div>
+                      )}
+
+                      {/* Assigned tech name */}
+                      {'assignedTo' in step && step.assignedTo && (isCurrent || isCompleted) && (
+                        <p className="text-xs text-blue-600 font-medium mt-1.5">
+                          👤 {step.assignedTo.split('@')[0]}
+                        </p>
+                      )}
+
+                      {/* Sub-steps for Resuelto */}
+                      {'subSteps' in step && step.subSteps && (isCurrent || isCompleted) && (
+                        <div className="mt-3 ml-1 space-y-2 border-l-2 border-slate-100 pl-4">
+                          {step.subSteps.map((sub, si) => (
+                            <div key={si} className="flex items-center gap-2">
+                              {sub.done ? (
+                                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-200 flex-shrink-0" />
+                              )}
+                              <span className={`text-xs font-medium ${sub.done ? 'text-slate-700' : 'text-slate-400'}`}>
+                                {sub.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
