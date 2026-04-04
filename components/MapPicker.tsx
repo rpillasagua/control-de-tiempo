@@ -5,7 +5,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer as ReactMapContainer, TileLayer as ReactTileLayer, Marker as ReactMarker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { MapPin } from 'lucide-react';
+import { MapPin, Navigation } from 'lucide-react';
+import { toast } from 'sonner';
 
 const MapContainer = ReactMapContainer as any;
 const TileLayer = ReactTileLayer as any;
@@ -35,7 +36,9 @@ function LocationMarker({ position, setPosition }: any) {
 
   useEffect(() => {
     if (position) {
-      map.flyTo(position, map.getZoom());
+      // Zoom in appropriately if currently zoomed out
+      const targetZoom = map.getZoom() < 15 ? 16 : map.getZoom();
+      map.flyTo(position, targetZoom);
     }
   }, [position, map]);
 
@@ -54,6 +57,24 @@ export default function MapPicker({ defaultLocation, onLocationSelect, onClose }
     if (position) {
       onLocationSelect({ lat: position.lat, lng: position.lng });
     }
+  };
+
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      toast.error('Tu navegador no soporta geolocalización.');
+      return;
+    }
+    const tid = toast.loading('Calculando coordenadas GPS...');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        toast.success('¡Ubicación encontrada!', { id: tid });
+      },
+      (err) => {
+        toast.error('Error obteniendo ubicación. Asegúrate de dar permisos de GPS.', { id: tid });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   return (
@@ -77,6 +98,16 @@ export default function MapPicker({ defaultLocation, onLocationSelect, onClose }
             />
             <LocationMarker position={position} setPosition={setPosition} />
           </MapContainer>
+          
+          {/* Floating action button for current location */}
+          <button 
+            onClick={handleLocateMe}
+            className="absolute bottom-4 right-4 z-[1000] bg-white text-blue-600 p-3 rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition active:scale-95 flex items-center gap-2"
+            title="Mi Ubicación"
+          >
+            <Navigation className="w-5 h-5" />
+            <span className="text-sm font-bold pr-1 hidden sm:inline">Mi Ubicación</span>
+          </button>
         </div>
 
         <div className="p-4 bg-white border-t border-slate-100 flex gap-3">

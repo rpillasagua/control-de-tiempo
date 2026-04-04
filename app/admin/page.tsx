@@ -18,7 +18,7 @@ import { Company, Ticket, Invite, TicketPriority } from '@/lib/types';
 import {
   Loader2, Plus, Users, Building2, MapPin, Phone,
   Trash2, Link as LinkIcon, Bell, ChevronDown,
-  ArrowRightLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock, Camera, Save, Volume2, VolumeX,
+  ArrowRightLeft, ArrowLeft, Ticket as TicketIcon, AlertCircle, Key, Copy, Clock, Camera, Save, Volume2, VolumeX,
   Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -389,8 +389,11 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* ── Header ── */}
-      <header className="bg-blue-700 text-white pt-10 pb-6 px-4">
+      <header className="bg-blue-700 text-white pt-6 pb-6 px-4">
         <div className="max-w-4xl mx-auto space-y-3">
+          <button onClick={() => window.location.href = '/'} className="flex items-center gap-1.5 text-blue-200 hover:text-white transition text-sm font-medium mb-3">
+            <ArrowLeft className="w-4 h-4" /> Volver al Inicio
+          </button>
           {/* Company selector */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
