@@ -144,6 +144,7 @@ export interface Client {
   phone?: string;
   email?: string;
   notes?: string;
+  location?: GeoPoint;
   companyId?: string;  // Nueva: vinculación al tenant de la empresa
   createdBy: string;   // email del técnico o marcador de sistema
   createdAt: string;

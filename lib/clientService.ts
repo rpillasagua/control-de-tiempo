@@ -104,6 +104,29 @@ export async function getClients(technicianId: string): Promise<Client[]> {
   }
 }
 
+export async function getClientsByCompany(companyId: string): Promise<Client[]> {
+  const q = query(
+    collection(db, COLLECTION),
+    where('companyId', '==', companyId),
+    orderBy('name', 'asc')
+  );
+
+  try {
+    const cacheSnap = await getDocsFromCache(q);
+    if (!cacheSnap.empty) {
+      getDocs(q).catch(() => {});
+      return cacheSnap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
+    }
+  } catch {}
+
+  try {
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
+  } catch {
+    return [];
+  }
+}
+
 export async function updateClient(
   clientId: string,
   data: Partial<Omit<Client, 'id' | 'createdBy' | 'createdAt'>>,

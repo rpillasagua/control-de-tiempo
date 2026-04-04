@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient, getClients } from '@/lib/clientService';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n';
 
@@ -13,6 +16,8 @@ export default function NewClientPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -56,6 +61,7 @@ export default function NewClientPage() {
         phone: formData.phone.trim(),
         email: formData.email.trim(),
         notes: formData.notes.trim(),
+        location: location || undefined,
         createdBy: user.email,
         createdAt: new Date().toISOString()
       } as any);
@@ -99,13 +105,23 @@ export default function NewClientPage() {
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t.addressLabel}</label>
-          <input 
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            placeholder={t.addressPlaceholder}
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="flex flex-col gap-2">
+            <input 
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder={t.addressPlaceholder}
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowMapPicker(true)}
+              className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+            >
+              <MapPin className="w-4 h-4" />
+              {location ? `Ubicación Fijada (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})` : 'Seleccionar Ubicación Exacta en Mapa'}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -154,6 +170,14 @@ export default function NewClientPage() {
           {saving ? t.creating : t.saveClientBtn}
         </button>
       </main>
+
+      {/* Map Picker Overlay */}
+      {showMapPicker && (
+        <MapPicker 
+          onLocationSelect={(loc) => { setLocation(loc); setShowMapPicker(false); }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   );
 }

@@ -12,9 +12,10 @@ import { useTranslation } from '@/lib/i18n';
 import { compressImage } from '@/lib/imageCompression';
 import { getTicketsByCompany, updateTicketStatus, createTicketByAdmin } from '@/lib/ticketService';
 import { createInvite, getCompanyInvites } from '@/lib/inviteService';
+import { getClientsByCompany } from '@/lib/clientService';
 import { uploadPhotoToStorage } from '@/lib/storageService';
 import { dataUrlToFile } from '@/lib/utils';
-import { Company, Ticket, Invite, TicketPriority } from '@/lib/types';
+import { Company, Ticket, Invite, TicketPriority, Client } from '@/lib/types';
 import {
   Loader2, Plus, Users, Building2, MapPin, Phone,
   Trash2, Link as LinkIcon, Bell, ChevronDown,
@@ -65,6 +66,9 @@ export default function AdminDashboardPage() {
   const [ticketsLoading, setTicketsLoading] = useState(false);
   // Alert badge
   const [newCount, setNewCount] = useState(0);
+
+  // Clients
+  const [clients, setClients] = useState<Client[]>([]);
 
   // Invites
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -146,11 +150,15 @@ export default function AdminDashboardPage() {
       const list = await getTicketsByCompany(selectedCompanyId);
       setTickets(list);
       setNewCount(0);
+      
+      const clientList = await getClientsByCompany(selectedCompanyId);
+      setClients(clientList);
+
       // Also refresh active invites
       const inviteList = await getCompanyInvites(selectedCompanyId);
       setInvites(inviteList);
     } catch {
-      toast.error('Error cargando tickets');
+      toast.error('Error cargando tickets o clientes');
     } finally {
       setTicketsLoading(false);
     }
@@ -827,6 +835,7 @@ export default function AdminDashboardPage() {
       {showNewTicketModal && activeCompany && (
         <NewTicketModal
           technicianEmails={activeCompany.technicianEmails}
+          clients={clients}
           onClose={() => setShowNewTicketModal(false)}
           onSubmit={handleCreateManualTicket}
         />
@@ -870,10 +879,12 @@ function CompanyFormModal({
 // ─────────────────────────────────────────
 function NewTicketModal({
   technicianEmails,
+  clients,
   onClose,
   onSubmit,
 }: {
   technicianEmails: string[];
+  clients: Client[];
   onClose: () => void;
   onSubmit: (data: {
     clientName: string;
@@ -887,6 +898,7 @@ function NewTicketModal({
     assignedTo?: string;
   }) => void;
 }) {
+  const [selectedClientId, setSelectedClientId] = React.useState('');
   const [clientName, setClientName] = React.useState('');
   const [clientPhone, setClientPhone] = React.useState('');
   const [clientAddress, setClientAddress] = React.useState('');
@@ -962,19 +974,54 @@ function NewTicketModal({
           </div>
         </div>
 
-        {/* Client Name */}
+        {/* Client Name & Phone */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente *</label>
-            <input required value={clientName} onChange={e => setClientName(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Nombre del cliente" />
+          <div className="col-span-2 sm:col-span-1 border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente *</label>
+            <select
+              value={selectedClientId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedClientId(id);
+                if (id === 'NEW' || id === '') {
+                  setClientName('');
+                  setClientPhone('');
+                  setClientAddress('');
+                  setLocation(null);
+                } else {
+                  const c = clients.find(cl => cl.id === id);
+                  if (c) {
+                    setClientName(c.name);
+                    setClientPhone(c.phone || '');
+                    setClientAddress(c.address || '');
+                    setLocation(c.location || null);
+                  }
+                }
+              }}
+              className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white mb-2 shadow-sm"
+            >
+              <option value="">— Selecionar Cliente Registrado —</option>
+              <option value="NEW">➕ Cliente Nuevo (Escritura Manual)</option>
+              <optgroup label="Tus Clientes">
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </optgroup>
+            </select>
+
+            {(selectedClientId === 'NEW' || selectedClientId === '') && (
+              <input required value={clientName} onChange={e => setClientName(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+                placeholder="Nombre del cliente" />
+            )}
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-            <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="099..." />
+          <div className="col-span-2 sm:col-span-1 flex items-end">
+            <div className="w-full">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+              <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+                placeholder="099..." />
+            </div>
           </div>
         </div>
 
