@@ -933,11 +933,20 @@ function NewTicketModal({
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { compressImage } = await import('@/lib/imageCompression');
-    const compressed = await compressImage(file);
-    const reader = new FileReader();
-    reader.onload = () => setPhotoDataUrl(reader.result as string);
-    reader.readAsDataURL(compressed);
+    const toastId = toast.loading('Procesando foto...');
+    try {
+      const { compressImage } = await import('@/lib/utils');
+      // Usar compresión html5 canvas que nunca falla en móviles (800x800 Max, 70% calidad = < 300KB)
+      const compressedBlob = await compressImage(file, 800, 800, 0.7);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoDataUrl(reader.result as string);
+        toast.success('Foto adjuntada correctamente', { id: toastId });
+      };
+      reader.readAsDataURL(compressedBlob);
+    } catch {
+      toast.error('Error al procesar la foto', { id: toastId });
+    }
     e.target.value = '';
   };
 
@@ -1112,7 +1121,7 @@ function NewTicketModal({
         {/* Photo */}
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Foto de referencia</label>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
           {photoDataUrl ? (
             <div className="relative">
               <img src={photoDataUrl} alt="Preview" className="w-full h-32 object-cover rounded-xl border border-slate-200" />
