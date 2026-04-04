@@ -22,6 +22,9 @@ import {
   Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
 // ─────────────────────────────────────────
 // Small helper: play a soft ping sound
@@ -260,6 +263,7 @@ export default function AdminDashboardPage() {
     priority: TicketPriority;
     notes?: string;
     photoDataUrl?: string;
+    location?: { lat: number; lng: number };
     assignedTo?: string;
   }) => {
     if (!activeCompany) return;
@@ -277,6 +281,7 @@ export default function AdminDashboardPage() {
         priority: data.priority,
         notes: data.notes,
         photoUrl,
+        location: data.location,
         assignedTo: data.assignedTo || undefined,
       });
       toast.success('✅ Orden creada correctamente');
@@ -875,6 +880,7 @@ function NewTicketModal({
     priority: TicketPriority;
     notes?: string;
     photoDataUrl?: string;
+    location?: { lat: number; lng: number };
     assignedTo?: string;
   }) => void;
 }) {
@@ -886,6 +892,8 @@ function NewTicketModal({
   const [notes, setNotes] = React.useState('');
   const [assignedTo, setAssignedTo] = React.useState('');
   const [photoDataUrl, setPhotoDataUrl] = React.useState<string | undefined>();
+  const [location, setLocation] = React.useState<{ lat: number; lng: number } | null>(null);
+  const [showMapPicker, setShowMapPicker] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
@@ -913,6 +921,7 @@ function NewTicketModal({
         priority,
         notes: notes.trim() || undefined,
         photoDataUrl,
+        location: location || undefined,
         assignedTo: assignedTo || undefined,
       });
     } finally {
@@ -968,10 +977,21 @@ function NewTicketModal({
 
         {/* Address */}
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
-          <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-            className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Calle, número, sector..." />
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección / Link</label>
+          <div className="flex flex-col gap-2">
+            <input value={clientAddress} onChange={e => setClientAddress(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Ej: Mapasingue Este Mz 4..." />
+            
+            <button
+              type="button"
+              onClick={() => setShowMapPicker(true)}
+              className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border-2 transition ${location ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+            >
+              <MapPin className="w-4 h-4" />
+              {location ? `Ubicación Fijada (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})` : 'Seleccionar Ubicación Exacta en Mapa'}
+            </button>
+          </div>
         </div>
 
         {/* Issue */}
@@ -1028,6 +1048,14 @@ function NewTicketModal({
           </button>
         </div>
       </form>
+
+      {/* Map Picker Overlay */}
+      {showMapPicker && (
+        <MapPicker 
+          onLocationSelect={(loc) => { setLocation(loc); setShowMapPicker(false); }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   );
 }
