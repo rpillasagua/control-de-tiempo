@@ -919,6 +919,7 @@ function NewTicketModal({
 }) {
   const [selectedClientId, setSelectedClientId] = React.useState('');
   const [clientSearch, setClientSearch] = React.useState('');
+  const [showClientDropdown, setShowClientDropdown] = React.useState(false);
   const [clientName, setClientName] = React.useState('');
   const [clientPhone, setClientPhone] = React.useState('');
   const [clientAddress, setClientAddress] = React.useState('');
@@ -1008,14 +1009,16 @@ function NewTicketModal({
           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente *</label>
           <div className="relative">
             <input
-              list="clients-list"
               type="text"
               placeholder="🔍 Buscar por nombre o RUC/teléfono..."
               className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm"
               value={clientSearch}
+              onFocus={() => setShowClientDropdown(true)}
+              onBlur={() => setShowClientDropdown(false)}
               onChange={(e) => {
                 const val = e.target.value;
                 setClientSearch(val);
+                setShowClientDropdown(true);
                 
                 if (!val.trim()) {
                   setSelectedClientId('');
@@ -1026,26 +1029,51 @@ function NewTicketModal({
                   return;
                 }
 
-                // Check if exact match from datalist
-                const found = clients.find(c => `${c.name} ${c.phone ? '- ' + c.phone : ''}` === val);
-                if (found) {
-                  setSelectedClientId(found.id);
-                  setClientName(found.name);
-                  setClientPhone(found.phone || '');
-                  setClientAddress(found.address || '');
-                  setLocation(found.location || null);
-                } else {
-                  // Not found in list, they are typing a new name
-                  setSelectedClientId('NEW');
-                  setClientName(val);
-                }
+                // If typing manually, assume it's a NEW client until they select one
+                setSelectedClientId('NEW');
+                setClientName(val);
               }}
             />
-            <datalist id="clients-list">
-              {clients.map(c => (
-                <option key={c.id} value={`${c.name} ${c.phone ? '- ' + c.phone : ''}`} />
-              ))}
-            </datalist>
+            
+            {showClientDropdown && (
+              <div 
+                className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
+                onMouseDown={(e) => e.preventDefault()} // prevent input blur before click
+              >
+                {clients
+                  .filter(c => `${c.name} ${c.phone || ''}`.toLowerCase().includes(clientSearch.toLowerCase()))
+                  .slice(0, 4)
+                  .map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedClientId(c.id);
+                        setClientSearch(c.name);
+                        setClientName(c.name);
+                        setClientPhone(c.phone || '');
+                        setClientAddress(c.address || '');
+                        setLocation(c.location || null);
+                        setShowClientDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100"
+                    >
+                      <div className="font-bold text-slate-800 text-sm">{c.name}</div>
+                      {c.phone && <div className="text-xs text-slate-500">{c.phone}</div>}
+                    </button>
+                  ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClientId('NEW');
+                    setShowClientDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50 bg-slate-50"
+                >
+                  ➕ Registrar "{clientSearch || 'Nuevo Cliente'}"
+                </button>
+              </div>
+            )}
           </div>
 
           {/* New Client Form Block */}
